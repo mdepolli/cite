@@ -12,8 +12,9 @@ defmodule Cite.Answer do
   @doc """
   The Noul probability of an answer.
 
-  Missing or malformed answers read as `0.0` — a confident "no". Same as the
-  prototype: an unanswered key is not distinguished from a negative Noul.
+  A malformed answer reads as `0.0`. A *missing* answer never reaches here:
+  the shell records a reply that skips a question as an error for that
+  request.
   """
   @spec noul(term()) :: number()
   def noul(%{"noul" => value}) when is_number(value), do: value

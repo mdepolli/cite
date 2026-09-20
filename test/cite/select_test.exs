@@ -122,7 +122,7 @@ defmodule Cite.SelectTest do
 
         answers =
           if Map.has_key?(questions, "fits"),
-            do: %{"fits" => %{"noul" => 0.86}},
+            do: compare_answers(questions, 0.86),
             else: Map.new(questions, fn {key, _} -> {key, %{"noul" => scan_noul(key)}} end)
 
         {:ok, %{answers: answers, usage: %{input_tokens: 3, output_tokens: 0}}}
@@ -215,7 +215,7 @@ defmodule Cite.SelectTest do
             {:error, :request_too_large}
 
           Map.has_key?(request["questions"], "fits") ->
-            {:ok, %{answers: %{"fits" => %{"noul" => 0.2}}, usage: nil}}
+            {:ok, %{answers: compare_answers(request["questions"], 0.2), usage: nil}}
 
           true ->
             answers =
@@ -345,6 +345,24 @@ defmodule Cite.SelectTest do
       end
     end
 
+    test "records a reply that skips a question as an error, not as no" do
+      # Arrange — the scan stub answers only one of the two candidates' questions.
+      {source, candidates} = household_fixture()
+
+      client = fn %{"questions" => questions} ->
+        [first | _] = questions |> Map.keys() |> Enum.sort()
+        {:ok, %{answers: %{first => %{"noul" => 0.9}}, usage: nil}}
+      end
+
+      # Act
+      result = Cite.select(client, source, candidates, household_spec())
+
+      # Assert
+      assert result.scan == %{}
+      assert [%Error{reason: {:missing_answers, missing}}] = result.errors
+      assert length(missing) == 3
+    end
+
     test "raises when the client returns the wrong shape, including a bad usage" do
       spec = %{
         atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
@@ -444,5 +462,19 @@ defmodule Cite.SelectTest do
         )
       end
     end
+  end
+
+  # Every question answered, by type; the Noul at `fits` gets `noul`.
+  defp compare_answers(questions, noul) do
+    Map.new(questions, fn
+      {key, %{"type" => "noul"}} ->
+        {key, %{"noul" => noul}}
+
+      {key, %{"type" => "score"}} ->
+        {key, %{"score" => 1, "confidence" => 0.9}}
+
+      {key, %{"type" => "choice", "criteria" => c}} ->
+        {key, %{"choice" => c |> Map.keys() |> hd(), "confidence" => 0.9}}
+    end)
   end
 end

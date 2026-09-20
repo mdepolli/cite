@@ -161,9 +161,10 @@ or above 0.6 accepts it; anything else sends it out for review. With
 cluster with no Nouls has nothing to gate and is accepted; a cluster with
 no questions at all is accepted without a request.
 
-A missing Noul answer reads as `0.0` — the same as a confident "no". That is
-deliberate and inherited from the prototype; a model that skipped a key is
-not given the benefit of the doubt.
+A reply that skips a question is not a verdict on it. The model promises one
+answer per question, so the request becomes a `Cite.Error` with reason
+`{:missing_answers, keys}` and nothing from it is read — a scan window
+contributes no index rows, a cluster is neither accepted nor rejected.
 
 `member_questions` narrows which members are grounded: name the Noul(s)
 that vouch for a member and it is emitted only when one of them is above

@@ -189,9 +189,9 @@ nothing to gate and is accepted once judged; a cluster with no questions at
 all is accepted without a request. Rejected clusters land in
 `Result.rejected` with their answers.
 
-An unanswered Noul reads as `0.0`. That is a deliberate choice inherited from
-the prototype: a key the model did not answer is not distinguished from a
-confident "no".
+A reply that skips a question is not read as "no": the model promises one
+answer per question, so the whole request is recorded as a `Cite.Error`
+(`{:missing_answers, keys}`) and nothing from it enters the index.
 
 ## Grounding members
 

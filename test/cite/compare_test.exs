@@ -117,9 +117,9 @@ defmodule Cite.CompareTest do
       assert :reject == decide(cluster([]), %{"fits" => noul(0.4)})
     end
 
-    test ":all counts an unanswered Noul as 0.0" do
+    test ":all counts a malformed Noul answer as 0.0" do
       cluster = cluster(questions: %{"fits" => noul_q(), "also" => noul_q()})
-      assert :reject == decide(cluster, %{"fits" => noul(0.9)})
+      assert :reject == decide(cluster, %{"fits" => noul(0.9), "also" => %{"noul" => "high"}})
     end
 
     test ":any accepts on one clearing Noul and reviews on one above the low edge" do

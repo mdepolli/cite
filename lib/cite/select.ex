@@ -115,12 +115,18 @@ defmodule Cite.Select do
   end
 
   # The client is the caller's function; its return is checked here, once, and
-  # trusted everywhere after.
+  # trusted everywhere after. A reply that skips a question is not a verdict
+  # on it — the model promises one answer per question — so it is recorded as
+  # an error for the whole request rather than read as "no".
   defp call(client, request) do
     case client.(request) do
       {:ok, %{answers: answers, usage: usage}} = verdict when is_map(answers) ->
         usage(usage)
-        verdict
+
+        case Map.keys(request["questions"]) -- Map.keys(answers) do
+          [] -> verdict
+          missing -> {:error, {:missing_answers, Enum.sort(missing)}}
+        end
 
       {:error, _reason} = error ->
         error

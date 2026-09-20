@@ -95,10 +95,17 @@ defmodule Cite.ScanTest do
   end
 
   describe "resolve/2" do
-    test "builds the index from answers, one row per candidate, missing answers as 0.0" do
+    test "builds the index from answers, one row per candidate, malformed answers as 0.0" do
       # Arrange
       window = [cand("U0", "aaaa", 0), cand("U1", "bbbb", 5)]
-      answers = %{"U0:dependents" => %{"noul" => 0.9}, "U1:dependents" => %{"noul" => 0.2}}
+
+      answers = %{
+        "U0:dependents" => %{"noul" => 0.9},
+        "U1:dependents" => %{"noul" => 0.2},
+        "U0:income" => %{"noul" => "n/a"},
+        "U1:income" => %{}
+      }
+
       outcomes = [{window, {:ok, %{answers: answers, usage: nil}}}]
 
       # Act
