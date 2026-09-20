@@ -8,7 +8,8 @@ paraphrased quote to align.
 
 ```elixir
 judge = Arbiter.new(api_key: System.fetch_env!("JEV_API_KEY"))
-{source, candidates} = Cite.Candidate.from_segments(segments)
+candidates = Cite.Candidate.from_segments(segments)
+source = Enum.map_join(candidates, " ", & &1.text)
 
 result =
   Cite.select(judge, source, candidates, spec)

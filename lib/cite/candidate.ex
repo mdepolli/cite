@@ -35,8 +35,10 @@ defmodule Cite.Candidate do
   Builds candidates with byte offsets into the document formed by joining
   trimmed segment texts with a single ASCII space (`0x20`).
 
-  Callers rebuild that document with `Enum.map_join(candidates, " ", & &1.text)`.
-  For every candidate, `binary_part(source, byte_start, byte_end - byte_start) == text`.
+  Offsets are **byte** indexes into that document, so callers must rebuild it
+  with exactly `source = Enum.map_join(candidates, " ", & &1.text)`; any other
+  separator silently shifts every offset. Given that `source`, for every
+  candidate `binary_part(source, byte_start, byte_end - byte_start) == text`.
   `[]` → `[]`.
 
   Raises `ArgumentError` on a bad list or segment (programmer error), including
