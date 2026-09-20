@@ -8,6 +8,8 @@ defmodule Cite.Error do
   else becomes `inspect(reason)`.
   """
 
+  alias Cite.Candidate
+
   @type t :: %__MODULE__{
           byte_start: non_neg_integer(),
           byte_end: non_neg_integer(),
@@ -26,7 +28,7 @@ defmodule Cite.Error do
   end
 
   @doc false
-  @spec from_candidates([Cite.Candidate.t(), ...], term()) :: t()
+  @spec from_candidates([Candidate.t(), ...], term()) :: t()
   def from_candidates([_ | _] = candidates, reason) do
     starts = Enum.map(candidates, & &1.byte_start)
     stops = Enum.map(candidates, & &1.byte_end)
@@ -35,7 +37,9 @@ defmodule Cite.Error do
 end
 
 defimpl Jason.Encoder, for: Cite.Error do
-  def encode(%Cite.Error{} = error, opts) do
+  alias Cite.Error
+
+  def encode(%Error{} = error, opts) do
     Jason.Encode.map(
       %{
         "byte_start" => error.byte_start,

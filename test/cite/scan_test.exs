@@ -68,7 +68,7 @@ defmodule Cite.ScanTest do
       request = Scan.request(window, atomics, %{meeting: "m1"})
 
       # Assert
-      assert Map.keys(request["questions"]) |> Enum.sort() ==
+      assert Enum.sort(Map.keys(request["questions"])) ==
                ["U0:dependents", "U0:income", "U1:dependents", "U1:income"]
 
       assert request["questions"]["U1:income"]["instructions"]["question"] == "income for U1?"

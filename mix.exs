@@ -10,7 +10,6 @@ defmodule Cite.MixProject do
       version: @version,
       elixir: ">= 1.20.0",
       start_permanent: Mix.env() == :prod,
-      elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
       name: "Cite",
       description: description(),
@@ -21,13 +20,8 @@ defmodule Cite.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(_), do: ["lib"]
-
   def application do
-    [
-      extra_applications: [:logger]
-    ]
+    []
   end
 
   defp deps do

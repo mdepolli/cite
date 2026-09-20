@@ -56,7 +56,7 @@ defmodule Cite.Scan do
   @spec resolve([outcome()], [atomic()]) :: %{
           index: index(),
           errors: [Error.t()],
-          usages: [map() | nil]
+          usages: [Cite.usage() | nil]
         }
   def resolve(outcomes, atomics) do
     %{

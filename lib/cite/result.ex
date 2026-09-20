@@ -12,7 +12,7 @@ defmodule Cite.Result do
   @derive {Jason.Encoder, only: [:spans, :errors, :usage, :scan, :rejected]}
 
   @type usage :: %{input_tokens: non_neg_integer(), output_tokens: non_neg_integer()}
-  @type scan :: %{String.t() => %{String.t() => float()}}
+  @type scan :: %{String.t() => %{String.t() => number()}}
   @type rejected :: %{String.t() => map()}
 
   @type t :: %__MODULE__{

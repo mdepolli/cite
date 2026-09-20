@@ -41,6 +41,9 @@ defmodule Cite.Provider.TypeSafe do
       ])
 
     api_key = opts[:api_key] || System.get_env("JEV_API_KEY")
+    model = opts[:model]
+    base_url = opts[:base_url]
+    req_overrides = opts[:req_options] || []
 
     if api_key in [nil, ""] do
       raise ArgumentError, "missing API key: pass :api_key or set JEV_API_KEY"
@@ -48,15 +51,15 @@ defmodule Cite.Provider.TypeSafe do
 
     req_options =
       [
-        base_url: opts[:base_url],
+        base_url: base_url,
         auth: {:bearer, api_key},
         receive_timeout: 120_000,
         retry: :transient,
         redirect: false
       ]
-      |> Keyword.merge(opts[:req_options] || [])
+      |> Keyword.merge(req_overrides)
 
-    %__MODULE__{http_client: Req.new(req_options), model: opts[:model]}
+    %__MODULE__{http_client: Req.new(req_options), model: model}
   end
 
   @impl Cite.Provider

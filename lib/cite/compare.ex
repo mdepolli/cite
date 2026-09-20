@@ -60,7 +60,7 @@ defmodule Cite.Compare do
           accepted: [accepted()],
           rejected: %{String.t() => map()},
           errors: [Error.t()],
-          usages: [map() | nil]
+          usages: [Cite.usage() | nil]
         }
   def resolve(outcomes, band) do
     decisions =

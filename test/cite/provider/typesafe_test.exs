@@ -115,6 +115,12 @@ defmodule Cite.Provider.TypeSafeTest do
 
       assert judge().(@request) == {:error, {:rate_limited, 7000}}
 
+      Req.Test.stub(__MODULE__, fn conn ->
+        conn |> Plug.Conn.put_resp_header("retry-after", "soon") |> Plug.Conn.send_resp(429, "")
+      end)
+
+      assert judge().(@request) == {:error, {:rate_limited, nil}}
+
       Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 503, "down"))
       assert judge().(@request) == {:error, :server_error}
     end

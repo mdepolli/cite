@@ -53,13 +53,17 @@ defmodule Cite do
   @type spec :: %{atomics: [atomic()], compose: (map(), [Candidate.t()] -> [Cluster.t()])}
 
   @doc """
-  A judge backed by `provider`, a `Cite.Provider` module; `opts` are the
-  provider's. Defaults to `Cite.Provider.TypeSafe`, which reads `:api_key`
-  or `JEV_API_KEY`.
+  A TypeSafe System One judge; `opts` are `Cite.Provider.TypeSafe`'s
+  (`:api_key` or `JEV_API_KEY`, `:model`, `:base_url`, `:req_options`).
   """
   @spec judge(keyword()) :: judge()
   def judge(opts \\ []) when is_list(opts), do: judge(Provider.TypeSafe, opts)
 
+  @doc """
+  A judge backed by `provider`, any module implementing `Cite.Provider`;
+  `opts` are the provider's. The result is the 1-arity function
+  `select/5` takes, closed over the provider's client.
+  """
   @spec judge(module(), keyword()) :: judge()
   def judge(provider, opts) when is_atom(provider) and is_list(opts) do
     client = provider.new(opts)

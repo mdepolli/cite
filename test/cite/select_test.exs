@@ -132,8 +132,8 @@ defmodule Cite.SelectTest do
 
       # Assert
       assert %Result{errors: [], rejected: %{}} = result
-      assert Enum.map(result.spans, & &1.candidate_id) |> Enum.sort() == ["U000", "U001"]
-      assert Map.keys(result.scan) |> Enum.sort() == ["U000", "U001"]
+      assert Enum.sort(Enum.map(result.spans, & &1.candidate_id)) == ["U000", "U001"]
+      assert Enum.sort(Map.keys(result.scan)) == ["U000", "U001"]
       assert result.usage == %{input_tokens: 6, output_tokens: 0}
     end
 
@@ -314,6 +314,18 @@ defmodule Cite.SelectTest do
                result.errors
 
       assert result.spans == []
+    end
+
+    test "no candidates means no calls and an empty result" do
+      spec = %{
+        atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
+        compose: fn _, _ -> [] end
+      }
+
+      judge = fn _ -> flunk("judge was called with nothing to judge") end
+
+      assert %Result{spans: [], errors: [], usage: nil, scan: %{}, rejected: %{}} =
+               Cite.select(judge, "", [], spec)
     end
 
     test "checks candidates against the source before any judge call" do
