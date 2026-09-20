@@ -1,11 +1,20 @@
 # Cite
 
-**TODO: Add description**
+Candidates in, grounded citations out.
+
+Cite proposes candidates, asks an [Arbiter](https://github.com/mdepolli/arbiter)
+System One judge, and copies evidence byte-exact from the source — never a
+paraphrased quote to align.
+
+```elixir
+judge = Arbiter.new(api_key: System.fetch_env!("JEV_API_KEY"))
+candidates = Cite.Candidate.from_segments(segments)
+
+result =
+  Cite.select(judge, source, candidates, spec)
+```
 
 ## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `cite` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -15,7 +24,6 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/cite>.
+## License
 
+MIT — see [LICENSE](LICENSE).

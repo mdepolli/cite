@@ -1,8 +1,7 @@
 defmodule CiteTest do
-  use ExUnit.Case
-  doctest Cite
+  use ExUnit.Case, async: true
 
-  test "greets the world" do
-    assert Cite.hello() == :world
+  test "placeholder until facade lands" do
+    assert true
   end
 end

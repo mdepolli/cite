@@ -10,11 +10,17 @@
 # Where third-party dependencies like ExDoc output generated docs.
 /doc/
 
+# Dev specs and plans
+/docs/
+
 # Temporary files, for example, from tests.
 /tmp/
 
 # If the VM crashes, it generates a dump, let's ignore it too.
 erl_crash.dump
+
+# fprof trace files from profiling
+fprof.trace
 
 # Also ignore archive artifacts (built via "mix archive.build").
 *.ez
@@ -22,3 +28,29 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 cite-*.tar
 
+# Local git worktrees
+.worktrees/
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Grok Build (local skills, workflows, session state)
+.grok/
+
+# Elixir language servers (Expert, Dexter)
+/.expert/
+/.dexter/
+
+# macOS Finder metadata
+.DS_Store
+
+# Local environment files (API keys, mise env)
+.env
+.env.*
+.envrc
+mise.toml
+mise.local.toml
+
+# Generated analysis output
+xref_graph.dot

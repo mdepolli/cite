@@ -1,18 +1,7 @@
 defmodule Cite do
   @moduledoc """
-  Documentation for `Cite`.
+  Candidates in, grounded citations out.
+
+  Code proposes candidates; Arbiter judges; Cite copies evidence byte-exact.
   """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Cite.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
 end
