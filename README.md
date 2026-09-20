@@ -113,9 +113,10 @@ atomics = [%{name: "riddle", question: riddle}]
 ```
 
 An atomic is one question asked of every candidate. The scan puts each
-window of candidates under `"candidates"` in the request state, so questions
-address a line as `` `candidates.#{id}.text` `` — the model reads only what
-the path points at. The scan's output is an index,
+window of candidates under the spec's `scan_key` — `"candidates"` unless you
+say otherwise — so questions address a line as `` `candidates.#{id}.text` ``
+and the model reads only what the path points at. Pick the word that reads
+naturally in your questions; it is part of them. The scan's output is an index,
 `%{candidate_id => %{atomic_name => probability}}`, with scores at or below
 `atomic_threshold` dropped.
 
@@ -244,9 +245,10 @@ plain map does not past 32 entries — and the model reads neighbours. Structs
 other than candidates and keys that are neither atoms nor binaries are
 rejected before the first request.
 
-The scan's key (`scan_key`, default `"candidates"`) is the scan's; a `:state`
-that uses it is rejected. Since the word appears in every scan question, it
-is a wording choice — change it and the questions change with it.
+The scan's key is the spec's `scan_key` (default `"candidates"`); a `:state`
+that uses it is rejected. The word appears in every scan question, so it
+belongs to the question set: for a transcript, `scan_key: "utterances"` and
+questions that say `` `utterances.U005.text` ``.
 
 ## Errors and diagnostics
 
@@ -285,7 +287,6 @@ it is not.
 | `review_band` | `{0.4, 0.6}` | reject at or below `low`, accept at or above `high` |
 | `confidence_floor` | `0.5` | Score and Choice labels below this read `"uncertain"` |
 | `state` | `%{}` | merged under every request's state |
-| `scan_key` | `"candidates"` | the state key each scan window sits under, and so the word scan questions address (`` `candidates.C000.text` ``) |
 
 ## Testing without a key
 

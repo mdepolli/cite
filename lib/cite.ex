@@ -35,6 +35,11 @@ defmodule Cite do
   `spec.atomics` is a list of `%{name: String.t(), question: (Candidate.t() -> Question.t())}`.
   Scan keys are `"\#{candidate.id}:\#{atomic.name}"`.
 
+  `spec.scan_key` (default `"candidates"`) is the state key each scan window
+  sits under, and so the word every scan question names in its path —
+  `` `utterances.U005.text` `` for a transcript, say. It lives in the spec
+  because it belongs to the questions, not to a run.
+
   `spec.compose` is `index, candidates -> [Cluster.t()]`. `index` is
   `%{candidate_id => %{atomic_name => noul}}` after `atomic_threshold`;
   candidates whose scan window failed have no row, so look them up with
@@ -59,7 +64,11 @@ defmodule Cite do
         }
   @type client :: (map() -> {:ok, verdict()} | {:error, term()})
   @type atomic :: %{name: String.t(), question: (Candidate.t() -> Question.t())}
-  @type spec :: %{atomics: [atomic()], compose: (map(), [Candidate.t()] -> [Cluster.t()])}
+  @type spec :: %{
+          required(:atomics) => [atomic()],
+          required(:compose) => (map(), [Candidate.t()] -> [Cluster.t()]),
+          optional(:scan_key) => String.t()
+        }
 
   @doc """
   A client backed by `provider`, a module implementing `Cite.Provider`;
@@ -78,9 +87,7 @@ defmodule Cite do
   @doc """
   Runs select-and-judge. Options: `window_size` (40), `atomic_threshold`
   (0.5), `review_band` (`{0.4, 0.6}`), `confidence_floor` (0.5), `state`
-  (`%{}`, merged under every request), and `scan_key` (`"candidates"`), the
-  state key each scan window sits under — the word your scan questions name
-  in their paths.
+  (`%{}`, merged under every request).
   """
   @spec select(client(), String.t(), [Candidate.t()], spec(), keyword()) :: Result.t()
   defdelegate select(client, source, candidates, spec, opts \\ []), to: Select

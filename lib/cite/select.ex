@@ -20,8 +20,7 @@ defmodule Cite.Select do
         atomic_threshold: 0.5,
         review_band: {0.4, 0.6},
         confidence_floor: 0.5,
-        state: %{},
-        scan_key: "candidates"
+        state: %{}
       )
 
     window_size = opts[:window_size]
@@ -29,9 +28,9 @@ defmodule Cite.Select do
     review_band = opts[:review_band]
     confidence_floor = opts[:confidence_floor]
     extra_state = opts[:state]
-    scan_key = opts[:scan_key]
     atomics = spec |> Map.fetch!(:atomics) |> Scan.atomics()
     compose = Map.fetch!(spec, :compose)
+    scan_key = Map.get(spec, :scan_key, "candidates")
 
     check_options(window_size, atomic_threshold, review_band, confidence_floor, extra_state)
     check_state(extra_state, scan_key)
@@ -76,9 +75,9 @@ defmodule Cite.Select do
     """
   end
 
-  # The scan puts each window under scan_key; a caller's entry there would be
-  # overwritten without a word. The key itself is the word every scan question
-  # names in its path, so it is the caller's to choose.
+  # The scan puts each window under spec.scan_key; a caller's entry there
+  # would be overwritten without a word. The key is the word every scan
+  # question names in its path, which is why it lives with the questions.
   defp check_state(state, scan_key) when is_binary(scan_key) and scan_key != "" do
     if Map.has_key?(state, scan_key) or Map.has_key?(state, String.to_atom(scan_key)) do
       raise ArgumentError,
@@ -87,7 +86,7 @@ defmodule Cite.Select do
   end
 
   defp check_state(_state, scan_key) do
-    raise ArgumentError, "scan_key must be a non-empty binary, got: #{inspect(scan_key)}"
+    raise ArgumentError, "spec.scan_key must be a non-empty binary, got: #{inspect(scan_key)}"
   end
 
   defp model(nil), do: :ok
