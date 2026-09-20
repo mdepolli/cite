@@ -18,8 +18,8 @@ defmodule Cite do
 
   ## The judge
 
-  `judge/2` builds one from a `Cite.Provider` (TypeSafe System One by
-  default). Any 1-arity function of the same shape works in its place:
+  `judge/2` builds one from a `Cite.Provider` module. Any 1-arity function
+  of the same shape works in its place:
 
       request -> {:ok, verdict} | {:error, reason}
 
@@ -46,7 +46,7 @@ defmodule Cite do
   question names; the caller maps score integers to its own labels.
   """
 
-  alias Cite.{Candidate, Cluster, Provider, Question, Result, Select}
+  alias Cite.{Candidate, Cluster, Question, Result, Select}
 
   @type usage :: Result.usage()
   @type verdict :: %{answers: map(), usage: usage() | nil}
@@ -55,23 +55,15 @@ defmodule Cite do
   @type spec :: %{atomics: [atomic()], compose: (map(), [Candidate.t()] -> [Cluster.t()])}
 
   @doc """
-  A TypeSafe System One judge; `opts` are `Cite.Provider.TypeSafe`'s
-  (`:api_key` or `JEV_API_KEY`, `:model`, `:base_url`, `:req_options`).
-  Given a `Cite.Provider` module instead, a judge backed by it with no
-  options — see `judge/2`.
-  """
-  @spec judge(keyword() | module()) :: judge()
-  def judge(opts_or_provider \\ [])
-  def judge(opts) when is_list(opts), do: judge(Provider.TypeSafe, opts)
-  def judge(provider) when is_atom(provider), do: judge(provider, [])
+  A judge backed by `provider`, a module implementing `Cite.Provider`;
+  `opts` are the provider's. The result is the 1-arity function `select/5`
+  takes, closed over the provider's client. Cite ships
+  `Cite.Provider.TypeSafe`.
 
-  @doc """
-  A judge backed by `provider`, any module implementing `Cite.Provider`;
-  `opts` are the provider's. The result is the 1-arity function
-  `select/5` takes, closed over the provider's client.
+      judge = Cite.judge(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
   """
   @spec judge(module(), keyword()) :: judge()
-  def judge(provider, opts) when is_atom(provider) and is_list(opts) do
+  def judge(provider, opts \\ []) when is_atom(provider) and is_list(opts) do
     client = provider.new(opts)
     &provider.judge(client, &1)
   end

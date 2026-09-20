@@ -19,7 +19,7 @@ evidence byte-exact from the source. Nothing is generated; nothing is aligned.
    their offsets, the cluster's class, and the labelled answers.
 
 ```elixir
-judge = Cite.judge(api_key: System.fetch_env!("JEV_API_KEY"))
+judge = Cite.judge(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
 
 candidates =
   Cite.Candidate.from_segments([
@@ -75,10 +75,9 @@ See the `Cite` module docs for the judge and spec contracts and the options
 
 ## Providers
 
-`Cite.judge/1` builds a judge for TypeSafe System One. Any module
-implementing `Cite.Provider` works through `Cite.judge/2`, and any 1-arity
-function of the right shape works directly, which is how the tests run
-without a key.
+`Cite.judge/2` builds a judge from any module implementing `Cite.Provider`;
+`Cite.Provider.TypeSafe` ships with the library. Any 1-arity function of the
+right shape works directly, which is how the tests run without a key.
 
 Scan windows are judged one after another; a long document is one request
 per window. Each request may take up to 120 seconds, and the TypeSafe
