@@ -22,7 +22,7 @@ defmodule Cite.Answer do
   A Score labels as `round(score)`; a Choice as its `choice`. Either becomes
   `"uncertain"` when `confidence` is below `floor`.
   """
-  @spec label(Question.t(), term(), number()) :: non_neg_integer() | String.t() | nil
+  @spec label(Question.t(), term(), number()) :: integer() | String.t() | nil
   def label(%Question{type: :score}, %{"score" => score, "confidence" => confidence}, floor)
       when is_number(score) and is_number(confidence) and confidence >= floor do
     round(score)
