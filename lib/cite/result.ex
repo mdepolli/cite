@@ -27,8 +27,8 @@ defmodule Cite.Result do
           rejected: rejected() | nil
         }
 
-  @enforce_keys [:spans, :errors]
-  defstruct [:spans, :errors, usage: nil, scan: nil, rejected: nil]
+  @enforce_keys [:spans, :errors, :usage, :scan, :rejected]
+  defstruct [:spans, :errors, :usage, :scan, :rejected]
 
   @doc false
   @spec total_usage([usage() | nil]) :: usage() | nil

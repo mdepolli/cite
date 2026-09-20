@@ -4,12 +4,10 @@ defmodule Cite.ResultTest do
   alias Cite.{Error, Result, Span}
 
   describe "struct" do
-    test "requires spans and errors; usage scan and rejected default to nil" do
-      result = %Result{spans: [], errors: []}
-
-      assert result.usage == nil
-      assert result.scan == nil
-      assert result.rejected == nil
+    test "requires every field; Select always sets all five" do
+      assert_raise ArgumentError, ~r/the following keys must also be given/, fn ->
+        struct!(Result, spans: [], errors: [])
+      end
     end
 
     test "holds Select diagnostics and usage" do
