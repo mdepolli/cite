@@ -48,8 +48,8 @@ defmodule Cite.Candidate do
   def from_segments(segments) when is_list(segments) do
     segments
     |> Enum.with_index()
-    |> Enum.map(&parse_segment!/1)
-    |> reject_duplicate_ids!()
+    |> Enum.map(&parse_segment/1)
+    |> reject_duplicate_ids()
     |> put_offsets()
   end
 
@@ -57,15 +57,15 @@ defmodule Cite.Candidate do
     raise ArgumentError, "expected a list of segments, got: #{inspect(other)}"
   end
 
-  defp parse_segment!({segment, index}) do
+  defp parse_segment({segment, index}) do
     %{
-      id: segment_id!(segment, index),
-      text: segment_text!(segment),
-      meta: segment_meta!(segment)
+      id: segment_id(segment, index),
+      text: segment_text(segment),
+      meta: segment_meta(segment)
     }
   end
 
-  defp reject_duplicate_ids!(rows) do
+  defp reject_duplicate_ids(rows) do
     dupes =
       for {id, n} <- Enum.frequencies_by(rows, & &1.id), n > 1, do: id
 
@@ -94,7 +94,7 @@ defmodule Cite.Candidate do
     candidates
   end
 
-  defp segment_text!(%{text: text}) when is_binary(text) do
+  defp segment_text(%{text: text}) when is_binary(text) do
     case String.trim(text) do
       "" ->
         raise ArgumentError, "segment :text is blank after trim, got: #{inspect(text)}"
@@ -104,39 +104,39 @@ defmodule Cite.Candidate do
     end
   end
 
-  defp segment_text!(%{text: other}) do
+  defp segment_text(%{text: other}) do
     raise ArgumentError, "segment :text must be a binary, got: #{inspect(other)}"
   end
 
-  defp segment_text!(segment) when is_map(segment) do
+  defp segment_text(segment) when is_map(segment) do
     raise ArgumentError, "segment is missing required :text key, got: #{inspect(segment)}"
   end
 
-  defp segment_text!(other) do
+  defp segment_text(other) do
     raise ArgumentError, "segment must be a map, got: #{inspect(other)}"
   end
 
-  defp segment_id!(%{id: id}, _index) when is_binary(id) and id != "" do
+  defp segment_id(%{id: id}, _index) when is_binary(id) and id != "" do
     id
   end
 
-  defp segment_id!(%{id: ""}, _index) do
+  defp segment_id(%{id: ""}, _index) do
     raise ArgumentError, ~s(segment :id must be a non-empty binary, got: "")
   end
 
-  defp segment_id!(%{id: other}, _index) do
+  defp segment_id(%{id: other}, _index) do
     raise ArgumentError, "segment :id must be a binary, got: #{inspect(other)}"
   end
 
-  defp segment_id!(_segment, index), do: auto_id(index)
+  defp segment_id(_segment, index), do: auto_id(index)
 
-  defp segment_meta!(%{meta: meta}) when is_map(meta), do: meta
+  defp segment_meta(%{meta: meta}) when is_map(meta), do: meta
 
-  defp segment_meta!(%{meta: other}) do
+  defp segment_meta(%{meta: other}) do
     raise ArgumentError, "segment :meta must be a map, got: #{inspect(other)}"
   end
 
-  defp segment_meta!(_segment), do: %{}
+  defp segment_meta(_segment), do: %{}
 
   defp auto_id(index) do
     "C" <> String.pad_leading(Integer.to_string(index), 3, "0")

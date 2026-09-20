@@ -40,7 +40,7 @@ defmodule Cite.Span do
          byte_start: start,
          byte_end: stop
        }) do
-    text = source_slice!(source, start, stop)
+    text = source_slice(source, start, stop)
 
     if text != expected do
       raise ArgumentError,
@@ -55,13 +55,13 @@ defmodule Cite.Span do
     raise ArgumentError, "expected %Cite.Candidate{}, got: #{inspect(other)}"
   end
 
-  defp source_slice!(source, start, stop)
+  defp source_slice(source, start, stop)
        when is_integer(start) and is_integer(stop) and start >= 0 and stop >= start and
               stop <= byte_size(source) do
     binary_part(source, start, stop - start)
   end
 
-  defp source_slice!(source, start, stop) do
+  defp source_slice(source, start, stop) do
     raise ArgumentError,
           "invalid candidate offsets [#{inspect(start)}, #{inspect(stop)}) " <>
             "for source of #{byte_size(source)} bytes"
