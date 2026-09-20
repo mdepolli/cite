@@ -59,10 +59,10 @@ defmodule Cite.Scan do
 
   @doc """
   One scan request: every atomic asked of every candidate in the window, over
-  `extra_state` plus the window's candidates under `"candidates"`.
+  `extra_state` plus the window's candidates under `scan_key`.
   """
-  @spec request([Candidate.t()], [atomic()], map()) :: map()
-  def request(window, atomics, extra_state) do
+  @spec request([Candidate.t()], [atomic()], map(), String.t()) :: map()
+  def request(window, atomics, extra_state, scan_key) do
     questions =
       for %Candidate{} = candidate <- window, atomic <- atomics, into: %{} do
         {key(candidate.id, atomic.name), atomic.question.(candidate)}
@@ -71,7 +71,7 @@ defmodule Cite.Scan do
     state =
       extra_state
       |> Wire.map()
-      |> Map.put("candidates", Wire.candidates(window))
+      |> Map.put(scan_key, Wire.candidates(window))
 
     %{"state" => state, "questions" => Wire.questions(questions)}
   end

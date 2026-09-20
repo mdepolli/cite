@@ -465,6 +465,36 @@ defmodule Cite.SelectTest do
       end
     end
 
+    test "scan_key names the state key the window sits under" do
+      {source, candidates} = household_fixture()
+
+      spec = %{
+        atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
+        compose: fn _, _ -> [] end
+      }
+
+      parent = self()
+
+      client = fn %{"state" => state, "questions" => qs} ->
+        send(parent, {:state_keys, Map.keys(state)})
+        {:ok, %{answers: Map.new(qs, fn {k, _} -> {k, %{"noul" => 0.1}} end), usage: nil}}
+      end
+
+      Cite.select(client, source, candidates, spec, scan_key: "utterances")
+      assert_receive {:state_keys, ["utterances"]}
+
+      assert_raise ArgumentError, ~r/must not use the "utterances" key/, fn ->
+        Cite.select(client, source, candidates, spec,
+          scan_key: "utterances",
+          state: %{"utterances" => 1}
+        )
+      end
+
+      assert_raise ArgumentError, ~r/scan_key must be a non-empty binary/, fn ->
+        Cite.select(client, source, candidates, spec, scan_key: "")
+      end
+    end
+
     test "raises on option values that cannot work" do
       spec = %{
         atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],

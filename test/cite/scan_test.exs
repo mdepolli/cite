@@ -76,7 +76,7 @@ defmodule Cite.ScanTest do
       atomics = [atomic("dependents"), atomic("income")]
 
       # Act
-      request = Scan.request(window, atomics, %{meeting: "m1"})
+      request = Scan.request(window, atomics, %{meeting: "m1"}, "candidates")
 
       # Assert
       assert Enum.sort(Map.keys(request["questions"])) ==

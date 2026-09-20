@@ -78,7 +78,9 @@ defmodule Cite do
   @doc """
   Runs select-and-judge. Options: `window_size` (40), `atomic_threshold`
   (0.5), `review_band` (`{0.4, 0.6}`), `confidence_floor` (0.5), `state`
-  (`%{}`, merged under every request).
+  (`%{}`, merged under every request), and `scan_key` (`"candidates"`), the
+  state key each scan window sits under — the word your scan questions name
+  in their paths.
   """
   @spec select(client(), String.t(), [Candidate.t()], spec(), keyword()) :: Result.t()
   defdelegate select(client, source, candidates, spec, opts \\ []), to: Select

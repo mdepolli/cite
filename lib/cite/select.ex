@@ -20,7 +20,8 @@ defmodule Cite.Select do
         atomic_threshold: 0.5,
         review_band: {0.4, 0.6},
         confidence_floor: 0.5,
-        state: %{}
+        state: %{},
+        scan_key: "candidates"
       )
 
     window_size = opts[:window_size]
@@ -28,17 +29,18 @@ defmodule Cite.Select do
     review_band = opts[:review_band]
     confidence_floor = opts[:confidence_floor]
     extra_state = opts[:state]
+    scan_key = opts[:scan_key]
     atomics = spec |> Map.fetch!(:atomics) |> Scan.atomics()
     compose = Map.fetch!(spec, :compose)
 
     check_options(window_size, atomic_threshold, review_band, confidence_floor, extra_state)
-    check_state(extra_state)
+    check_state(extra_state, scan_key)
 
     scan =
       candidates
       |> Scan.candidates(source)
       |> Enum.chunk_every(window_size)
-      |> Enum.flat_map(&judge_window(client, &1, atomics, extra_state))
+      |> Enum.flat_map(&judge_window(client, &1, atomics, extra_state, scan_key))
       |> Scan.resolve(atomics)
 
     compare =
@@ -74,12 +76,18 @@ defmodule Cite.Select do
     """
   end
 
-  # The scan puts each window under "candidates"; a caller's entry there would
-  # be overwritten without a word.
-  defp check_state(state) do
-    if Map.has_key?(state, "candidates") or Map.has_key?(state, :candidates) do
-      raise ArgumentError, "state must not use the \"candidates\" key; the scan window goes there"
+  # The scan puts each window under scan_key; a caller's entry there would be
+  # overwritten without a word. The key itself is the word every scan question
+  # names in its path, so it is the caller's to choose.
+  defp check_state(state, scan_key) when is_binary(scan_key) and scan_key != "" do
+    if Map.has_key?(state, scan_key) or Map.has_key?(state, String.to_atom(scan_key)) do
+      raise ArgumentError,
+            "state must not use the #{inspect(scan_key)} key; the scan window goes there"
     end
+  end
+
+  defp check_state(_state, scan_key) do
+    raise ArgumentError, "scan_key must be a non-empty binary, got: #{inspect(scan_key)}"
   end
 
   defp model(nil), do: :ok
@@ -103,13 +111,13 @@ defmodule Cite.Select do
 
   # A window over the request token cap is split in half and both halves
   # judged; only a single candidate that still exceeds it is an error.
-  defp judge_window(client, window, atomics, extra_state) do
-    case call(client, Scan.request(window, atomics, extra_state)) do
+  defp judge_window(client, window, atomics, extra_state, scan_key) do
+    case call(client, Scan.request(window, atomics, extra_state, scan_key)) do
       {:error, :request_too_large} when length(window) > 1 ->
         {left, right} = Enum.split(window, div(length(window), 2))
 
-        judge_window(client, left, atomics, extra_state) ++
-          judge_window(client, right, atomics, extra_state)
+        judge_window(client, left, atomics, extra_state, scan_key) ++
+          judge_window(client, right, atomics, extra_state, scan_key)
 
       verdict ->
         [{window, verdict}]

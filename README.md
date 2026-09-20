@@ -244,7 +244,9 @@ plain map does not past 32 entries — and the model reads neighbours. Structs
 other than candidates and keys that are neither atoms nor binaries are
 rejected before the first request.
 
-The `"candidates"` key is the scan's; a `:state` that uses it is rejected.
+The scan's key (`scan_key`, default `"candidates"`) is the scan's; a `:state`
+that uses it is rejected. Since the word appears in every scan question, it
+is a wording choice — change it and the questions change with it.
 
 ## Errors and diagnostics
 
@@ -283,6 +285,7 @@ it is not.
 | `review_band` | `{0.4, 0.6}` | reject at or below `low`, accept at or above `high` |
 | `confidence_floor` | `0.5` | Score and Choice labels below this read `"uncertain"` |
 | `state` | `%{}` | merged under every request's state |
+| `scan_key` | `"candidates"` | the state key each scan window sits under, and so the word scan questions address (`` `candidates.C000.text` ``) |
 
 ## Testing without a key
 
