@@ -1,8 +1,7 @@
 defmodule Cite.SpanTest do
   use ExUnit.Case, async: true
 
-  alias Cite.Candidate
-  alias Cite.Span
+  alias Cite.{Candidate, Span}
 
   describe "from_candidates/2" do
     test "copies each candidate's source slice with offsets and id" do

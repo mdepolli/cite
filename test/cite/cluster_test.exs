@@ -1,9 +1,7 @@
 defmodule Cite.ClusterTest do
   use ExUnit.Case, async: true
 
-  alias Cite.Candidate
-  alias Cite.Cluster
-  alias Cite.Question
+  alias Cite.{Candidate, Cluster, Question}
 
   defp cand(id, text \\ "x") do
     %Candidate{id: id, text: text, byte_start: 0, byte_end: byte_size(text), meta: %{}}

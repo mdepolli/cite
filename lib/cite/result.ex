@@ -7,8 +7,7 @@ defmodule Cite.Result do
   `usage` totals token counts when the judge reported them (`nil` otherwise).
   """
 
-  alias Cite.Error
-  alias Cite.Span
+  alias Cite.{Error, Span}
 
   @derive {Jason.Encoder, only: [:spans, :errors, :usage, :scan, :rejected]}
 

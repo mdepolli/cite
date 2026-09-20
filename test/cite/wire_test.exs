@@ -1,9 +1,7 @@
 defmodule Cite.WireTest do
   use ExUnit.Case, async: true
 
-  alias Cite.Candidate
-  alias Cite.Question
-  alias Cite.Wire
+  alias Cite.{Candidate, Question, Wire}
 
   describe "map/1" do
     test "stringifies atom keys recursively and leaves binary keys alone" do

@@ -1,13 +1,7 @@
 defmodule Cite.SelectTest do
   use ExUnit.Case, async: true
 
-  alias Cite.Candidate
-  alias Cite.Cluster
-  alias Cite.Error
-  alias Cite.Question
-  alias Cite.Result
-  alias Cite.Select
-  alias Cite.Span
+  alias Cite.{Candidate, Cluster, Error, Question, Result, Select, Span}
 
   defp noul_q(text) do
     Question.noul(

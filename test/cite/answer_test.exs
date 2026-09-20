@@ -1,8 +1,7 @@
 defmodule Cite.AnswerTest do
   use ExUnit.Case, async: true
 
-  alias Cite.Answer
-  alias Cite.Question
+  alias Cite.{Answer, Question}
 
   defp score_q,
     do: Question.score(question: "How bad?", inspect: "`x`", criteria: ["a", "b", "c"])

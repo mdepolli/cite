@@ -3,8 +3,7 @@ defmodule Cite.Wire do
   # structs become their wire shape; nothing past this edge sees an Elixir value.
   @moduledoc false
 
-  alias Cite.Candidate
-  alias Cite.Question
+  alias Cite.{Candidate, Question}
 
   @doc """
   Stringifies keys recursively. A `%Candidate{}` anywhere in the tree becomes

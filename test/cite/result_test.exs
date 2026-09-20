@@ -1,9 +1,7 @@
 defmodule Cite.ResultTest do
   use ExUnit.Case, async: true
 
-  alias Cite.Error
-  alias Cite.Result
-  alias Cite.Span
+  alias Cite.{Error, Result, Span}
 
   describe "struct" do
     test "requires spans and errors; usage scan and rejected default to nil" do

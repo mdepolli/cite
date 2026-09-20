@@ -8,8 +8,7 @@ defmodule Cite.Cluster do
   every question key must exist in `:questions`.
   """
 
-  alias Cite.Candidate
-  alias Cite.Question
+  alias Cite.{Candidate, Question}
 
   @type t :: %__MODULE__{
           id: String.t(),
