@@ -1,28 +1,7 @@
 defmodule Cite.Select do
-  @moduledoc """
-  Atomic scan over candidates, compose clusters in code, compare on a tiny state.
-
-  `judge` is a 1-arity function:
-  `request -> {:ok, verdict} | {:error, reason}` where `verdict` is
-  `%{answers: map(), usage: %{input_tokens: non_neg_integer(), output_tokens: non_neg_integer()} | nil}`.
-  Request maps are wire-shaped (string keys); `Cite.Question.encode/1` runs at
-  this edge.
-
-  `spec.atomics` is a list of `%{name: String.t(), question: (Candidate.t() -> Question.t())}`.
-  Scan keys are `"\#{candidate.id}:\#{atomic.name}"`.
-
-  `spec.compose` is `index, candidates -> [Cluster.t()]`. `index` is
-  `%{candidate_id => %{atomic_name => noul}}` after `atomic_threshold`.
-
-  Scan state puts each window under `"candidates"` as
-  `%{id => meta_with_text}` — candidate `meta` passes through (atom keys
-  stringified for the wire), with `"text"` set from the candidate.
-
-  Compare attributes are typed from `cluster.questions`: each `:score` emits
-  `round(score)` under its key, each `:choice` emits `choice`; both become
-  `"uncertain"` when confidence is below `confidence_floor`. Cite does not
-  know question names — Vuln maps score integers to domain labels.
-  """
+  # The imperative shell: chunks, calls the judge, retries on overflow, and
+  # hands every decision to Scan, Compare, and Emit. Entry point is Cite.select/5.
+  @moduledoc false
 
   alias Cite.{Candidate, Cluster, Compare, Emit, Question, Result, Scan}
 

@@ -2,7 +2,9 @@ defmodule Cite.Cluster do
   @moduledoc """
   A typed compose cluster for Select.
 
-  Built via `new/1`. `:questions` values must be `%Cite.Question{}`.
+  Built via `new/1`. `:questions` values must be `%Cite.Question{}`. A
+  `%Cite.Candidate{}` anywhere in `:state` is wired as its `meta` plus `"id"`
+  and `"text"`; put candidates there rather than building maps by hand.
   Empty `:questions` is allowed (atomic-only emit with no compare round).
   When `:member_questions` is non-empty, every id must name a member and
   every question key must exist in `:questions`.
@@ -61,22 +63,6 @@ defmodule Cite.Cluster do
 
   def new(other) do
     raise ArgumentError, "expected a map or keyword list, got: #{inspect(other)}"
-  end
-
-  @doc """
-  Packs a candidate into a judge-state role map (`:id` / `:text` / `:speaker`).
-  """
-  @spec member_state(Candidate.t()) :: map()
-  def member_state(%Candidate{id: id, text: text, meta: meta}) do
-    %{
-      id: id,
-      text: text,
-      speaker: Map.get(meta, :speaker)
-    }
-  end
-
-  def member_state(other) do
-    raise ArgumentError, "expected a Cite.Candidate, got: #{inspect(other)}"
   end
 
   defp normalize_keys(attrs) do

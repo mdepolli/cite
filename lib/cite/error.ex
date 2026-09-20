@@ -1,6 +1,7 @@
 defmodule Cite.Error do
   @moduledoc """
-  A failed window or chunk with its byte range and reason.
+  A failed judge call — a scan window or a compare cluster — with the byte
+  range it covered and the reason. Returned in `Cite.Result.errors`.
 
   `reason` is open (`t:term/0`): whatever the failing layer reported.
   Encoding always succeeds — JSON-safe reasons pass through; everything
@@ -16,9 +17,7 @@ defmodule Cite.Error do
   @enforce_keys [:byte_start, :byte_end, :reason]
   defstruct [:byte_start, :byte_end, :reason]
 
-  @doc """
-  Builds an error for an explicit byte range.
-  """
+  @doc false
   @spec from_range(non_neg_integer(), non_neg_integer(), term()) :: t()
   def from_range(byte_start, byte_end, reason)
       when is_integer(byte_start) and byte_start >= 0 and is_integer(byte_end) and

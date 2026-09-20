@@ -2,8 +2,8 @@ defmodule Cite.Span do
   @moduledoc """
   A grounded slice of source text with byte offsets.
 
-  Built from candidates via `from_candidates/2` (byte-exact copy).
-  Select may set `class` and `attributes` after judgment.
+  Returned by `Cite.select/5`, one per grounded cluster member, with the
+  cluster's `class` and the labelled compare answers as `attributes`.
 
   Offsets and `candidate_id` are always present — Cite only emits
   byte-exact copies, never aligner statuses or unlocated spans.
@@ -26,13 +26,9 @@ defmodule Cite.Span do
   @enforce_keys [:text, :byte_start, :byte_end, :candidate_id]
   defstruct [:text, :byte_start, :byte_end, :candidate_id, :class, attributes: %{}]
 
-  @doc """
-  Copy each candidate's `[byte_start, byte_end)` from `source` into a span.
-
-  Raises `ArgumentError` when `candidates` is not a list, an element is not a
-  candidate, offsets are invalid, or the source slice does not equal
-  `candidate.text`.
-  """
+  # Select's grounding step. Raises ArgumentError on a non-list, a non-candidate,
+  # invalid offsets, or a slice that does not equal candidate.text.
+  @doc false
   @spec from_candidates(String.t(), [Candidate.t()]) :: [t()]
   def from_candidates(source, candidates) when is_binary(source) and is_list(candidates) do
     Enum.map(candidates, &from_candidate(source, &1))

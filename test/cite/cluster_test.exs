@@ -28,7 +28,7 @@ defmodule Cite.ClusterTest do
           id: "life_event:U001",
           class: "life_events",
           members: [member],
-          state: %{"utterances" => %{"U001" => Cluster.member_state(member)}},
+          state: %{"utterances" => %{"U001" => member}},
           questions: q()
         )
 
@@ -221,25 +221,7 @@ defmodule Cite.ClusterTest do
     end
   end
 
-  describe "member_state/1" do
-    test "packs id text and speaker from atom meta" do
-      c = %Candidate{
-        id: "U010",
-        text: "hi",
-        byte_start: 0,
-        byte_end: 2,
-        meta: %{speaker: "A"}
-      }
-
-      assert Cluster.member_state(c) == %{id: "U010", text: "hi", speaker: "A"}
-    end
-
-    test "raises on non-candidate" do
-      assert_raise ArgumentError, ~r/Cite.Candidate/, fn ->
-        Cluster.member_state(%{id: "U001"})
-      end
-    end
-
+  describe "new/1 reserved keys" do
     test "rejects question keys reserved for span attributes" do
       assert_raise ArgumentError, ~r/\["compare", "review"\] are reserved/, fn ->
         Cluster.new(

@@ -79,10 +79,7 @@ defmodule Cite.SelectTest do
               id: "household",
               class: "resilience",
               members: [dep, inc],
-              state: %{
-                household: Cluster.member_state(dep),
-                income: Cluster.member_state(inc)
-              },
+              state: %{household: dep, income: inc},
               questions: %{
                 "fits" =>
                   noul_q(
