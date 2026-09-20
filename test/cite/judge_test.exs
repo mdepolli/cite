@@ -1,0 +1,121 @@
+defmodule Cite.JudgeTest do
+  use ExUnit.Case, async: true
+
+  alias Cite.Judge
+
+  @request %{
+    "state" => %{"candidates" => %{"U0" => %{"text" => "hi"}}},
+    "questions" => %{"U0:d" => %{"type" => "noul"}}
+  }
+
+  defp judge(opts \\ []) do
+    Cite.judge([api_key: "k", req_options: [plug: {Req.Test, __MODULE__}, retry: false]] ++ opts)
+  end
+
+  describe "new/1" do
+    test "raises without an api key" do
+      System.delete_env("JEV_API_KEY")
+
+      assert_raise ArgumentError, ~r/missing API key/, fn -> Judge.new() end
+      assert_raise ArgumentError, ~r/missing API key/, fn -> Judge.new(api_key: "") end
+    end
+
+    test "hides the http client from inspect" do
+      refute inspect(Judge.new(api_key: "k")) =~ "http_client"
+    end
+
+    test "rejects unknown options" do
+      assert_raise ArgumentError, ~r/unknown keys \[:modle\]/, fn ->
+        Judge.new(api_key: "k", modle: "x")
+      end
+    end
+  end
+
+  describe "judge/2 request" do
+    test "posts model, state, and questions with a bearer token" do
+      # Arrange
+      Req.Test.expect(__MODULE__, fn conn ->
+        assert conn.method == "POST"
+        assert conn.request_path == "/v1/systemone"
+        assert Plug.Conn.get_req_header(conn, "authorization") == ["Bearer k"]
+
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+        assert Jason.decode!(body) == %{
+                 "model" => "jev-test",
+                 "state" => @request["state"],
+                 "questions" => @request["questions"]
+               }
+
+        Req.Test.json(conn, %{"answers" => %{}})
+      end)
+
+      # Act + Assert
+      assert {:ok, _} = judge(model: "jev-test").(@request)
+    end
+  end
+
+  describe "judge/2 replies" do
+    test "returns answers and usage on 200" do
+      # Arrange
+      Req.Test.stub(__MODULE__, fn conn ->
+        Req.Test.json(conn, %{
+          "answers" => %{"U0:d" => %{"noul" => 0.8}},
+          "usage" => %{"input_tokens" => 12, "output_tokens" => 0}
+        })
+      end)
+
+      # Act + Assert
+      assert judge().(@request) ==
+               {:ok,
+                %{
+                  answers: %{"U0:d" => %{"noul" => 0.8}},
+                  usage: %{input_tokens: 12, output_tokens: 0}
+                }}
+    end
+
+    test "usage is nil when the reply omits it" do
+      Req.Test.stub(__MODULE__, &Req.Test.json(&1, %{"answers" => %{}}))
+      assert {:ok, %{usage: nil}} = judge().(@request)
+    end
+
+    test "keeps TypeSafe's error_type on a 400 so the shell can halve a window" do
+      # Arrange
+      Req.Test.stub(__MODULE__, fn conn ->
+        conn
+        |> Plug.Conn.put_status(400)
+        |> Req.Test.json(%{"detail" => %{"error_type" => "max_tokens_exceeded"}})
+      end)
+
+      # Act + Assert
+      assert judge().(@request) == {:error, {:bad_request, "max_tokens_exceeded"}}
+    end
+
+    test "maps 401, 429 with retry-after, and 5xx" do
+      Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 401, ""))
+      assert judge().(@request) == {:error, :unauthorized}
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        conn |> Plug.Conn.put_resp_header("retry-after", "7") |> Plug.Conn.send_resp(429, "")
+      end)
+
+      assert judge().(@request) == {:error, {:rate_limited, 7000}}
+
+      Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 503, "down"))
+      assert judge().(@request) == {:error, :server_error}
+    end
+
+    test "bounds an unexpected error body" do
+      Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 418, String.duplicate("x", 5_000)))
+      assert {:error, {:api_error, 418, preview}} = judge().(@request)
+      assert String.length(preview) == 2_000
+    end
+
+    test "wraps transport failures" do
+      Req.Test.stub(__MODULE__, &Req.Test.transport_error(&1, :econnrefused))
+
+      assert {:error, {:request_error, %Req.TransportError{reason: :econnrefused}}} =
+               judge().(@request)
+    end
+  end
+end

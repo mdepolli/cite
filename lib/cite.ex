@@ -18,7 +18,8 @@ defmodule Cite do
 
   ## The judge
 
-  A 1-arity function:
+  `judge/1` builds one for TypeSafe System One. Any 1-arity function of the
+  same shape works in its place:
 
       request -> {:ok, verdict} | {:error, reason}
 
@@ -43,13 +44,24 @@ defmodule Cite do
   question names; the caller maps score integers to its own labels.
   """
 
-  alias Cite.{Candidate, Cluster, Question, Result, Select}
+  alias Cite.{Candidate, Cluster, Judge, Question, Result, Select}
 
   @type usage :: Result.usage()
   @type verdict :: %{answers: map(), usage: usage() | nil}
   @type judge :: (map() -> {:ok, verdict()} | {:error, term()})
   @type atomic :: %{name: String.t(), question: (Candidate.t() -> Question.t())}
   @type spec :: %{atomics: [atomic()], compose: (map(), [Candidate.t()] -> [Cluster.t()])}
+
+  @doc """
+  A TypeSafe System One judge. Reads `:api_key` or `JEV_API_KEY` (missing is
+  a caller error and raises); `:model` (`"jev-1.13.0"`), `:base_url`, and
+  `:req_options` (merged into the HTTP client, e.g. a `Req.Test` plug).
+  """
+  @spec judge(keyword()) :: judge()
+  def judge(opts \\ []) do
+    client = Judge.new(opts)
+    &Judge.judge(client, &1)
+  end
 
   @doc """
   Runs select-and-judge. Options: `window_size` (40), `atomic_threshold`

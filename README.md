@@ -7,6 +7,7 @@ about them, and Cite copies evidence byte-exact from the source — never a
 paraphrased quote to align.
 
 ```elixir
+judge = Cite.judge(api_key: System.fetch_env!("JEV_API_KEY"))
 candidates = Cite.Candidate.from_segments(segments)
 source = Enum.map_join(candidates, " ", & &1.text)
 
