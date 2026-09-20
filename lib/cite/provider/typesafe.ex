@@ -88,7 +88,8 @@ defmodule Cite.Provider.TypeSafe do
   # Retry-After so the caller knows what the server asked for.
   defp retry(request, %Req.Response{status: status} = response)
        when status == 429 or status == 529 or status in 500..504 do
-    {:delay, min(retry_after_ms(response) || backoff_ms(request), @max_retry_delay_ms)}
+    {:delay,
+     min(Req.Response.get_retry_after(response) || backoff_ms(request), @max_retry_delay_ms)}
   end
 
   defp retry(request, %Req.TransportError{reason: reason}) when reason != :timeout do
@@ -149,12 +150,32 @@ defmodule Cite.Provider.TypeSafe do
 
   defp usage(_), do: nil
 
+  # Retry-After is delay-seconds or an HTTP date; anything else, or a negative
+  # value, reads as no advice. Req.Response.get_retry_after/1 raises on the
+  # unparseable case, and a proxy's 429 can carry one.
   defp retry_after_ms(response) do
-    with [seconds | _] <- Req.Response.get_header(response, "retry-after"),
-         {s, ""} when s >= 0 <- Integer.parse(seconds) do
-      s * 1000
-    else
-      _ -> nil
+    case Req.Response.get_header(response, "retry-after") do
+      [value | _] -> retry_after_ms_from(value)
+      [] -> nil
+    end
+  end
+
+  defp retry_after_ms_from(value) do
+    case Integer.parse(value) do
+      {seconds, ""} when seconds >= 0 ->
+        seconds * 1000
+
+      {_negative, ""} ->
+        nil
+
+      :error ->
+        case Req.Utils.parse_http_date(value) do
+          {:ok, date} -> max(DateTime.diff(date, DateTime.utc_now(), :millisecond), 0)
+          _ -> nil
+        end
+
+      _ ->
+        nil
     end
   end
 
