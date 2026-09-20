@@ -24,12 +24,14 @@ defmodule Cite.Select do
   know question names — Vuln maps score integers to domain labels.
   """
 
+  alias Cite.Answer
   alias Cite.Candidate
   alias Cite.Cluster
   alias Cite.Error
   alias Cite.Question
   alias Cite.Result
   alias Cite.Span
+  alias Cite.Wire
 
   @type usage :: %{input_tokens: non_neg_integer(), output_tokens: non_neg_integer()}
   @type verdict :: %{answers: map(), usage: usage() | nil}
@@ -113,8 +115,8 @@ defmodule Cite.Select do
 
     state =
       extra_state
-      |> wire_map()
-      |> Map.put("candidates", candidates_by_id(window))
+      |> Wire.map()
+      |> Map.put("candidates", Map.new(window, &{&1.id, Wire.candidate(&1)}))
 
     %{"state" => state, "questions" => questions}
   end
@@ -123,7 +125,7 @@ defmodule Cite.Select do
 
   defp merge_scores({window, {:ok, %{answers: answers}}}, index, atomics) do
     Enum.reduce(window, index, fn %Candidate{id: id}, acc ->
-      scores = Map.new(atomics, &{&1.name, noul(answers[scan_key(id, &1.name)])})
+      scores = Map.new(atomics, &{&1.name, Answer.noul(answers[scan_key(id, &1.name)])})
       Map.update(acc, id, scores, &Map.merge(&1, scores))
     end)
   end
@@ -224,8 +226,8 @@ defmodule Cite.Select do
 
   defp compare_request(%Cluster{state: state, questions: questions}, extra_state) do
     %{
-      "state" => Map.merge(wire_map(extra_state), wire_map(state)),
-      "questions" => encode_questions(questions)
+      "state" => Map.merge(Wire.map(extra_state), Wire.map(state)),
+      "questions" => Wire.questions(questions)
     }
   end
 
@@ -245,7 +247,7 @@ defmodule Cite.Select do
   defp gate(%Cluster{match: match, questions: questions}, answers, band) do
     values =
       for {key, %Question{type: :noul}} <- questions do
-        noul(answers[key])
+        Answer.noul(answers[key])
       end
 
     gate_values(match, values, band)
@@ -292,12 +294,12 @@ defmodule Cite.Select do
   end
 
   defp grounded?(nil, _answers, _low), do: true
-  defp grounded?(keys, answers, low), do: Enum.any?(keys, &(noul(answers[&1]) > low))
+  defp grounded?(keys, answers, low), do: Enum.any?(keys, &(Answer.noul(answers[&1]) > low))
 
   defp emit_attributes(%Cluster{questions: questions} = cluster, answers, review?, floor) do
     labels =
       Enum.reduce(questions, %{}, fn {key, question}, acc ->
-        case label_answer(question, answers[key], floor) do
+        case Answer.label(question, answers[key], floor) do
           nil -> acc
           value -> Map.put(acc, key, value)
         end
@@ -310,67 +312,7 @@ defmodule Cite.Select do
     })
   end
 
-  defp label_answer(
-         %Question{type: :score},
-         %{"score" => score, "confidence" => confidence},
-         floor
-       )
-       when is_number(score) and is_number(confidence) and confidence >= floor do
-    round(score)
-  end
-
-  defp label_answer(%Question{type: :score}, %{"score" => _}, _floor), do: "uncertain"
-  defp label_answer(%Question{type: :score}, _, _floor), do: nil
-
-  defp label_answer(
-         %Question{type: :choice},
-         %{"choice" => choice, "confidence" => confidence},
-         floor
-       )
-       when is_number(confidence) and confidence >= floor do
-    choice
-  end
-
-  defp label_answer(%Question{type: :choice}, %{"choice" => _}, _floor), do: "uncertain"
-  defp label_answer(%Question{type: :choice}, _, _floor), do: nil
-
-  defp label_answer(%Question{type: :noul}, _, _floor), do: nil
-
   defp scan_key(id, atomic_name), do: id <> ":" <> to_string(atomic_name)
-
-  defp candidates_by_id(window) do
-    Map.new(window, fn %Candidate{id: id, text: text, meta: meta} ->
-      {id, candidate_wire(text, meta)}
-    end)
-  end
-
-  defp candidate_wire(text, meta) do
-    meta
-    |> wire_map()
-    |> Map.put("text", text)
-  end
-
-  defp encode_questions(questions) do
-    Map.new(questions, fn {key, %Question{} = question} ->
-      {key, Question.encode(question)}
-    end)
-  end
-
-  defp wire_map(map) when is_map(map) do
-    Map.new(map, fn {key, value} -> {wire_key(key), wire_value(value)} end)
-  end
-
-  defp wire_key(key) when is_atom(key), do: Atom.to_string(key)
-  defp wire_key(key) when is_binary(key), do: key
-
-  defp wire_value(%{} = map) when not is_struct(map), do: wire_map(map)
-  defp wire_value(list) when is_list(list), do: Enum.map(list, &wire_value/1)
-  defp wire_value(value), do: value
-
-  # Missing or malformed answers read as 0.0 — a confident "no". Same as the
-  # prototype: an unanswered key is not distinguished from a negative Noul.
-  defp noul(%{"noul" => value}) when is_number(value), do: value
-  defp noul(_), do: 0.0
 
   defp total_usage(usages) do
     present = Enum.reject(usages, &is_nil/1)
