@@ -95,4 +95,4 @@ end
 
 ## License
 
-MIT.
+MIT — see [LICENSE](https://github.com/mdepolli/cite/blob/main/LICENSE).
