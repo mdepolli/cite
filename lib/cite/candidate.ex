@@ -2,7 +2,7 @@ defmodule Cite.Candidate do
   @moduledoc """
   A source slice proposed for judgment, with byte offsets into a joined document.
 
-  Build candidates with `from_segments/1`. `meta` is caller-owned (speaker, times,
+  Build candidates with `from_segments/1`. `meta` is caller-owned (speaker, chapter,
   …); this module does not interpret it.
   """
 
