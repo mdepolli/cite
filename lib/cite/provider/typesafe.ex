@@ -9,6 +9,8 @@ defmodule Cite.Provider.TypeSafe do
 
   @behaviour Cite.Provider
 
+  # The model the vulnerability benchmark's questions and criteria were tuned
+  # against; a newer Jev may read the same wording differently.
   @default_model "jev-1.13.0"
   @default_base_url "https://api.typesafe.ai"
   @max_error_body_bytes 2_000
