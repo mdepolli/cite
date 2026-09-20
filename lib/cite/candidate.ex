@@ -10,7 +10,8 @@ defmodule Cite.Candidate do
   Input row for `from_segments/1`. Atom keys only.
 
   Missing `:id` defaults to `C000`, `C001`, … by position; missing `:meta`
-  defaults to `%{}`. `:text` is trimmed; blank-after-trim is rejected.
+  defaults to `%{}`. `:text` is trimmed; blank-after-trim is rejected. A present
+  `:id` must be a non-empty binary.
   """
   @type segment :: %{
           required(:text) => String.t(),
@@ -38,7 +39,7 @@ defmodule Cite.Candidate do
   `[]` → `{"", []}`.
 
   Raises `ArgumentError` on a bad list or segment (programmer error), including
-  blank-after-trim `:text`.
+  blank-after-trim `:text` or an empty `:id`.
   """
   @spec from_segments([segment()]) :: {String.t(), [t()]}
   def from_segments(segments) when is_list(segments) do
@@ -96,7 +97,13 @@ defmodule Cite.Candidate do
     raise ArgumentError, "segment must be a map, got: #{inspect(other)}"
   end
 
-  defp segment_id!(%{id: id}, _index) when is_binary(id), do: id
+  defp segment_id!(%{id: id}, _index) when is_binary(id) and id != "" do
+    id
+  end
+
+  defp segment_id!(%{id: ""}, _index) do
+    raise ArgumentError, ~s(segment :id must be a non-empty binary, got: "")
+  end
 
   defp segment_id!(%{id: other}, _index) do
     raise ArgumentError, "segment :id must be a binary, got: #{inspect(other)}"

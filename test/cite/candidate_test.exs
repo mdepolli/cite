@@ -113,6 +113,12 @@ defmodule Cite.CandidateTest do
       end
     end
 
+    test "raises when segment keys are strings" do
+      assert_raise ArgumentError, ~r/missing required :text/, fn ->
+        Candidate.from_segments([%{"text" => "hi"}])
+      end
+    end
+
     test "raises when :text is not a binary" do
       assert_raise ArgumentError, ~r/:text must be a binary/, fn ->
         Candidate.from_segments([%{text: 123}])
@@ -128,6 +134,12 @@ defmodule Cite.CandidateTest do
     test "raises when :id is not a binary" do
       assert_raise ArgumentError, ~r/:id must be a binary/, fn ->
         Candidate.from_segments([%{text: "hi", id: :bad}])
+      end
+    end
+
+    test "raises when :id is empty" do
+      assert_raise ArgumentError, ~r/:id must be a non-empty binary/, fn ->
+        Candidate.from_segments([%{text: "hi", id: ""}])
       end
     end
 
