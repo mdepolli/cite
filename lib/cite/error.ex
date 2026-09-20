@@ -27,6 +27,12 @@ defmodule Cite.Error do
     %__MODULE__{byte_start: byte_start, byte_end: byte_end, reason: reason}
   end
 
+  def from_range(byte_start, byte_end, _reason) do
+    raise ArgumentError,
+          "byte range must be non-negative integers with byte_end >= byte_start, " <>
+            "got: [#{inspect(byte_start)}, #{inspect(byte_end)})"
+  end
+
   @doc false
   @spec from_candidates([Candidate.t(), ...], term()) :: t()
   def from_candidates([_ | _] = candidates, reason) do

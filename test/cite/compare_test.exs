@@ -185,12 +185,6 @@ defmodule Cite.CompareTest do
       assert resolved.usages == []
     end
 
-    test "raises when a verdict has no answers" do
-      assert_raise ArgumentError, ~r/verdict must carry :answers/, fn ->
-        Compare.resolve([{cluster([]), {:ok, %{usage: nil}}}], @band)
-      end
-    end
-
     test "buckets decisions, keeps rejected answers, and spans errors over members" do
       # Arrange
       accept = cluster(id: "a")

@@ -342,11 +342,57 @@ defmodule Cite.SelectTest do
       end
     end
 
+    test "raises when the judge returns the wrong shape, and tolerates a missing usage" do
+      spec = %{
+        atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
+        compose: fn _, _ -> [] end
+      }
+
+      {source, candidates} = household_fixture()
+
+      for bad <- [{:ok, %{}}, {:ok, %{answers: []}}, :done, %{answers: %{}}] do
+        assert_raise ArgumentError, ~r/judge must return/, fn ->
+          Cite.select(fn _ -> bad end, source, candidates, spec)
+        end
+      end
+
+      result = Cite.select(fn _ -> {:ok, %{answers: %{}}} end, source, candidates, spec)
+      assert result.usage == nil
+      assert result.errors == []
+    end
+
+    test "raises on malformed atomics before any judge call" do
+      judge = fn _ -> flunk("judge was called with bad atomics") end
+      {source, candidates} = household_fixture()
+      question = fn _ -> noul_q("?") end
+
+      for {atomics, message} <- [
+            {[], ~r/non-empty list/},
+            {[%{name: :dependents, question: question}], ~r/non-empty binary/},
+            {[%{name: "d", question: fn -> nil end}], ~r/fun\/1/},
+            {[%{name: "d", question: question}, %{name: "d", question: question}],
+             ~r/duplicated: \["d"\]/}
+          ] do
+        assert_raise ArgumentError, message, fn ->
+          Cite.select(judge, source, candidates, %{atomics: atomics, compose: fn _, _ -> [] end})
+        end
+      end
+    end
+
     test "raises on option values that cannot work" do
-      spec = %{atomics: [], compose: fn _, _ -> [] end}
+      spec = %{
+        atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
+        compose: fn _, _ -> [] end
+      }
+
       judge = fn _ -> {:ok, %{answers: %{}, usage: nil}} end
 
-      for bad <- [[window_size: 0], [review_band: {0.6, 0.4}], [confidence_floor: "high"]] do
+      for bad <- [
+            [window_size: 0],
+            [review_band: {0.6, 0.4}],
+            [confidence_floor: "high"],
+            [state: URI.parse("x")]
+          ] do
         assert_raise ArgumentError, ~r/invalid options/, fn ->
           Cite.select(judge, "", [], spec, bad)
         end

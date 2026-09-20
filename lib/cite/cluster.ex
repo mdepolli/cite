@@ -48,6 +48,8 @@ defmodule Cite.Cluster do
 
     members = members(attrs.members)
     questions = questions(attrs.questions)
+    member_question_keys = Map.get(attrs, :member_questions, %{})
+    match_mode = Map.get(attrs, :match, :all)
 
     %__MODULE__{
       id: id(attrs.id),
@@ -55,9 +57,8 @@ defmodule Cite.Cluster do
       members: members,
       state: state(attrs.state),
       questions: questions,
-      member_questions:
-        member_questions(Map.get(attrs, :member_questions, %{}), members, questions),
-      match: match(Map.get(attrs, :match, :all))
+      member_questions: member_questions(member_question_keys, members, questions),
+      match: match(match_mode)
     }
   end
 

@@ -30,6 +30,14 @@ defmodule Cite.WireTest do
     end
   end
 
+  describe "map/1 keys" do
+    test "raises on a key that is neither atom nor binary" do
+      assert_raise ArgumentError, ~r/keys must be atoms or binaries, got: 1/, fn ->
+        Wire.map(%{1 => "x"})
+      end
+    end
+  end
+
   describe "candidate/1" do
     test "is meta plus id and text, with text winning over a meta key" do
       candidate = %Candidate{

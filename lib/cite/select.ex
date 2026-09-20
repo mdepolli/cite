@@ -22,7 +22,7 @@ defmodule Cite.Select do
     review_band = opts[:review_band]
     confidence_floor = opts[:confidence_floor]
     extra_state = opts[:state]
-    atomics = Map.fetch!(spec, :atomics)
+    atomics = spec |> Map.fetch!(:atomics) |> Scan.atomics()
     compose = Map.fetch!(spec, :compose)
 
     check_options(window_size, atomic_threshold, review_band, confidence_floor, extra_state)
@@ -54,7 +54,7 @@ defmodule Cite.Select do
   defp check_options(window_size, atomic_threshold, {low, high}, confidence_floor, state)
        when is_integer(window_size) and window_size > 0 and is_number(atomic_threshold) and
               is_number(low) and is_number(high) and low <= high and
-              is_number(confidence_floor) and is_map(state) do
+              is_number(confidence_floor) and is_map(state) and not is_struct(state) do
     :ok
   end
 
@@ -68,7 +68,7 @@ defmodule Cite.Select do
   # A window over the request token cap is split in half and both halves
   # judged; only a single candidate that still exceeds it is an error.
   defp judge_window(judge, window, atomics, extra_state) do
-    case judge.(Scan.request(window, atomics, extra_state)) do
+    case call(judge, Scan.request(window, atomics, extra_state)) do
       {:error, :request_too_large} when length(window) > 1 ->
         {left, right} = Enum.split(window, div(length(window), 2))
 
@@ -83,7 +83,24 @@ defmodule Cite.Select do
   defp judge_cluster(judge, cluster, extra_state) do
     case Compare.request(cluster, extra_state) do
       nil -> :unasked
-      request -> judge.(request)
+      request -> call(judge, request)
+    end
+  end
+
+  # The judge is the caller's function; its return is checked here, once, and
+  # trusted everywhere after. A verdict may omit :usage.
+  defp call(judge, request) do
+    case judge.(request) do
+      {:ok, %{answers: answers} = verdict} when is_map(answers) ->
+        {:ok, Map.put_new(verdict, :usage, nil)}
+
+      {:error, _reason} = error ->
+        error
+
+      other ->
+        raise ArgumentError,
+              "judge must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, " <>
+                "got: #{inspect(other)}"
     end
   end
 end

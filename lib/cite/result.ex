@@ -35,8 +35,8 @@ defmodule Cite.Result do
 
       present ->
         %{
-          input_tokens: Enum.sum(Enum.map(present, & &1.input_tokens)),
-          output_tokens: Enum.sum(Enum.map(present, & &1.output_tokens))
+          input_tokens: Enum.sum_by(present, & &1.input_tokens),
+          output_tokens: Enum.sum_by(present, & &1.output_tokens)
         }
     end
   end

@@ -10,7 +10,7 @@ defmodule Cite.ErrorTest do
     end
 
     test "raises on inverted range" do
-      assert_raise FunctionClauseError, fn ->
+      assert_raise ArgumentError, fn ->
         Error.from_range(10, 0, :timeout)
       end
     end

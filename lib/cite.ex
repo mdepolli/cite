@@ -33,7 +33,9 @@ defmodule Cite do
   Scan keys are `"\#{candidate.id}:\#{atomic.name}"`.
 
   `spec.compose` is `index, candidates -> [Cluster.t()]`. `index` is
-  `%{candidate_id => %{atomic_name => noul}}` after `atomic_threshold`. A
+  `%{candidate_id => %{atomic_name => noul}}` after `atomic_threshold`;
+  candidates whose scan window failed have no row, so look them up with
+  `Map.get/2`, not `Map.fetch!/2`. A
   `%Candidate{}` placed in a cluster's `state` is wired as its `meta` plus
   `"id"` and `"text"`; the scan puts each window's candidates under
   `"candidates"` in the same shape.
@@ -55,9 +57,13 @@ defmodule Cite do
   @doc """
   A TypeSafe System One judge; `opts` are `Cite.Provider.TypeSafe`'s
   (`:api_key` or `JEV_API_KEY`, `:model`, `:base_url`, `:req_options`).
+  Given a `Cite.Provider` module instead, a judge backed by it with no
+  options — see `judge/2`.
   """
-  @spec judge(keyword()) :: judge()
-  def judge(opts \\ []) when is_list(opts), do: judge(Provider.TypeSafe, opts)
+  @spec judge(keyword() | module()) :: judge()
+  def judge(opts_or_provider \\ [])
+  def judge(opts) when is_list(opts), do: judge(Provider.TypeSafe, opts)
+  def judge(provider) when is_atom(provider), do: judge(provider, [])
 
   @doc """
   A judge backed by `provider`, any module implementing `Cite.Provider`;

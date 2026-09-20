@@ -42,6 +42,16 @@ defmodule Cite.ScanTest do
       end
     end
 
+    test "raises on empty or invalid UTF-8 text" do
+      for text <- ["", <<0xFF, 0xFE>>] do
+        bad = %Candidate{id: "U0", text: text, byte_start: 0, byte_end: byte_size(text)}
+
+        assert_raise ArgumentError, ~r/valid UTF-8/, fn ->
+          Scan.candidates([bad], text)
+        end
+      end
+    end
+
     test "raises on inverted or out-of-range offsets, and on a non-candidate" do
       inverted = %Candidate{id: "U0", text: "aaaa", byte_start: 4, byte_end: 0}
       outside = %Candidate{id: "U0", text: "aaaa", byte_start: 6, byte_end: 10}
@@ -101,12 +111,6 @@ defmodule Cite.ScanTest do
 
       assert resolved.errors == []
       assert resolved.usages == [nil]
-    end
-
-    test "raises when a verdict has no answers" do
-      assert_raise ArgumentError, ~r/verdict must carry :answers/, fn ->
-        Scan.resolve([{[cand("U0", "aaaa", 0)], {:ok, %{usage: nil}}}], [atomic("d")])
-      end
     end
 
     test "records one error spanning a failed window and keeps its usage out" do

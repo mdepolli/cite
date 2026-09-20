@@ -36,6 +36,10 @@ defmodule Cite.Wire do
   defp key(key) when is_atom(key), do: Atom.to_string(key)
   defp key(key) when is_binary(key), do: key
 
+  defp key(other) do
+    raise ArgumentError, "state and meta keys must be atoms or binaries, got: #{inspect(other)}"
+  end
+
   defp value(%Candidate{} = candidate), do: candidate(candidate)
   defp value(%{} = map) when not is_struct(map), do: map(map)
   defp value(list) when is_list(list), do: Enum.map(list, &value/1)

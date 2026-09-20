@@ -10,6 +10,27 @@ defmodule Cite.Scan do
   @type outcome :: {[Candidate.t()], {:ok, map()} | {:error, term()}}
 
   @doc """
+  Checks the caller's atomics: a non-empty list of `%{name, question}` with
+  unique non-empty binary names (an atom would leak into the index as an
+  atom key) and 1-arity question functions. Raises `ArgumentError`.
+  """
+  @spec atomics(term()) :: [atomic()]
+  def atomics([_ | _] = atomics) do
+    Enum.each(atomics, &atomic/1)
+    dupes = for {name, n} <- Enum.frequencies_by(atomics, & &1.name), n > 1, do: name
+
+    if dupes != [] do
+      raise ArgumentError, "atomic names must be unique, duplicated: #{inspect(Enum.sort(dupes))}"
+    end
+
+    atomics
+  end
+
+  def atomics(other) do
+    raise ArgumentError, "spec.atomics must be a non-empty list, got: #{inspect(other)}"
+  end
+
+  @doc """
   Checks the caller's candidates before any judge call is paid for: ids
   must be unique, or the scan would collapse two candidates into one row,
   and every `[byte_start, byte_end)` must slice `source` to exactly `text`,
@@ -78,9 +99,20 @@ defmodule Cite.Scan do
     end)
   end
 
+  defp atomic(%{name: name, question: question})
+       when is_binary(name) and name != "" and is_function(question, 1),
+       do: :ok
+
+  defp atomic(other) do
+    raise ArgumentError,
+          "each atomic must be %{name: non-empty binary, question: fun/1}, got: #{inspect(other)}"
+  end
+
   defp grounded(%Candidate{id: id, text: text, byte_start: start, byte_end: stop}, source)
        when is_integer(start) and is_integer(stop) and start >= 0 and stop >= start and
               stop <= byte_size(source) do
+    text(id, text)
+
     case binary_part(source, start, stop - start) do
       ^text ->
         :ok
@@ -102,17 +134,22 @@ defmodule Cite.Scan do
     raise ArgumentError, "expected a Candidate, got: #{inspect(other)}"
   end
 
+  defp text(_id, text) when is_binary(text) and text != "" do
+    unless String.valid?(text), do: raise(ArgumentError, "candidate text is not valid UTF-8")
+  end
+
+  defp text(id, text) do
+    raise ArgumentError,
+          "candidate #{inspect(id)} text must be non-empty valid UTF-8, got: #{inspect(text)}"
+  end
+
   defp merge({_window, {:error, _reason}}, index, _atomics), do: index
 
-  defp merge({window, {:ok, %{answers: answers}}}, index, atomics) when is_map(answers) do
+  defp merge({window, {:ok, %{answers: answers}}}, index, atomics) do
     Enum.reduce(window, index, fn %Candidate{id: id}, acc ->
       scores = Map.new(atomics, &{&1.name, Answer.noul(answers[key(id, &1.name)])})
       Map.update(acc, id, scores, &Map.merge(&1, scores))
     end)
-  end
-
-  defp merge({_window, {:ok, other}}, _index, _atomics) do
-    raise ArgumentError, "judge verdict must carry :answers, got: #{inspect(other)}"
   end
 
   defp key(id, atomic_name), do: id <> ":" <> to_string(atomic_name)

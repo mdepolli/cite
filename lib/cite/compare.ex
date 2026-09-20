@@ -99,12 +99,8 @@ defmodule Cite.Compare do
   # An unasked cluster answers nothing, which the gate accepts (no Nouls) and
   # evidence grounds fully (no member_questions can name a question).
   defp answers(:unasked), do: %{}
-  defp answers({:ok, %{answers: answers}}) when is_map(answers), do: answers
+  defp answers({:ok, %{answers: answers}}), do: answers
   defp answers({:error, _reason}), do: nil
-
-  defp answers({:ok, other}) do
-    raise ArgumentError, "judge verdict must carry :answers, got: #{inspect(other)}"
-  end
 
   defp cluster_members(%Cluster{id: cluster_id, members: members}, known) do
     Enum.each(members, &member(&1, cluster_id, known))
