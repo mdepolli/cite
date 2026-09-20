@@ -32,8 +32,9 @@ inspect:  "`candidates.#{id}.text`"
 
 In the scan the window is under `"candidates"`, so a scan question addresses
 `` `candidates.#{id}.text` ``. In compare the state is the cluster's own —
-`%{"line" => c}` becomes `` `line.text` ``, `%{"lines" => %{"C000" => c0}}`
-becomes `` `lines.C000.text` ``. Whatever `meta` a candidate carries rides
+`%{"line" => c}` becomes `` `line.text` ``, `%{"lines" => [c0, c5]}` becomes
+`` `lines.C000.text` `` and `` `lines.C005.text` `` — a list of candidates is
+wired as an object keyed by id, in order. Whatever `meta` a candidate carries rides
 along: `` `line.speaker` `` works if `meta` had `:speaker`.
 
 A path that points nowhere is not an error the model reports; it answers
@@ -125,7 +126,7 @@ hits = for c <- candidates, index[c.id]["riddle"], do: c
     id: "riddles",
     class: "riddle",
     members: hits,
-    state: %{"lines" => Map.new(hits, &{&1.id, &1})},
+    state: %{"lines" => hits},
     questions: Map.new(hits, &{"unanswered:#{&1.id}", unanswered_for(&1.id)}),
     member_questions: Map.new(hits, &{&1.id, ["unanswered:#{&1.id}"]}),
     match: :any
@@ -137,7 +138,8 @@ hits = for c <- candidates, index[c.id]["riddle"], do: c
 then grounded only if its own did. Every member of a cluster shares one
 request, so the model sees them together — that is what you want when the
 members are related, and what you must avoid when a judgment has to be
-independent.
+independent. Pass the members as a list, not a map: past 32 entries a map
+reaches the model in hash order, and order is context.
 
 **A cluster built from several atomics.** When one finding needs evidence of
 two kinds — a question and its answer, say — pick the best line for each

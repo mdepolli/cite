@@ -86,7 +86,15 @@ defmodule Cite.MixProject do
           Cite.Error
         ],
         Providers: [Cite.Provider, Cite.Provider.TypeSafe],
-        Internal: [Cite.Select, Cite.Scan, Cite.Compare, Cite.Emit, Cite.Wire, Cite.Answer]
+        Internal: [
+          Cite.Select,
+          Cite.Scan,
+          Cite.Compare,
+          Cite.Emit,
+          Cite.Wire,
+          Cite.Wire.Object,
+          Cite.Answer
+        ]
       ],
       # Renders ```mermaid``` fences in extras (README + guides) on HexDocs.
       # GitHub renders them natively; ExDoc needs the CDN + init hook.

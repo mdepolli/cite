@@ -4,7 +4,8 @@ defmodule Cite.Cluster do
 
   Built via `new/1`. `:questions` values must be `%Cite.Question{}`. A
   `%Cite.Candidate{}` anywhere in `:state` is wired as its `meta` plus `"id"`
-  and `"text"`; put candidates there rather than building maps by hand.
+  and `"text"`, and a list of candidates as an object keyed by id that keeps
+  their order; put candidates there rather than building maps by hand.
   Empty `:questions` is allowed (atomic-only emit with no compare round).
   When `:member_questions` is non-empty, every id must name a member and
   every question key must exist in `:questions`.

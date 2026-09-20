@@ -2,6 +2,7 @@ defmodule Cite.ScanTest do
   use ExUnit.Case, async: true
 
   alias Cite.{Candidate, Error, Question, Scan}
+  alias Cite.Wire.Object
 
   defp cand(id, text, start, meta \\ %{}) do
     %Candidate{
@@ -83,13 +84,13 @@ defmodule Cite.ScanTest do
 
       assert request["questions"]["U1:income"]["instructions"]["question"] == "income for U1?"
 
-      assert request["state"] == %{
-               "meeting" => "m1",
-               "candidates" => %{
-                 "U0" => %{"id" => "U0", "text" => "aaaa", "speaker" => "A"},
-                 "U1" => %{"id" => "U1", "text" => "bbbb"}
-               }
-             }
+      assert request["state"]["meeting"] == "m1"
+
+      assert request["state"]["candidates"] ==
+               Object.new([
+                 {"U0", %{"id" => "U0", "text" => "aaaa", "speaker" => "A"}},
+                 {"U1", %{"id" => "U1", "text" => "bbbb"}}
+               ])
     end
   end
 

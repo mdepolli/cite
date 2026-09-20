@@ -7,10 +7,12 @@ defmodule Cite.Wire do
   """
 
   alias Cite.{Candidate, Question}
+  alias Cite.Wire.Object
 
   @doc """
   Stringifies keys recursively. A `%Candidate{}` anywhere in the tree becomes
-  its wire shape via `candidate/1`.
+  its wire shape via `candidate/1`; a list of candidates becomes an object
+  keyed by id that keeps their order (`candidates/1`).
   """
   @spec map(map()) :: map()
   def map(map) when is_map(map) do
@@ -29,6 +31,15 @@ defmodule Cite.Wire do
   end
 
   @doc """
+  Candidates on the wire as one object keyed by id, in the order given. A
+  plain map would lose that order past 32 entries.
+  """
+  @spec candidates([Candidate.t()]) :: Object.t()
+  def candidates(candidates) when is_list(candidates) do
+    Object.new(Enum.map(candidates, &{&1.id, candidate(&1)}))
+  end
+
+  @doc """
   Encodes every question in a `%{key => Question.t()}` map.
   """
   @spec questions(%{String.t() => Question.t()}) :: %{String.t() => map()}
@@ -44,7 +55,9 @@ defmodule Cite.Wire do
   end
 
   defp value(%Candidate{} = candidate), do: candidate(candidate)
+  defp value(%Object{} = object), do: object
   defp value(%{} = map) when not is_struct(map), do: map(map)
+  defp value([%Candidate{} | _] = candidates), do: candidates(candidates)
   defp value(list) when is_list(list), do: Enum.map(list, &value/1)
   defp value(value), do: value
 end

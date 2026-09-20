@@ -71,7 +71,7 @@ defmodule Cite.Scan do
     state =
       extra_state
       |> Wire.map()
-      |> Map.put("candidates", Map.new(window, &{&1.id, Wire.candidate(&1)}))
+      |> Map.put("candidates", Wire.candidates(window))
 
     %{"state" => state, "questions" => Wire.questions(questions)}
   end

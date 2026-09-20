@@ -2,6 +2,7 @@ defmodule Cite.SelectTest do
   use ExUnit.Case, async: true
 
   alias Cite.{Candidate, Cluster, Error, Question, Result, Span}
+  alias Cite.Wire.Object
 
   defp noul_q(text) do
     Question.noul(
@@ -201,9 +202,11 @@ defmodule Cite.SelectTest do
       judge = fn request ->
         ids =
           request["state"]
-          |> Map.get("candidates", %{})
-          |> Map.keys()
-          |> Enum.sort()
+          |> Map.get("candidates")
+          |> then(fn
+            %Object{pairs: pairs} -> Enum.map(pairs, &elem(&1, 0))
+            nil -> []
+          end)
 
         send(parent, {:scan, ids})
 
