@@ -241,5 +241,17 @@ defmodule Cite.ClusterTest do
         Cluster.member_state(%{id: "U001"})
       end
     end
+
+    test "rejects question keys reserved for span attributes" do
+      assert_raise ArgumentError, ~r/\["compare", "review"\] are reserved/, fn ->
+        Cluster.new(
+          id: "x",
+          class: "y",
+          members: [cand("U001")],
+          state: %{},
+          questions: Map.merge(q("review"), Map.merge(q("compare"), q("ok")))
+        )
+      end
+    end
   end
 end

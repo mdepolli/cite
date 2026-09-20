@@ -25,6 +25,7 @@ defmodule Cite.Cluster do
   defstruct [:id, :class, :members, :state, :questions, member_questions: %{}, match: :all]
 
   @required [:id, :class, :members, :state, :questions]
+  @reserved_keys ["cluster_id", "compare", "review"]
 
   @doc """
   Builds a `%Cite.Cluster{}`. Raises `ArgumentError` on missing keys or bad types.
@@ -145,6 +146,13 @@ defmodule Cite.Cluster do
            end) do
       raise ArgumentError,
             "cluster questions must be %{non-empty binary => Cite.Question}"
+    end
+
+    reserved = Enum.filter(Map.keys(questions), &(&1 in @reserved_keys))
+
+    if reserved != [] do
+      raise ArgumentError,
+            "cluster question keys #{inspect(Enum.sort(reserved))} are reserved for span attributes"
     end
 
     questions
