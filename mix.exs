@@ -30,7 +30,8 @@ defmodule Cite.MixProject do
       {:req, "~> 0.6"},
       {:plug, "~> 1.0", only: :test},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false}
     ]
   end
 
