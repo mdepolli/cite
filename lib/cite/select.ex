@@ -26,6 +26,7 @@ defmodule Cite.Select do
     compose = Map.fetch!(spec, :compose)
 
     check_options(window_size, atomic_threshold, review_band, confidence_floor, extra_state)
+    check_state(extra_state)
 
     scan =
       candidates
@@ -63,6 +64,14 @@ defmodule Cite.Select do
           "invalid options: window_size must be a positive integer, atomic_threshold and " <>
             "confidence_floor numbers, review_band {low, high} with low < high, state a map; " <>
             "got #{inspect(window_size: window_size, atomic_threshold: atomic_threshold, review_band: review_band, confidence_floor: confidence_floor, state: state)}"
+  end
+
+  # The scan puts each window under "candidates"; a caller's entry there would
+  # be overwritten without a word.
+  defp check_state(state) do
+    if Map.has_key?(state, "candidates") or Map.has_key?(state, :candidates) do
+      raise ArgumentError, "state must not use the \"candidates\" key; the scan window goes there"
+    end
   end
 
   defp usage(nil), do: :ok

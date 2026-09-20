@@ -391,6 +391,21 @@ defmodule Cite.SelectTest do
       end
     end
 
+    test "raises when the caller's state uses the scan's candidates key" do
+      spec = %{
+        atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
+        compose: fn _, _ -> [] end
+      }
+
+      client = fn _ -> {:ok, %{answers: %{}, usage: nil}} end
+
+      for state <- [%{"candidates" => 1}, %{candidates: 1}] do
+        assert_raise ArgumentError, ~r/must not use the "candidates" key/, fn ->
+          Cite.select(client, "", [], spec, state: state)
+        end
+      end
+    end
+
     test "raises on option values that cannot work" do
       spec = %{
         atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
