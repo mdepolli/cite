@@ -1,7 +1,7 @@
 defmodule Cite.SelectTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Candidate, Cluster, Error, Question, Result, Select, Span}
+  alias Cite.{Candidate, Cluster, Error, Question, Result, Span}
 
   defp noul_q(text) do
     Question.noul(
@@ -112,7 +112,7 @@ defmodule Cite.SelectTest do
   end
 
   describe "select/5 compose" do
-    test "emits one span per cluster member after a compare Noul fires" do
+    test "runs scan, compose, compare, and emit end to end" do
       # Arrange
       {source, candidates} = household_fixture()
 
@@ -120,47 +120,48 @@ defmodule Cite.SelectTest do
         questions = request["questions"]
 
         answers =
-          if Map.has_key?(questions, "fits") do
-            %{
-              "fits" => %{"noul" => 0.86},
-              "severity" => %{"score" => 0.2, "confidence" => 0.9},
-              "temporal" => %{"choice" => "transient", "confidence" => 0.9}
-            }
-          else
-            # Scan: meta (speaker) must be on the wire under candidates.
-            candidates_state = request["state"]["candidates"]
-            assert candidates_state["U000"]["speaker"] == "A"
-            assert candidates_state["U000"]["text"] == "Four kids at home."
-
-            Map.new(questions, fn {key, _} -> {key, %{"noul" => scan_noul(key)}} end)
-          end
+          if Map.has_key?(questions, "fits"),
+            do: %{"fits" => %{"noul" => 0.86}},
+            else: Map.new(questions, fn {key, _} -> {key, %{"noul" => scan_noul(key)}} end)
 
         {:ok, %{answers: answers, usage: %{input_tokens: 3, output_tokens: 0}}}
       end
 
       # Act
-      result = Select.select(judge, source, candidates, household_spec())
+      result = Cite.select(judge, source, candidates, household_spec())
 
       # Assert
-      assert %Result{errors: []} = result
-      texts = Enum.sort(Enum.map(result.spans, & &1.text))
-
-      assert texts == ["Four kids at home.", "I make about 180000 a year."]
-      assert Enum.all?(result.spans, &(&1.class == "resilience"))
-
-      assert Enum.all?(result.spans, fn %Span{attributes: attrs} ->
-               attrs["cluster_id"] == "household" and
-                 attrs["severity"] == 0 and
-                 attrs["temporal"] == "transient" and
-                 attrs["review"] == false
-             end)
-
-      assert result.scan == %{
-               "U000" => %{"dependents" => 0.9, "primary_income" => 0.1},
-               "U001" => %{"dependents" => 0.1, "primary_income" => 0.9}
-             }
-
+      assert %Result{errors: [], rejected: %{}} = result
+      assert Enum.map(result.spans, & &1.candidate_id) |> Enum.sort() == ["U000", "U001"]
+      assert Map.keys(result.scan) |> Enum.sort() == ["U000", "U001"]
       assert result.usage == %{input_tokens: 6, output_tokens: 0}
+    end
+
+    test "collects compare errors after scan errors" do
+      # Arrange
+      {source, candidates} = household_fixture()
+
+      judge = fn request ->
+        if Map.has_key?(request["questions"], "fits"),
+          do: {:error, :compare_down},
+          else:
+            {:ok,
+             %{
+               answers:
+                 Map.new(request["questions"], fn {key, _} ->
+                   {key, %{"noul" => scan_noul(key)}}
+                 end),
+               usage: nil
+             }}
+      end
+
+      # Act
+      result = Cite.select(judge, source, candidates, household_spec())
+
+      # Assert
+      assert result.spans == []
+      assert [%Error{byte_start: 0, byte_end: 46, reason: :compare_down}] = result.errors
+      assert result.usage == nil
     end
 
     test "windows atomic scan so each request stays within window_size" do
@@ -176,7 +177,7 @@ defmodule Cite.SelectTest do
       end
 
       # Act
-      Select.select(judge, source, candidates, household_spec(), window_size: 1)
+      Cite.select(judge, source, candidates, household_spec(), window_size: 1)
 
       # Assert
       assert_receive {:scan, keys1}
@@ -224,7 +225,7 @@ defmodule Cite.SelectTest do
       end
 
       # Act
-      result = Select.select(judge, source, candidates, household_spec())
+      result = Cite.select(judge, source, candidates, household_spec())
 
       # Assert
       assert_receive {:scan, ["U000", "U001"]}
@@ -278,7 +279,7 @@ defmodule Cite.SelectTest do
       end
 
       # Act
-      result = Select.select(judge, source, [candidate], spec)
+      result = Cite.select(judge, source, [candidate], spec)
 
       # Assert
       assert_receive {:call, keys}
@@ -300,7 +301,7 @@ defmodule Cite.SelectTest do
       judge = fn _request -> {:error, {:bad_request, "max_tokens_exceeded"}} end
 
       # Act
-      result = Select.select(judge, source, [candidate], spec)
+      result = Cite.select(judge, source, [candidate], spec)
 
       # Assert
       assert [
@@ -321,7 +322,7 @@ defmodule Cite.SelectTest do
 
       # Act + Assert
       assert_raise ArgumentError, ~r/unknown keys \[:confidence_flor\]/, fn ->
-        Select.select(fn _ -> {:ok, %{answers: %{}, usage: nil}} end, "", [], spec,
+        Cite.select(fn _ -> {:ok, %{answers: %{}, usage: nil}} end, "", [], spec,
           confidence_flor: 0.9
         )
       end

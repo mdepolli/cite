@@ -28,6 +28,17 @@ defmodule Cite.CompareTest do
 
   defp noul(value), do: %{"noul" => value}
 
+  # One judged cluster through resolve/2, read back as its decision.
+  defp decide(cluster, answers) do
+    resolved = Compare.resolve([{cluster, {:ok, %{answers: answers, usage: nil}}}], @band)
+
+    case resolved do
+      %{accepted: [%{members: members, review?: false}]} -> {:accept, members}
+      %{accepted: [%{members: members, review?: true}]} -> {:review, members}
+      %{accepted: [], rejected: %{}} -> :reject
+    end
+  end
+
   describe "clusters/2" do
     test "returns the clusters when every member is a known candidate" do
       clusters = [cluster(id: "a"), cluster(id: "b")]
@@ -80,39 +91,39 @@ defmodule Cite.CompareTest do
     end
   end
 
-  describe "decide/3 gate" do
+  describe "resolve/2 gate" do
     test "accepts when every Noul clears the high edge" do
-      assert {:accept, [_, _]} = Compare.decide(cluster([]), %{"fits" => noul(0.9)}, @band)
+      assert {:accept, [_, _]} = decide(cluster([]), %{"fits" => noul(0.9)})
     end
 
     test "reviews when a Noul lands inside the band" do
-      assert {:review, _} = Compare.decide(cluster([]), %{"fits" => noul(0.5)}, @band)
+      assert {:review, _} = decide(cluster([]), %{"fits" => noul(0.5)})
     end
 
     test "rejects when any Noul is at or below the low edge" do
-      assert {:reject, _} = Compare.decide(cluster([]), %{"fits" => noul(0.4)}, @band)
+      assert :reject == decide(cluster([]), %{"fits" => noul(0.4)})
     end
 
     test ":all counts an unanswered Noul as 0.0" do
       cluster = cluster(questions: %{"fits" => noul_q(), "also" => noul_q()})
-      assert {:reject, _} = Compare.decide(cluster, %{"fits" => noul(0.9)}, @band)
+      assert :reject == decide(cluster, %{"fits" => noul(0.9)})
     end
 
     test ":any accepts on one clearing Noul and reviews on one above the low edge" do
       cluster = cluster(match: :any, questions: %{"a" => noul_q(), "b" => noul_q()})
-      assert {:accept, _} = Compare.decide(cluster, %{"a" => noul(0.9), "b" => noul(0.1)}, @band)
-      assert {:review, _} = Compare.decide(cluster, %{"a" => noul(0.5), "b" => noul(0.1)}, @band)
-      assert {:reject, _} = Compare.decide(cluster, %{"a" => noul(0.4), "b" => noul(0.1)}, @band)
+      assert {:accept, _} = decide(cluster, %{"a" => noul(0.9), "b" => noul(0.1)})
+      assert {:review, _} = decide(cluster, %{"a" => noul(0.5), "b" => noul(0.1)})
+      assert :reject == decide(cluster, %{"a" => noul(0.4), "b" => noul(0.1)})
     end
 
     test "accepts a cluster with only Score and Choice questions" do
       cluster = cluster(questions: %{"severity" => score_q()})
       answers = %{"severity" => %{"score" => 1, "confidence" => 0.9}}
-      assert {:accept, [_, _]} = Compare.decide(cluster, answers, @band)
+      assert {:accept, [_, _]} = decide(cluster, answers)
     end
   end
 
-  describe "decide/3 evidence" do
+  describe "resolve/2 evidence" do
     test "grounds only named members whose own Noul clears the low edge" do
       # Arrange
       cluster =
@@ -125,7 +136,7 @@ defmodule Cite.CompareTest do
       answers = %{"fits" => noul(0.9), "fits:U0" => noul(0.9), "fits:U1" => noul(0.1)}
 
       # Act + Assert
-      assert {:accept, [%Candidate{id: "U0"}]} = Compare.decide(cluster, answers, @band)
+      assert {:accept, [%Candidate{id: "U0"}]} = decide(cluster, answers)
     end
 
     test "members not named in member_questions are always evidence" do
@@ -140,7 +151,7 @@ defmodule Cite.CompareTest do
 
       # Act + Assert
       assert {:accept, [%Candidate{id: "U0"}, %Candidate{id: "U1"}]} =
-               Compare.decide(cluster, answers, @band)
+               decide(cluster, answers)
     end
 
     test "rejects a cluster that clears the gate but grounds no member" do
@@ -155,7 +166,7 @@ defmodule Cite.CompareTest do
       answers = %{"fits" => noul(0.9), "fits:U0" => noul(0.1), "fits:U1" => noul(0.1)}
 
       # Act + Assert
-      assert {:reject, []} = Compare.decide(cluster, answers, @band)
+      assert :reject == decide(cluster, answers)
     end
   end
 
@@ -168,7 +179,9 @@ defmodule Cite.CompareTest do
       resolved = Compare.resolve([{cluster, :unasked}], @band)
 
       # Assert
-      assert [{^cluster, [_, _], %{}, false}] = resolved.accepted
+      assert [%{cluster: ^cluster, members: [_, _], answers: %{}, review?: false}] =
+               resolved.accepted
+
       assert resolved.usages == []
     end
 
@@ -197,7 +210,10 @@ defmodule Cite.CompareTest do
       resolved = Compare.resolve(outcomes, @band)
 
       # Assert
-      assert [{^accept, [_, _], _, false}, {^review, [_, _], _, true}] = resolved.accepted
+      assert [
+               %{cluster: ^accept, members: [_, _], review?: false},
+               %{cluster: ^review, members: [_, _], review?: true}
+             ] = resolved.accepted
 
       assert resolved.rejected == %{
                "x" => %{"members" => ["U0", "U1"], "answers" => %{"fits" => noul(0.1)}}

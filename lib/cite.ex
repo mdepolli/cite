@@ -18,10 +18,13 @@ defmodule Cite do
 
   ## The judge
 
-  A 1-arity function: `request -> {:ok, verdict} | {:error, reason}` where
-  `verdict` is `%{answers: map(), usage: usage | nil}` and `usage` is
+  A 1-arity function:
+
+      request -> {:ok, verdict} | {:error, reason}
+
+  where `verdict` is `%{answers: map(), usage: usage | nil}` and `usage` is
   `%{input_tokens: n, output_tokens: n}`. Requests are wire-shaped (string
-  keys); `Cite.Question.encode/1` runs at that edge.
+  keys); Cite encodes questions at that edge, so callers never see them.
 
   ## The spec
 

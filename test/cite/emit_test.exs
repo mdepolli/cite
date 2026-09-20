@@ -42,7 +42,12 @@ defmodule Cite.EmitTest do
     }
 
     # Act
-    spans = Emit.spans(@source, [{cluster, members(), answers, false}], 0.5)
+    spans =
+      Emit.spans(
+        @source,
+        [%{cluster: cluster, members: members(), answers: answers, review?: false}],
+        0.5
+      )
 
     # Assert
     assert [
@@ -72,7 +77,12 @@ defmodule Cite.EmitTest do
     }
 
     # Act
-    [span | _] = Emit.spans(@source, [{cluster, members(), answers, true}], 0.5)
+    [span | _] =
+      Emit.spans(
+        @source,
+        [%{cluster: cluster, members: members(), answers: answers, review?: true}],
+        0.5
+      )
 
     # Assert
     assert span.attributes["severity"] == "uncertain"
@@ -82,7 +92,15 @@ defmodule Cite.EmitTest do
   end
 
   test "grounds only the members it is handed" do
-    [only] = Emit.spans(@source, [{cluster(questions()), [hd(members())], %{}, false}], 0.5)
+    [only] =
+      Emit.spans(
+        @source,
+        [
+          %{cluster: cluster(questions()), members: [hd(members())], answers: %{}, review?: false}
+        ],
+        0.5
+      )
+
     assert only.candidate_id == "U0"
   end
 end

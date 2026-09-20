@@ -2,9 +2,9 @@ defmodule Cite.Question do
   @moduledoc """
   A typed System One question.
 
-  Callers build `%Cite.Question{}` via `noul/1`, `score/1`, or `choice/1`.
-  `encode/1` is the only path to Jev's wire JSON — nothing else should see
-  string keys.
+  Callers build `%Cite.Question{}` via `noul/1`, `score/1`, or `choice/1`
+  and hand them to `Cite.select/5` in the spec; Cite encodes them to the wire
+  at the judge edge, so callers never see string keys.
   """
 
   @type type :: :noul | :score | :choice
@@ -100,9 +100,8 @@ defmodule Cite.Question do
     raise ArgumentError, "choice expects a keyword list, got: #{inspect(other)}"
   end
 
-  @doc """
-  Encodes a question into Jev's wire JSON map (string keys).
-  """
+  # Jev's wire JSON map (string keys). Called by Cite.Wire only.
+  @doc false
   @spec encode(t()) :: map()
   def encode(%__MODULE__{type: type, question: question, inspect: inspect, criteria: criteria})
       when type in [:noul, :score, :choice] do

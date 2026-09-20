@@ -7,7 +7,12 @@ defmodule Cite.Compare do
 
   @type band :: {number(), number()}
   @type outcome :: {Cluster.t(), {:ok, map()} | {:error, term()} | :unasked}
-  @type accepted :: {Cluster.t(), [Candidate.t()], map(), boolean()}
+  @type accepted :: %{
+          cluster: Cluster.t(),
+          members: [Candidate.t()],
+          answers: map(),
+          review?: boolean()
+        }
 
   @doc """
   Checks what `compose` returned: a list of `%Cluster{}` with unique ids whose
@@ -66,7 +71,7 @@ defmodule Cite.Compare do
     %{
       accepted:
         for {cluster, answers, {decision, members}} <- decisions, decision != :reject do
-          {cluster, members, answers, decision == :review}
+          %{cluster: cluster, members: members, answers: answers, review?: decision == :review}
         end,
       rejected:
         for {cluster, answers, {:reject, _members}} <- decisions, into: %{} do
@@ -80,14 +85,10 @@ defmodule Cite.Compare do
     }
   end
 
-  @doc """
-  The gate decision and the members it grounds.
-
-  A cluster that clears the gate but grounds no member has nothing to cite,
-  so it is rejected rather than vanishing from the result.
-  """
-  @spec decide(Cluster.t(), map(), band()) :: {:accept | :review | :reject, [Candidate.t()]}
-  def decide(cluster, answers, {low, _high} = band) do
+  # The gate decision and the members it grounds. A cluster that clears the
+  # gate but grounds no member has nothing to cite, so it is rejected rather
+  # than vanishing from the result.
+  defp decide(cluster, answers, {low, _high} = band) do
     case {gate(cluster, answers, band), evidencing_members(cluster, answers, low)} do
       {:reject, members} -> {:reject, members}
       {_decision, []} -> {:reject, []}

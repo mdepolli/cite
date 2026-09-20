@@ -10,7 +10,12 @@ defmodule Cite.Emit do
   """
   @spec spans(String.t(), [Compare.accepted()], number()) :: [Span.t()]
   def spans(source, accepted, confidence_floor) do
-    Enum.flat_map(accepted, fn {cluster, members, answers, review?} ->
+    Enum.flat_map(accepted, fn %{
+                                 cluster: cluster,
+                                 members: members,
+                                 answers: answers,
+                                 review?: review?
+                               } ->
       attributes = attributes(cluster, answers, review?, confidence_floor)
 
       source
