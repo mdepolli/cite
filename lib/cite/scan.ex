@@ -40,6 +40,7 @@ defmodule Cite.Scan do
   """
   @spec candidates([Candidate.t()], String.t()) :: [Candidate.t()]
   def candidates(candidates, source) do
+    Enum.each(candidates, &grounded(&1, source))
     dupes = for {id, n} <- Enum.frequencies_by(candidates, & &1.id), n > 1, do: id
 
     if dupes != [] do
@@ -47,7 +48,6 @@ defmodule Cite.Scan do
             "candidate ids must be unique, duplicated: #{inspect(Enum.sort(dupes))}"
     end
 
-    Enum.each(candidates, &grounded(&1, source))
     candidates
   end
 
@@ -134,8 +134,10 @@ defmodule Cite.Scan do
     raise ArgumentError, "expected a Candidate, got: #{inspect(other)}"
   end
 
-  defp text(_id, text) when is_binary(text) and text != "" do
-    unless String.valid?(text), do: raise(ArgumentError, "candidate text is not valid UTF-8")
+  defp text(id, text) when is_binary(text) and text != "" do
+    unless String.valid?(text) do
+      raise ArgumentError, "candidate #{inspect(id)} text is not valid UTF-8: #{inspect(text)}"
+    end
   end
 
   defp text(id, text) do
