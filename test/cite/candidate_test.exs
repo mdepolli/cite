@@ -143,6 +143,12 @@ defmodule Cite.CandidateTest do
       end
     end
 
+    test "raises when ids collide, including with auto-generated ones" do
+      assert_raise ArgumentError, ~r/ids must be unique, duplicated: \["C001"\]/, fn ->
+        Candidate.from_segments([%{text: "a", id: "C001"}, %{text: "b"}])
+      end
+    end
+
     test "raises when :meta is not a map" do
       assert_raise ArgumentError, ~r/:meta must be a map/, fn ->
         Candidate.from_segments([%{text: "hi", meta: "nope"}])

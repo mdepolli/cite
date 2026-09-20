@@ -11,7 +11,8 @@ defmodule Cite.Candidate do
 
   Missing `:id` defaults to `C000`, `C001`, … by position; missing `:meta`
   defaults to `%{}`. `:text` is trimmed; blank-after-trim is rejected. A present
-  `:id` must be a non-empty binary.
+  `:id` must be a non-empty binary, and ids must be unique across the list
+  (including against auto-generated ones).
   """
   @type segment :: %{
           required(:text) => String.t(),
@@ -39,7 +40,7 @@ defmodule Cite.Candidate do
   `[]` → `{"", []}`.
 
   Raises `ArgumentError` on a bad list or segment (programmer error), including
-  blank-after-trim `:text` or an empty `:id`.
+  blank-after-trim `:text`, an empty `:id`, or duplicate ids.
   """
   @spec from_segments([segment()]) :: {String.t(), [t()]}
   def from_segments(segments) when is_list(segments) do
@@ -48,7 +49,7 @@ defmodule Cite.Candidate do
       |> Enum.with_index()
       |> Enum.reduce({"", [], 0}, &append_segment/2)
 
-    {source, Enum.reverse(candidates)}
+    {source, unique_ids!(Enum.reverse(candidates))}
   end
 
   def from_segments(other) do
@@ -118,6 +119,15 @@ defmodule Cite.Candidate do
   end
 
   defp segment_meta!(_segment), do: %{}
+
+  defp unique_ids!(candidates) do
+    ids = Enum.map(candidates, & &1.id)
+
+    case Enum.uniq(ids -- Enum.uniq(ids)) do
+      [] -> candidates
+      dupes -> raise ArgumentError, "segment ids must be unique, duplicated: #{inspect(dupes)}"
+    end
+  end
 
   defp auto_id(index) do
     "C" <> String.pad_leading(Integer.to_string(index), 3, "0")
