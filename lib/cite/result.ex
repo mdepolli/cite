@@ -3,7 +3,8 @@ defmodule Cite.Result do
   A completed Select run: spans plus errors.
 
   Span order follows compose emit order (not necessarily document order).
-  `scan` and `rejected` are set by Select (`nil` elsewhere).
+  `errors` holds scan errors first, in window order, then compare errors in
+  cluster order. `scan` and `rejected` are set by Select.
   `usage` totals token counts when the judge reported them (`nil` otherwise).
   """
 
