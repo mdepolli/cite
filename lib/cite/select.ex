@@ -60,10 +60,11 @@ defmodule Cite.Select do
   end
 
   defp check_options(window_size, atomic_threshold, review_band, confidence_floor, state) do
-    raise ArgumentError,
-          "invalid options: window_size must be a positive integer, atomic_threshold and " <>
-            "confidence_floor numbers, review_band {low, high} with low < high, state a map; " <>
-            "got #{inspect(window_size: window_size, atomic_threshold: atomic_threshold, review_band: review_band, confidence_floor: confidence_floor, state: state)}"
+    raise ArgumentError, """
+    invalid options: window_size must be a positive integer, atomic_threshold and \
+    confidence_floor numbers, review_band {low, high} with low < high, state a map; got \
+    #{inspect(window_size: window_size, atomic_threshold: atomic_threshold, review_band: review_band, confidence_floor: confidence_floor, state: state)}
+    """
   end
 
   # The scan puts each window under "candidates"; a caller's entry there would
@@ -119,9 +120,10 @@ defmodule Cite.Select do
         error
 
       other ->
-        raise ArgumentError,
-              "client must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, " <>
-                "got: #{inspect(other)}"
+        raise ArgumentError, """
+        client must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, \
+        got: #{inspect(other)}
+        """
     end
   end
 end

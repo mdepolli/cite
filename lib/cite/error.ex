@@ -32,9 +32,10 @@ defmodule Cite.Error do
   end
 
   def from_range(byte_start, byte_end, _reason) do
-    raise ArgumentError,
-          "byte range must be non-negative integers with byte_end >= byte_start, " <>
-            "got: [#{inspect(byte_start)}, #{inspect(byte_end)})"
+    raise ArgumentError, """
+    byte range must be non-negative integers with byte_end >= byte_start, \
+    got: [#{inspect(byte_start)}, #{inspect(byte_end)})
+    """
   end
 
   @doc false

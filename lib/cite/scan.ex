@@ -118,16 +118,18 @@ defmodule Cite.Scan do
         :ok
 
       slice ->
-        raise ArgumentError,
-              "candidate #{inspect(id)} text does not match source at [#{start}, #{stop}): " <>
-                "got #{inspect(slice)}, expected #{inspect(text)}"
+        raise ArgumentError, """
+        candidate #{inspect(id)} text does not match source at [#{start}, #{stop}): \
+        got #{inspect(slice)}, expected #{inspect(text)}
+        """
     end
   end
 
   defp grounded(%Candidate{id: id, byte_start: start, byte_end: stop}, source) do
-    raise ArgumentError,
-          "candidate #{inspect(id)} has invalid offsets [#{inspect(start)}, #{inspect(stop)}) " <>
-            "for source of #{byte_size(source)} bytes"
+    raise ArgumentError, """
+    candidate #{inspect(id)} has invalid offsets [#{inspect(start)}, #{inspect(stop)}) \
+    for source of #{byte_size(source)} bytes
+    """
   end
 
   defp grounded(other, _source) do
