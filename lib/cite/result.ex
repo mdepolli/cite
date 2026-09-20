@@ -1,7 +1,8 @@
 defmodule Cite.Result do
   @moduledoc """
-  A completed Select run: document-ordered spans plus errors.
+  A completed Select run: spans plus errors.
 
+  Span order follows compose emit order (not necessarily document order).
   `scan` and `rejected` are set by Select (`nil` elsewhere).
   `usage` totals token counts when the judge reported them (`nil` otherwise).
   """

@@ -11,7 +11,7 @@ candidates = Cite.Candidate.from_segments(segments)
 source = Enum.map_join(candidates, " ", & &1.text)
 
 result =
-  Cite.select(judge, source, candidates, spec)
+  Cite.Select.select(judge, source, candidates, spec)
 ```
 
 ## Installation
