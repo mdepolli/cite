@@ -402,6 +402,7 @@ defmodule Cite.SelectTest do
       for bad <- [
             [window_size: 0],
             [review_band: {0.6, 0.4}],
+            [review_band: {0.5, 0.5}],
             [confidence_floor: "high"],
             [state: URI.parse("x")]
           ] do

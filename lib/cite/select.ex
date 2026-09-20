@@ -53,7 +53,7 @@ defmodule Cite.Select do
 
   defp check_options(window_size, atomic_threshold, {low, high}, confidence_floor, state)
        when is_integer(window_size) and window_size > 0 and is_number(atomic_threshold) and
-              is_number(low) and is_number(high) and low <= high and
+              is_number(low) and is_number(high) and low < high and
               is_number(confidence_floor) and is_map(state) and not is_struct(state) do
     :ok
   end
@@ -61,7 +61,7 @@ defmodule Cite.Select do
   defp check_options(window_size, atomic_threshold, review_band, confidence_floor, state) do
     raise ArgumentError,
           "invalid options: window_size must be a positive integer, atomic_threshold and " <>
-            "confidence_floor numbers, review_band {low, high} with low <= high, state a map; " <>
+            "confidence_floor numbers, review_band {low, high} with low < high, state a map; " <>
             "got #{inspect(window_size: window_size, atomic_threshold: atomic_threshold, review_band: review_band, confidence_floor: confidence_floor, state: state)}"
   end
 
