@@ -1,7 +1,11 @@
 defmodule Cite.Answer do
-  # Judge reply maps → values. Reads one answer at a time; knows the reply
-  # shape for each question type and nothing else.
-  @moduledoc false
+  @moduledoc """
+  Reply maps to values.
+
+  Reads one answer at a time and knows the reply shape of each question
+  type — the Noul probability, the Score level, the Choice option — and
+  nothing else. Internal.
+  """
 
   alias Cite.Question
 

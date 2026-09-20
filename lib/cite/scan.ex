@@ -1,7 +1,13 @@
 defmodule Cite.Scan do
-  # The atomic scan, minus the judge call: a window becomes a request, and the
-  # judged outcomes become the score index. Pure.
-  @moduledoc false
+  @moduledoc """
+  The atomic scan, minus the client call.
+
+  A window of candidates becomes one request (`request/3`); the judged
+  outcomes become the score index (`resolve/2`); `drop_below/2` applies
+  `atomic_threshold`. `atomics/1` and `candidates/2` are the checks
+  `Cite.select/5` runs before its first request. Pure — tested with literal
+  maps. Internal.
+  """
 
   alias Cite.{Answer, Candidate, Error, Question, Wire}
 
@@ -35,8 +41,8 @@ defmodule Cite.Scan do
   must be unique, or the scan would collapse two candidates into one row,
   and every `[byte_start, byte_end)` must slice `source` to exactly `text`,
   or the spans emitted at the end would cite the wrong bytes. Raises
-  `ArgumentError` otherwise; a candidate that passes here is trusted by
-  `Cite.Span.from_candidates/2`.
+  `ArgumentError` otherwise; a candidate that passes here is trusted when its
+  span is copied at the end.
   """
   @spec candidates([Candidate.t()], String.t()) :: [Candidate.t()]
   def candidates(candidates, source) do

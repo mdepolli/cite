@@ -1,7 +1,13 @@
 defmodule Cite.Select do
-  # The imperative shell: chunks, calls the client, retries on overflow, and
-  # hands every decision to Scan, Compare, and Emit. Entry point is Cite.select/5.
-  @moduledoc false
+  @moduledoc """
+  The imperative shell behind `Cite.select/5`.
+
+  Chunks candidates into windows, calls the client, halves a window the
+  provider refuses as too large, calls the client once per cluster, and
+  assembles the `Cite.Result`. Every decision — what to ask, what an answer
+  means, what to emit — lives in `Cite.Scan`, `Cite.Compare`, and
+  `Cite.Emit`, which never see the client. Internal; use `Cite.select/5`.
+  """
 
   alias Cite.{Candidate, Compare, Emit, Result, Scan}
 

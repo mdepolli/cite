@@ -1,7 +1,12 @@
 defmodule Cite.Compare do
-  # The compare round, minus the judge call: a cluster becomes a request, and
-  # the judged outcomes become accepted/rejected buckets. Pure.
-  @moduledoc false
+  @moduledoc """
+  The compare round, minus the client call.
+
+  A cluster becomes one request on its own state (`request/2`); the judged
+  outcomes become accepted and rejected buckets (`resolve/2`), where the
+  review band gates each cluster and `member_questions` decide which members
+  are grounded. `clusters/2` checks what compose returned. Pure. Internal.
+  """
 
   alias Cite.{Answer, Candidate, Cluster, Error, Question, Wire}
 

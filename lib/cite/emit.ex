@@ -1,6 +1,10 @@
 defmodule Cite.Emit do
-  # Accepted clusters → grounded spans with their labelled attributes. Pure.
-  @moduledoc false
+  @moduledoc """
+  Accepted clusters to grounded spans.
+
+  One `Cite.Span` per grounded member, byte-exact from the source, carrying
+  the cluster's class and its labelled answers as attributes. Pure. Internal.
+  """
 
   alias Cite.{Answer, Cluster, Compare, Span}
 

@@ -1,7 +1,10 @@
 defmodule Cite.Wire do
-  # Values → judge request maps. The only place atom keys become strings and
-  # structs become their wire shape; nothing past this edge sees an Elixir value.
-  @moduledoc false
+  @moduledoc """
+  Values to request maps.
+
+  The one place atom keys become strings and a `Cite.Candidate` becomes its
+  wire shape; nothing past this edge sees an Elixir value. Internal.
+  """
 
   alias Cite.{Candidate, Question}
 
