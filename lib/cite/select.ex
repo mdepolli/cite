@@ -29,7 +29,7 @@ defmodule Cite.Select do
 
     scan =
       candidates
-      |> Scan.candidates()
+      |> Scan.candidates(source)
       |> Enum.chunk_every(window_size)
       |> Enum.flat_map(&judge_window(judge, &1, atomics, extra_state))
       |> Scan.resolve(atomics)

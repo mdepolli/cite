@@ -36,42 +36,6 @@ defmodule Cite.SpanTest do
                }
              ] = spans
     end
-
-    test "raises when the source slice does not match candidate text" do
-      candidate = %Candidate{id: "U000", text: "Nope", byte_start: 0, byte_end: 5}
-
-      assert_raise ArgumentError, ~r/does not match source slice/, fn ->
-        Span.from_candidates("Hello", [candidate])
-      end
-    end
-
-    test "raises on invalid offsets" do
-      candidate = %Candidate{id: "U000", text: "Hi", byte_start: 0, byte_end: 99}
-
-      assert_raise ArgumentError, ~r/invalid candidate offsets/, fn ->
-        Span.from_candidates("Hi", [candidate])
-      end
-    end
-
-    test "raises when offsets are inverted" do
-      candidate = %Candidate{id: "U000", text: "Hi", byte_start: 2, byte_end: 0}
-
-      assert_raise ArgumentError, ~r/invalid candidate offsets/, fn ->
-        Span.from_candidates("Hi", [candidate])
-      end
-    end
-
-    test "raises when candidates is not a list" do
-      assert_raise ArgumentError, ~r/expected a list of candidates/, fn ->
-        Span.from_candidates("Hi", %Candidate{id: "U000", text: "Hi", byte_start: 0, byte_end: 2})
-      end
-    end
-
-    test "raises when an element is not a Candidate" do
-      assert_raise ArgumentError, ~r/expected a Candidate/, fn ->
-        Span.from_candidates("Hi", [%{id: "U000", text: "Hi", byte_start: 0, byte_end: 2}])
-      end
-    end
   end
 
   describe "Jason.Encoder" do

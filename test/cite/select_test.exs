@@ -316,6 +316,20 @@ defmodule Cite.SelectTest do
       assert result.spans == []
     end
 
+    test "checks candidates against the source before any judge call" do
+      spec = %{
+        atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
+        compose: fn _, _ -> [] end
+      }
+
+      judge = fn _ -> flunk("judge was called before candidates were checked") end
+      stale = [%Candidate{id: "U0", text: "aaaa", byte_start: 0, byte_end: 4}]
+
+      assert_raise ArgumentError, ~r/text does not match source/, fn ->
+        Cite.select(judge, "bbbb", stale, spec)
+      end
+    end
+
     test "raises on option values that cannot work" do
       spec = %{atomics: [], compose: fn _, _ -> [] end}
       judge = fn _ -> {:ok, %{answers: %{}, usage: nil}} end

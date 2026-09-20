@@ -22,15 +22,38 @@ defmodule Cite.ScanTest do
     }
   end
 
-  describe "candidates/1" do
-    test "returns candidates with unique ids" do
+  describe "candidates/2" do
+    @source "aaaa bbbb"
+
+    test "returns candidates with unique ids that slice the source to their text" do
       candidates = [cand("U0", "aaaa", 0), cand("U1", "bbbb", 5)]
-      assert Scan.candidates(candidates) == candidates
+      assert Scan.candidates(candidates, @source) == candidates
     end
 
     test "raises on duplicate ids" do
       assert_raise ArgumentError, ~r/candidate ids must be unique, duplicated: \["U0"\]/, fn ->
-        Scan.candidates([cand("U0", "aaaa", 0), cand("U0", "bbbb", 5)])
+        Scan.candidates([cand("U0", "aaaa", 0), cand("U0", "bbbb", 5)], @source)
+      end
+    end
+
+    test "raises when the source slice does not equal the candidate text" do
+      assert_raise ArgumentError, ~r/"U1" text does not match source at \[5, 9\)/, fn ->
+        Scan.candidates([cand("U1", "bbbc", 5)], @source)
+      end
+    end
+
+    test "raises on inverted or out-of-range offsets, and on a non-candidate" do
+      inverted = %Candidate{id: "U0", text: "aaaa", byte_start: 4, byte_end: 0}
+      outside = %Candidate{id: "U0", text: "aaaa", byte_start: 6, byte_end: 10}
+
+      for bad <- [inverted, outside] do
+        assert_raise ArgumentError, ~r/"U0" has invalid offsets/, fn ->
+          Scan.candidates([bad], @source)
+        end
+      end
+
+      assert_raise ArgumentError, ~r/expected a Candidate/, fn ->
+        Scan.candidates([%{id: "U0"}], @source)
       end
     end
   end
