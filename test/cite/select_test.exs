@@ -137,7 +137,7 @@ defmodule Cite.SelectTest do
       assert result.usage == %{input_tokens: 6, output_tokens: 0}
     end
 
-    test "collects compare errors after scan errors" do
+    test "collects compare errors into Result.errors" do
       # Arrange
       {source, candidates} = household_fixture()
 
@@ -429,7 +429,10 @@ defmodule Cite.SelectTest do
 
     test "raises on unknown options" do
       # Arrange
-      spec = %{atomics: [], compose: fn _, _ -> [] end}
+      spec = %{
+        atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
+        compose: fn _, _ -> [] end
+      }
 
       # Act + Assert
       assert_raise ArgumentError, ~r/unknown keys \[:confidence_flor\]/, fn ->
