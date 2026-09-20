@@ -148,9 +148,14 @@ defmodule Cite.CandidateTest do
       end
     end
 
-    test "raises when ids collide, including with auto-generated ones" do
-      assert_raise ArgumentError, ~r/ids must be unique, duplicated: "C001"/, fn ->
-        Candidate.from_segments([%{text: "a", id: "C001"}, %{text: "b"}])
+    test "raises listing every duplicated id, including auto-generated collisions" do
+      assert_raise ArgumentError, ~r/ids must be unique, duplicated: \["C001", "x"\]/, fn ->
+        Candidate.from_segments([
+          %{text: "a", id: "C001"},
+          %{text: "b"},
+          %{text: "c", id: "x"},
+          %{text: "d", id: "x"}
+        ])
       end
     end
 
