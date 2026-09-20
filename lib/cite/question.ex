@@ -25,32 +25,35 @@ defmodule Cite.Question do
           type: type(),
           question: String.t(),
           inspect: inspect_path(),
+          focus: String.t() | nil,
           criteria: criteria()
         }
 
   @enforce_keys [:type, :question, :inspect, :criteria]
-  defstruct [:type, :question, :inspect, :criteria]
+  defstruct [:type, :question, :inspect, :criteria, focus: nil]
 
-  # TypeSafe documents `not_for` for Choice options only, but Jev accepts it
-  # on Noul criteria and reads it: every wrong Noul answer met while building
-  # the vulnerability benchmark was fixed by naming the boundary case in a
-  # `not_for` ("a home that is getting tight for space is not money being
-  # tight"). Hard-won; keep it.
+  # `what`, `not_for` and `examples` are the structured-criteria keys the
+  # TypeSafe docs describe for every question type. `not_for` on Nouls earned
+  # its keep: every wrong Noul answer met while building the first benchmark
+  # was fixed by naming the boundary case there.
   @criteria_keys [:what, :not_for, :examples]
 
   @doc """
   Builds a `:noul` question.
 
-  Required opts: `:question`, `:inspect`, `:true`, `:false`.
+  Required opts: `:question`, `:inspect`, `:true`, `:false`. Optional
+  `:focus`: one line telling the model what to attend to in the inspected
+  state, when the question alone leaves it open.
   """
   @spec noul(keyword()) :: t()
   def noul(opts) when is_list(opts) do
-    opts = Keyword.validate!(opts, [:question, :inspect, true, false])
+    opts = Keyword.validate!(opts, [:question, :inspect, :focus, true, false])
 
     %__MODULE__{
       type: :noul,
       question: question(fetch_opt(opts, :question)),
       inspect: inspect_path(fetch_opt(opts, :inspect)),
+      focus: focus(opts[:focus]),
       criteria: %{
         true: criteria(fetch_opt(opts, true)),
         false: criteria(fetch_opt(opts, false))
@@ -65,16 +68,19 @@ defmodule Cite.Question do
   @doc """
   Builds a `:score` question.
 
-  Required opts: `:question`, `:inspect`, `:criteria` (2–10 non-empty band labels).
+  Required opts: `:question`, `:inspect`, `:criteria` (2–10 non-empty band
+  labels). Optional `:focus`, as for `noul/1` — "judge how much sense the line
+  makes, not whether it is funny".
   """
   @spec score(keyword()) :: t()
   def score(opts) when is_list(opts) do
-    opts = Keyword.validate!(opts, [:question, :inspect, :criteria])
+    opts = Keyword.validate!(opts, [:question, :inspect, :focus, :criteria])
 
     %__MODULE__{
       type: :score,
       question: question(fetch_opt(opts, :question)),
       inspect: inspect_path(fetch_opt(opts, :inspect)),
+      focus: focus(opts[:focus]),
       criteria: score_criteria(fetch_opt(opts, :criteria))
     }
   end
@@ -86,17 +92,19 @@ defmodule Cite.Question do
   @doc """
   Builds a `:choice` question.
 
-  Required opts: `:question`, `:inspect`, `:criteria` (non-empty map of option id => description).
-  Option ids stay binaries (dynamic).
+  Required opts: `:question`, `:inspect`, `:criteria` (non-empty map of option
+  id => description). Option ids stay binaries (dynamic). Optional `:focus`,
+  as for `noul/1`.
   """
   @spec choice(keyword()) :: t()
   def choice(opts) when is_list(opts) do
-    opts = Keyword.validate!(opts, [:question, :inspect, :criteria])
+    opts = Keyword.validate!(opts, [:question, :inspect, :focus, :criteria])
 
     %__MODULE__{
       type: :choice,
       question: question(fetch_opt(opts, :question)),
       inspect: inspect_path(fetch_opt(opts, :inspect)),
+      focus: focus(opts[:focus]),
       criteria: choice_criteria(fetch_opt(opts, :criteria))
     }
   end
@@ -108,15 +116,15 @@ defmodule Cite.Question do
   # Jev's wire JSON map (string keys). Called by Cite.Wire only.
   @doc false
   @spec encode(t()) :: map()
-  def encode(%__MODULE__{type: type, question: question, inspect: inspect, criteria: criteria})
-      when type in [:noul, :score, :choice] do
+  def encode(%__MODULE__{type: type} = question) when type in [:noul, :score, :choice] do
+    instructions =
+      %{"question" => question.question, "inspect" => question.inspect}
+      |> put_focus(question.focus)
+
     %{
       "type" => Atom.to_string(type),
-      "instructions" => %{
-        "question" => question,
-        "inspect" => inspect
-      },
-      "criteria" => encode_criteria(type, criteria)
+      "instructions" => instructions,
+      "criteria" => encode_criteria(type, question.criteria)
     }
   end
 
@@ -130,6 +138,9 @@ defmodule Cite.Question do
       :error -> raise ArgumentError, "missing required key: #{inspect(key)}"
     end
   end
+
+  defp put_focus(instructions, nil), do: instructions
+  defp put_focus(instructions, focus), do: Map.put(instructions, "focus", focus)
 
   defp encode_criteria(:noul, %{true: yes, false: no}) do
     %{"true" => stringify_criteria(yes), "false" => stringify_criteria(no)}
@@ -146,6 +157,13 @@ defmodule Cite.Question do
 
   defp question(other) do
     raise ArgumentError, "question must be a non-empty binary, got: #{inspect(other)}"
+  end
+
+  defp focus(nil), do: nil
+  defp focus(focus) when is_binary(focus) and focus != "", do: focus
+
+  defp focus(other) do
+    raise ArgumentError, "focus must be a non-empty binary, got: #{inspect(other)}"
   end
 
   defp inspect_path(path) when is_binary(path) and path != "", do: path

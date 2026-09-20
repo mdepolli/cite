@@ -301,4 +301,25 @@ defmodule Cite.QuestionTest do
       end
     end
   end
+
+  describe "focus" do
+    test "is optional, rides under instructions when given, and must be a non-empty binary" do
+      plain = Question.score(question: "S?", inspect: "`x`", criteria: ["a", "b"])
+      refute Map.has_key?(Question.encode(plain)["instructions"], "focus")
+
+      focused =
+        Question.score(
+          question: "S?",
+          inspect: "`x`",
+          criteria: ["a", "b"],
+          focus: "Judge sense, not humour."
+        )
+
+      assert Question.encode(focused)["instructions"]["focus"] == "Judge sense, not humour."
+
+      assert_raise ArgumentError, ~r/focus must be a non-empty binary/, fn ->
+        Question.noul(question: "Q?", inspect: "`x`", true: "y", false: "n", focus: "")
+      end
+    end
+  end
 end
