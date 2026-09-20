@@ -1,9 +1,11 @@
 defmodule Cite do
   @moduledoc """
-  Candidates in, grounded citations out.
+  Citations copied from the source, never written by a model.
 
-  Code proposes candidates; a System One judge answers narrow typed questions
-  about them; Cite copies evidence byte-exact from the source.
+  Your code lists the candidates — a line in a transcript, a row, a sentence —
+  a decision model judges which ones hold up, and Cite returns those exact
+  bytes. A decision model answers narrow typed questions — a probability, a
+  level, a choice — with calibrated confidence; it never generates text.
 
   ## Inputs
 

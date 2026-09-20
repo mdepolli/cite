@@ -1,6 +1,6 @@
 defmodule Cite.Provider do
   @moduledoc """
-  A System One provider: builds a client, then answers one wire-shaped
+  A decision-model provider: builds a handle, then answers one wire-shaped
   request at a time.
 
   `Cite.new/2` turns a provider into the client — the 1-arity function
@@ -9,7 +9,8 @@ defmodule Cite.Provider do
 
   ## Requests
 
-  The request is the System One question schema: `"state"` plus
+  The request is the question schema TypeSafe's System One API defined and
+  Laya adopted: `"state"` plus
   `"questions"`, each question a map with `"type"` (`noul`, `score`,
   `choice`), `"instructions"` (`question`, `inspect`) and `"criteria"`.
   TypeSafe Jev and Laya share it, so a provider for either sends it as is; a

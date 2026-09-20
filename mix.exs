@@ -37,8 +37,9 @@ defmodule Cite.MixProject do
 
   defp description do
     """
-    Candidates in, grounded citations out. A System One judge answers typed
-    questions; Cite windows, selects, and copies evidence byte-exact.
+    Citations copied from the source, never written by a model. Your code lists
+    the candidates, a decision model judges which ones hold up, and Cite returns
+    those exact bytes.
     """
   end
 

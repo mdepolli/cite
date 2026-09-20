@@ -1,6 +1,6 @@
 defmodule Cite.Question do
   @moduledoc """
-  A typed System One question.
+  A typed question for a decision model.
 
   Callers build `%Cite.Question{}` via `noul/1`, `score/1`, or `choice/1`
   and hand them to `Cite.select/5` in the spec; Cite encodes them to the wire
