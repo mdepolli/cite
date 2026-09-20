@@ -12,6 +12,11 @@ defmodule Cite.Provider.TypeSafeTest do
     Cite.judge([api_key: "k", req_options: [plug: {Req.Test, __MODULE__}, retry: false]] ++ opts)
   end
 
+  # The adapter's own retry policy; the stubs send Retry-After: 0 to keep it fast.
+  defp retrying_judge do
+    Cite.judge(api_key: "k", req_options: [plug: {Req.Test, __MODULE__}])
+  end
+
   describe "new/1" do
     test "raises without an api key" do
       System.delete_env("JEV_API_KEY")
@@ -123,6 +128,51 @@ defmodule Cite.Provider.TypeSafeTest do
 
       Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 503, "down"))
       assert judge().(@request) == {:error, :server_error}
+    end
+
+    test "retries 529 and 429 with Retry-After, then succeeds" do
+      for status <- [529, 429] do
+        {:ok, calls} = Agent.start_link(fn -> 0 end)
+
+        Req.Test.stub(__MODULE__, fn conn ->
+          if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0 do
+            conn
+            |> Plug.Conn.put_resp_header("retry-after", "0")
+            |> Plug.Conn.send_resp(status, "later")
+          else
+            Req.Test.json(conn, %{"answers" => %{}})
+          end
+        end)
+
+        assert {:ok, _} = retrying_judge().(@request)
+        assert Agent.get(calls, & &1) == 2
+      end
+    end
+
+    test "gives up after the retries and reports the last 429" do
+      {:ok, calls} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        Agent.update(calls, &(&1 + 1))
+        conn |> Plug.Conn.put_resp_header("retry-after", "0") |> Plug.Conn.send_resp(429, "")
+      end)
+
+      assert retrying_judge().(@request) == {:error, {:rate_limited, 0}}
+      assert Agent.get(calls, & &1) == 4
+    end
+
+    test "does not retry a timeout" do
+      {:ok, calls} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        Agent.update(calls, &(&1 + 1))
+        Req.Test.transport_error(conn, :timeout)
+      end)
+
+      assert {:error, {:request_error, %Req.TransportError{reason: :timeout}}} =
+               retrying_judge().(@request)
+
+      assert Agent.get(calls, & &1) == 1
     end
 
     test "bounds an unexpected error body" do

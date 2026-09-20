@@ -31,6 +31,11 @@ defmodule Cite.Question do
   @enforce_keys [:type, :question, :inspect, :criteria]
   defstruct [:type, :question, :inspect, :criteria]
 
+  # TypeSafe documents `not_for` for Choice options only, but Jev accepts it
+  # on Noul criteria and reads it: every wrong Noul answer met while building
+  # the vulnerability benchmark was fixed by naming the boundary case in a
+  # `not_for` ("a home that is getting tight for space is not money being
+  # tight"). Hard-won; keep it.
   @criteria_keys [:what, :not_for, :examples]
 
   @doc """

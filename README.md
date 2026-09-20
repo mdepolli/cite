@@ -81,7 +81,11 @@ function of the right shape works directly, which is how the tests run
 without a key.
 
 Scan windows are judged one after another; a long document is one request
-per window, each up to 120 seconds. Concurrency is not yet an option.
+per window. Each request may take up to 120 seconds, and the TypeSafe
+provider retries rate limits, overloads, and connection failures up to three
+times with delays capped at 30 seconds — so one window can take several
+minutes before it fails. Timeouts are not retried. Concurrency is not yet an
+option.
 
 ## Installation
 

@@ -12,6 +12,8 @@ defmodule Cite.Provider.TypeSafe do
   @default_model "jev-1.13.0"
   @default_base_url "https://api.typesafe.ai"
   @max_error_body_bytes 2_000
+  @max_retries 3
+  @max_retry_delay_ms :timer.seconds(30)
 
   @type t :: %__MODULE__{http_client: Req.Request.t(), model: String.t()}
 
@@ -54,7 +56,8 @@ defmodule Cite.Provider.TypeSafe do
         base_url: base_url,
         auth: {:bearer, api_key},
         receive_timeout: 120_000,
-        retry: :transient,
+        retry: &retry/2,
+        max_retries: @max_retries,
         redirect: false
       ]
       |> Keyword.merge(req_overrides)
@@ -76,6 +79,28 @@ defmodule Cite.Provider.TypeSafe do
     |> decode()
   end
 
+  # Req owns retries: 429, 529 and 5xx (TypeSafe documents 529 as transient,
+  # Req's :transient list does not include it) and connection failures, at
+  # most @max_retries times with a delay capped at @max_retry_delay_ms even
+  # when Retry-After says longer. A timeout is not retried: a 120 s call
+  # retried is eight minutes, and a slow success would be billed twice. What
+  # reaches decode/1 has already had its retries; a 429 there still carries
+  # Retry-After so the caller knows what the server asked for.
+  defp retry(request, %Req.Response{status: status} = response)
+       when status == 429 or status == 529 or status in 500..504 do
+    {:delay, min(retry_after_ms(response) || backoff_ms(request), @max_retry_delay_ms)}
+  end
+
+  defp retry(request, %Req.TransportError{reason: reason}) when reason != :timeout do
+    {:delay, min(backoff_ms(request), @max_retry_delay_ms)}
+  end
+
+  defp retry(_request, _response_or_exception), do: false
+
+  defp backoff_ms(request) do
+    Integer.pow(2, Req.Request.get_private(request, :req_retry_count, 0)) * 1_000
+  end
+
   defp decode({:ok, %Req.Response{status: 200, body: %{"answers" => answers} = body}})
        when is_map(answers) do
     {:ok, %{answers: answers, usage: usage(body["usage"])}}
@@ -88,7 +113,9 @@ defmodule Cite.Provider.TypeSafe do
 
   # TypeSafe names the failure in the 400 body. Its token cap is the
   # provider-neutral :request_too_large the pipeline halves windows on;
-  # other names pass through as-is.
+  # other names pass through as-is. The "max_tokens_exceeded" name is not in
+  # TypeSafe's published docs: it is what the API returned on oversized
+  # windows during the prototype, and the halving behaviour was built on it.
   defp decode({:ok, %Req.Response{status: 400, body: %{"detail" => %{"error_type" => type}}}})
        when is_binary(type) do
     case type do
