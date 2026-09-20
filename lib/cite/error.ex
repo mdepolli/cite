@@ -25,6 +25,14 @@ defmodule Cite.Error do
              byte_end >= byte_start do
     %__MODULE__{byte_start: byte_start, byte_end: byte_end, reason: reason}
   end
+
+  @doc false
+  @spec from_candidates([Cite.Candidate.t(), ...], term()) :: t()
+  def from_candidates([_ | _] = candidates, reason) do
+    starts = Enum.map(candidates, & &1.byte_start)
+    stops = Enum.map(candidates, & &1.byte_end)
+    from_range(Enum.min(starts), Enum.max(stops), reason)
+  end
 end
 
 defimpl Jason.Encoder, for: Cite.Error do
