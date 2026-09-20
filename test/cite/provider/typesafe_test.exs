@@ -97,14 +97,16 @@ defmodule Cite.Provider.TypeSafeTest do
       assert {:ok, %{usage: nil}} = judge().(@request)
     end
 
-    test "maps the token cap to :request_too_large and keeps other 400 names" do
-      Req.Test.stub(__MODULE__, fn conn ->
-        conn
-        |> Plug.Conn.put_status(400)
-        |> Req.Test.json(%{"detail" => %{"error_type" => "max_tokens_exceeded"}})
-      end)
+    test "maps the token cap to :request_too_large on 400 and 422, keeps other names" do
+      for status <- [400, 422] do
+        Req.Test.stub(__MODULE__, fn conn ->
+          conn
+          |> Plug.Conn.put_status(status)
+          |> Req.Test.json(%{"detail" => %{"error_type" => "max_tokens_exceeded"}})
+        end)
 
-      assert judge().(@request) == {:error, :request_too_large}
+        assert judge().(@request) == {:error, :request_too_large}
+      end
 
       Req.Test.stub(__MODULE__, fn conn ->
         conn

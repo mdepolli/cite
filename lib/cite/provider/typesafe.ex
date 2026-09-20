@@ -127,12 +127,14 @@ defmodule Cite.Provider.TypeSafe do
   # other names pass through as-is. The "max_tokens_exceeded" name is not in
   # TypeSafe's published docs: it is what the API returned on oversized
   # windows during the prototype, and the halving behaviour was built on it.
-  defp decode({:ok, %Req.Response{status: 400, body: %{"detail" => %{"error_type" => type}}}})
-       when type == "max_tokens_exceeded",
+  # The docs list validation failures as 422; the prototype saw 400. Both
+  # are matched by the error type so a status change does not lose halving.
+  defp decode({:ok, %Req.Response{status: status, body: %{"detail" => %{"error_type" => type}}}})
+       when status in [400, 422] and type == "max_tokens_exceeded",
        do: {:error, :request_too_large}
 
-  defp decode({:ok, %Req.Response{status: 400, body: %{"detail" => %{"error_type" => type}}}})
-       when is_binary(type),
+  defp decode({:ok, %Req.Response{status: status, body: %{"detail" => %{"error_type" => type}}}})
+       when status in [400, 422] and is_binary(type),
        do: {:error, {:bad_request, type}}
 
   defp decode({:ok, %Req.Response{status: 400, body: body}}),
