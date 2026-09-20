@@ -67,15 +67,11 @@ defmodule Cite.Candidate do
 
   defp reject_duplicate_ids!(rows) do
     dupes =
-      rows
-      |> Enum.frequencies_by(& &1.id)
-      |> Enum.filter(fn {_id, n} -> n > 1 end)
-      |> Enum.map(fn {id, _n} -> id end)
-      |> Enum.sort()
+      for {id, n} <- Enum.frequencies_by(rows, & &1.id), n > 1, do: id
 
-    case dupes do
+    case Enum.sort(dupes) do
       [] -> rows
-      _ -> raise ArgumentError, "segment ids must be unique, duplicated: #{inspect(dupes)}"
+      sorted -> raise ArgumentError, "segment ids must be unique, duplicated: #{inspect(sorted)}"
     end
   end
 
