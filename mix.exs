@@ -66,6 +66,8 @@ defmodule Cite.MixProject do
       source_url: @source_url,
       extras: [
         "README.md",
+        "guides/select-and-judge.md",
+        "guides/writing-questions.md",
         "CHANGELOG.md"
       ],
       # Groups mirror the stability tiers (see README "Stability"): Core API
