@@ -40,14 +40,19 @@ defmodule Cite do
   question names; the caller maps score integers to its own labels.
   """
 
-  alias Cite.{Candidate, Result, Select}
+  alias Cite.{Candidate, Cluster, Question, Result, Select}
+
+  @type usage :: Result.usage()
+  @type verdict :: %{answers: map(), usage: usage() | nil}
+  @type judge :: (map() -> {:ok, verdict()} | {:error, term()})
+  @type atomic :: %{name: String.t(), question: (Candidate.t() -> Question.t())}
+  @type spec :: %{atomics: [atomic()], compose: (map(), [Candidate.t()] -> [Cluster.t()])}
 
   @doc """
   Runs select-and-judge. Options: `window_size` (40), `atomic_threshold`
   (0.5), `review_band` (`{0.4, 0.6}`), `confidence_floor` (0.5), `state`
   (`%{}`, merged under every request).
   """
-  @spec select(Select.judge(), String.t(), [Candidate.t()], Select.spec(), keyword()) ::
-          Result.t()
+  @spec select(judge(), String.t(), [Candidate.t()], spec(), keyword()) :: Result.t()
   defdelegate select(judge, source, candidates, spec, opts \\ []), to: Select
 end

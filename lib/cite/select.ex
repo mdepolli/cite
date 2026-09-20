@@ -3,15 +3,9 @@ defmodule Cite.Select do
   # hands every decision to Scan, Compare, and Emit. Entry point is Cite.select/5.
   @moduledoc false
 
-  alias Cite.{Candidate, Cluster, Compare, Emit, Question, Result, Scan}
+  alias Cite.{Candidate, Compare, Emit, Result, Scan}
 
-  @type usage :: %{input_tokens: non_neg_integer(), output_tokens: non_neg_integer()}
-  @type verdict :: %{answers: map(), usage: usage() | nil}
-  @type judge :: (map() -> {:ok, verdict()} | {:error, term()})
-  @type atomic :: %{name: String.t(), question: (Candidate.t() -> Question.t())}
-  @type spec :: %{atomics: [atomic()], compose: (map(), [Candidate.t()] -> [Cluster.t()])}
-
-  @spec select(judge(), String.t(), [Candidate.t()], spec(), keyword()) :: Result.t()
+  @spec select(Cite.judge(), String.t(), [Candidate.t()], Cite.spec(), keyword()) :: Result.t()
   def select(judge, source, candidates, spec, opts \\ [])
       when is_function(judge, 1) and is_binary(source) and is_list(candidates) and is_map(spec) do
     opts =
@@ -31,29 +25,25 @@ defmodule Cite.Select do
     atomics = Map.fetch!(spec, :atomics)
     compose = Map.fetch!(spec, :compose)
 
-    ensure_unique_candidate_ids(candidates)
-
     scan =
       candidates
+      |> Scan.candidates()
       |> Enum.chunk_every(window_size)
       |> Enum.flat_map(&judge_window(judge, &1, atomics, extra_state))
       |> Scan.resolve(atomics)
 
-    clusters =
+    compare =
       scan.index
       |> Scan.drop_below(atomic_threshold)
       |> compose.(candidates)
-      |> ensure_known_members(candidates)
-
-    compare =
-      clusters
+      |> Compare.clusters(candidates)
       |> Enum.map(&{&1, judge_cluster(judge, &1, extra_state)})
       |> Compare.resolve(review_band)
 
     %Result{
       spans: Emit.spans(source, compare.accepted, confidence_floor),
       errors: scan.errors ++ compare.errors,
-      usage: total_usage(scan.usages ++ compare.usages),
+      usage: Result.total_usage(scan.usages ++ compare.usages),
       scan: scan.index,
       rejected: compare.rejected
     }
@@ -74,75 +64,10 @@ defmodule Cite.Select do
     end
   end
 
-  # No questions means nothing to ask: the cluster is accepted without a call.
-  defp judge_cluster(_judge, %Cluster{questions: questions}, _state) when questions == %{} do
-    {:ok, %{answers: %{}, usage: nil}}
-  end
-
-  defp judge_cluster(judge, %Cluster{} = cluster, extra_state) do
-    judge.(Compare.request(cluster, extra_state))
-  end
-
-  defp ensure_known_members(clusters, candidates) when is_list(clusters) do
-    known = MapSet.new(candidates, & &1.id)
-    Enum.each(clusters, &ensure_cluster_members(&1, known))
-    ensure_unique_cluster_ids(clusters)
-    clusters
-  end
-
-  defp ensure_known_members(other, _candidates) do
-    raise ArgumentError, "compose must return a list of clusters, got: #{inspect(other)}"
-  end
-
-  defp ensure_cluster_members(%Cluster{id: cluster_id, members: members}, known) do
-    Enum.each(members, &ensure_member(&1, cluster_id, known))
-  end
-
-  defp ensure_cluster_members(other, _known) do
-    raise ArgumentError, "compose must return Cluster structs, got: #{inspect(other)}"
-  end
-
-  defp ensure_member(%Candidate{id: id}, cluster_id, known) do
-    unless MapSet.member?(known, id) do
-      raise ArgumentError,
-            "cluster #{inspect(cluster_id)} member #{inspect(id)} is not in candidates"
-    end
-  end
-
-  defp ensure_member(other, cluster_id, _known) do
-    raise ArgumentError,
-          "cluster #{inspect(cluster_id)} members must be Candidate structs, got: #{inspect(other)}"
-  end
-
-  defp ensure_unique_candidate_ids(candidates) do
-    dupes = for {id, n} <- Enum.frequencies_by(candidates, & &1.id), n > 1, do: id
-
-    if dupes != [] do
-      raise ArgumentError,
-            "candidate ids must be unique, duplicated: #{inspect(Enum.sort(dupes))}"
-    end
-  end
-
-  defp ensure_unique_cluster_ids(clusters) do
-    ids = Enum.map(clusters, fn %Cluster{id: id} -> id end)
-
-    if length(ids) != MapSet.size(MapSet.new(ids)) do
-      raise ArgumentError, "compose returned duplicate cluster ids: #{inspect(ids)}"
-    end
-  end
-
-  defp total_usage(usages) do
-    present = Enum.reject(usages, &is_nil/1)
-
-    case present do
-      [] ->
-        nil
-
-      _ ->
-        %{
-          input_tokens: Enum.sum(Enum.map(present, & &1.input_tokens)),
-          output_tokens: Enum.sum(Enum.map(present, & &1.output_tokens))
-        }
+  defp judge_cluster(judge, cluster, extra_state) do
+    case Compare.request(cluster, extra_state) do
+      nil -> :unasked
+      request -> judge.(request)
     end
   end
 end

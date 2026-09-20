@@ -28,7 +28,40 @@ defmodule Cite.CompareTest do
 
   defp noul(value), do: %{"noul" => value}
 
+  describe "clusters/2" do
+    test "returns the clusters when every member is a known candidate" do
+      clusters = [cluster(id: "a"), cluster(id: "b")]
+      assert Compare.clusters(clusters, [cand("U0"), cand("U1", 2)]) == clusters
+    end
+
+    test "raises when a member is not among the candidates" do
+      assert_raise ArgumentError, ~r/cluster "c" member "U9" is not in candidates/, fn ->
+        Compare.clusters([cluster(members: [cand("U9")])], [cand("U0")])
+      end
+    end
+
+    test "raises on duplicate cluster ids" do
+      assert_raise ArgumentError, ~r/duplicate cluster ids: \["c", "c"\]/, fn ->
+        Compare.clusters([cluster([]), cluster([])], [cand("U0"), cand("U1", 2)])
+      end
+    end
+
+    test "raises when compose returns something other than a cluster list" do
+      assert_raise ArgumentError, ~r/must return a list of clusters/, fn ->
+        Compare.clusters(:nope, [])
+      end
+
+      assert_raise ArgumentError, ~r/must return Cluster structs/, fn ->
+        Compare.clusters([%{id: "x"}], [])
+      end
+    end
+  end
+
   describe "request/2" do
+    test "is nil when the cluster has no questions" do
+      assert Compare.request(cluster(questions: %{}), %{}) == nil
+    end
+
     test "overlays the cluster state on the extra state and encodes the questions" do
       # Arrange
       cluster = cluster(state: %{"household" => cand("U0"), shared: "mine"})
@@ -127,6 +160,24 @@ defmodule Cite.CompareTest do
   end
 
   describe "resolve/2" do
+    test "accepts an unasked cluster with every member and no usage" do
+      # Arrange
+      cluster = cluster(id: "free", questions: %{})
+
+      # Act
+      resolved = Compare.resolve([{cluster, :unasked}], @band)
+
+      # Assert
+      assert [{^cluster, [_, _], %{}, false}] = resolved.accepted
+      assert resolved.usages == []
+    end
+
+    test "raises when a verdict has no answers" do
+      assert_raise ArgumentError, ~r/verdict must carry :answers/, fn ->
+        Compare.resolve([{cluster([]), {:ok, %{usage: nil}}}], @band)
+      end
+    end
+
     test "buckets decisions, keeps rejected answers, and spans errors over members" do
       # Arrange
       accept = cluster(id: "a")

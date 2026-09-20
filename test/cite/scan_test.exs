@@ -22,6 +22,19 @@ defmodule Cite.ScanTest do
     }
   end
 
+  describe "candidates/1" do
+    test "returns candidates with unique ids" do
+      candidates = [cand("U0", "aaaa", 0), cand("U1", "bbbb", 5)]
+      assert Scan.candidates(candidates) == candidates
+    end
+
+    test "raises on duplicate ids" do
+      assert_raise ArgumentError, ~r/candidate ids must be unique, duplicated: \["U0"\]/, fn ->
+        Scan.candidates([cand("U0", "aaaa", 0), cand("U0", "bbbb", 5)])
+      end
+    end
+  end
+
   describe "request/3" do
     test "asks every atomic of every candidate over the wired state" do
       # Arrange
@@ -65,6 +78,12 @@ defmodule Cite.ScanTest do
 
       assert resolved.errors == []
       assert resolved.usages == [nil]
+    end
+
+    test "raises when a verdict has no answers" do
+      assert_raise ArgumentError, ~r/verdict must carry :answers/, fn ->
+        Scan.resolve([{[cand("U0", "aaaa", 0)], {:ok, %{usage: nil}}}], [atomic("d")])
+      end
     end
 
     test "records one error spanning a failed window and keeps its usage out" do

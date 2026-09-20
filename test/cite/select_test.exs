@@ -287,41 +287,6 @@ defmodule Cite.SelectTest do
       assert [%Span{class: "resilience", text: "Four kids at home."}] = result.spans
     end
 
-    test "raises when compose returns a member not in candidates" do
-      # Arrange
-      {source, candidates} = household_fixture()
-      stranger = %Candidate{id: "UX", text: "nope", byte_start: 0, byte_end: 4}
-
-      spec = %{
-        atomics: [
-          %{name: "dependents", question: fn _ -> noul_q("d?") end}
-        ],
-        compose: fn _index, _candidates ->
-          [
-            Cluster.new(
-              id: "bad",
-              class: "resilience",
-              members: [stranger],
-              state: %{},
-              questions: %{}
-            )
-          ]
-        end
-      }
-
-      judge = fn request ->
-        answers =
-          Map.new(request["questions"], fn {key, _} -> {key, %{"noul" => 0.9}} end)
-
-        {:ok, %{answers: answers, usage: nil}}
-      end
-
-      # Act + Assert
-      assert_raise ArgumentError, ~r/member "UX" is not in candidates/, fn ->
-        Select.select(judge, source, candidates, spec)
-      end
-    end
-
     test "records a scan error when a single candidate still exceeds the token cap" do
       # Arrange
       source = "Four kids at home."
@@ -348,58 +313,6 @@ defmodule Cite.SelectTest do
                result.errors
 
       assert result.spans == []
-    end
-
-    test "raises on duplicate cluster ids from compose" do
-      # Arrange
-      {source, candidates} = household_fixture()
-      [first | _] = candidates
-
-      spec = %{
-        atomics: [%{name: "dependents", question: fn _ -> noul_q("d?") end}],
-        compose: fn _index, _candidates ->
-          cluster =
-            Cluster.new(
-              id: "dup",
-              class: "resilience",
-              members: [first],
-              state: %{},
-              questions: %{}
-            )
-
-          [cluster, cluster]
-        end
-      }
-
-      judge = fn request ->
-        answers = Map.new(request["questions"], fn {key, _} -> {key, %{"noul" => 0.9}} end)
-        {:ok, %{answers: answers, usage: nil}}
-      end
-
-      # Act + Assert
-      assert_raise ArgumentError, ~r/duplicate cluster ids/, fn ->
-        Select.select(judge, source, candidates, spec)
-      end
-    end
-
-    test "raises on duplicate candidate ids" do
-      # Arrange
-      candidates = [
-        %Candidate{id: "U000", text: "aaaa", byte_start: 0, byte_end: 4},
-        %Candidate{id: "U000", text: "bbbb", byte_start: 5, byte_end: 9}
-      ]
-
-      spec = %{atomics: [], compose: fn _, _ -> [] end}
-
-      # Act + Assert
-      assert_raise ArgumentError, ~r/candidate ids must be unique, duplicated: \["U000"\]/, fn ->
-        Select.select(
-          fn _ -> {:ok, %{answers: %{}, usage: nil}} end,
-          "aaaa bbbb",
-          candidates,
-          spec
-        )
-      end
     end
 
     test "raises on unknown options" do

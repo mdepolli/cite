@@ -6,14 +6,39 @@ defmodule Cite.Compare do
   alias Cite.{Answer, Candidate, Cluster, Error, Question, Wire}
 
   @type band :: {number(), number()}
-  @type outcome :: {Cluster.t(), {:ok, map()} | {:error, term()}}
+  @type outcome :: {Cluster.t(), {:ok, map()} | {:error, term()} | :unasked}
   @type accepted :: {Cluster.t(), [Candidate.t()], map(), boolean()}
 
   @doc """
-  One compare request: the cluster's questions over `extra_state` overlaid
-  with the cluster's own state.
+  Checks what `compose` returned: a list of `%Cluster{}` with unique ids whose
+  members are all among `candidates`. Raises `ArgumentError` otherwise.
   """
-  @spec request(Cluster.t(), map()) :: map()
+  @spec clusters(term(), [Candidate.t()]) :: [Cluster.t()]
+  def clusters(clusters, candidates) when is_list(clusters) do
+    known = MapSet.new(candidates, & &1.id)
+    Enum.each(clusters, &cluster_members(&1, known))
+
+    ids = Enum.map(clusters, fn %Cluster{id: id} -> id end)
+
+    if length(ids) != MapSet.size(MapSet.new(ids)) do
+      raise ArgumentError, "compose returned duplicate cluster ids: #{inspect(ids)}"
+    end
+
+    clusters
+  end
+
+  def clusters(other, _candidates) do
+    raise ArgumentError, "compose must return a list of clusters, got: #{inspect(other)}"
+  end
+
+  @doc """
+  One compare request: the cluster's questions over `extra_state` overlaid
+  with the cluster's own state. `nil` when the cluster has no questions —
+  there is nothing to ask, and the shell records the outcome as `:unasked`.
+  """
+  @spec request(Cluster.t(), map()) :: map() | nil
+  def request(%Cluster{questions: questions}, _extra_state) when questions == %{}, do: nil
+
   def request(%Cluster{state: state, questions: questions}, extra_state) do
     %{
       "state" => Map.merge(Wire.map(extra_state), Wire.map(state)),
@@ -34,7 +59,7 @@ defmodule Cite.Compare do
         }
   def resolve(outcomes, band) do
     decisions =
-      for {cluster, {:ok, %{answers: answers}}} <- outcomes do
+      for {cluster, verdict} <- outcomes, answers = answers(verdict), is_map(answers) do
         {cluster, answers, decide(cluster, answers, band)}
       end
 
@@ -68,6 +93,36 @@ defmodule Cite.Compare do
       {_decision, []} -> {:reject, []}
       {decision, members} -> {decision, members}
     end
+  end
+
+  # An unasked cluster answers nothing, which the gate accepts (no Nouls) and
+  # evidence grounds fully (no member_questions can name a question).
+  defp answers(:unasked), do: %{}
+  defp answers({:ok, %{answers: answers}}) when is_map(answers), do: answers
+  defp answers({:error, _reason}), do: nil
+
+  defp answers({:ok, other}) do
+    raise ArgumentError, "judge verdict must carry :answers, got: #{inspect(other)}"
+  end
+
+  defp cluster_members(%Cluster{id: cluster_id, members: members}, known) do
+    Enum.each(members, &member(&1, cluster_id, known))
+  end
+
+  defp cluster_members(other, _known) do
+    raise ArgumentError, "compose must return Cluster structs, got: #{inspect(other)}"
+  end
+
+  defp member(%Candidate{id: id}, cluster_id, known) do
+    unless MapSet.member?(known, id) do
+      raise ArgumentError,
+            "cluster #{inspect(cluster_id)} member #{inspect(id)} is not in candidates"
+    end
+  end
+
+  defp member(other, cluster_id, _known) do
+    raise ArgumentError,
+          "cluster #{inspect(cluster_id)} members must be Candidate structs, got: #{inspect(other)}"
   end
 
   # Gate over every :noul question key. Missing/malformed answers read as 0.0

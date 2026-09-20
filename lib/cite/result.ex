@@ -25,4 +25,19 @@ defmodule Cite.Result do
 
   @enforce_keys [:spans, :errors]
   defstruct [:spans, :errors, usage: nil, scan: nil, rejected: nil]
+
+  @doc false
+  @spec total_usage([usage() | nil]) :: usage() | nil
+  def total_usage(usages) do
+    case Enum.reject(usages, &is_nil/1) do
+      [] ->
+        nil
+
+      present ->
+        %{
+          input_tokens: Enum.sum(Enum.map(present, & &1.input_tokens)),
+          output_tokens: Enum.sum(Enum.map(present, & &1.output_tokens))
+        }
+    end
+  end
 end
