@@ -32,48 +32,64 @@ defmodule Cite.Candidate do
   defstruct [:id, :text, :byte_start, :byte_end, meta: %{}]
 
   @doc """
-  Joins `segment` texts into one `source` and returns `{source, candidates}`.
+  Builds candidates with byte offsets into the document formed by joining
+  trimmed segment texts with a single ASCII space (`0x20`).
 
-  Each `:text` is trimmed, then joined with a single ASCII space (`0x20`).
-  Offsets are **byte** indexes into `source`. For every candidate,
-  `binary_part(source, byte_start, byte_end - byte_start) == text`.
-  `[]` → `{"", []}`.
+  Callers rebuild that document with `Enum.map_join(candidates, " ", & &1.text)`.
+  For every candidate, `binary_part(source, byte_start, byte_end - byte_start) == text`.
+  `[]` → `[]`.
 
   Raises `ArgumentError` on a bad list or segment (programmer error), including
   blank-after-trim `:text`, an empty `:id`, or duplicate ids.
   """
-  @spec from_segments([segment()]) :: {String.t(), [t()]}
+  @spec from_segments([segment()]) :: [t()]
   def from_segments(segments) when is_list(segments) do
-    {source, candidates, _offset} =
-      segments
-      |> Enum.with_index()
-      |> Enum.reduce({"", [], 0}, &append_segment/2)
-
-    {source, unique_ids!(Enum.reverse(candidates))}
+    segments
+    |> Enum.with_index()
+    |> Enum.map(&parse_segment!/1)
+    |> reject_duplicate_ids!()
+    |> put_offsets()
   end
 
   def from_segments(other) do
     raise ArgumentError, "expected a list of segments, got: #{inspect(other)}"
   end
 
-  defp append_segment({segment, index}, {acc, candidates, offset}) do
-    text = segment_text!(segment)
-    id = segment_id!(segment, index)
-    meta = segment_meta!(segment)
-
-    start_offset = if acc == "", do: 0, else: offset + 1
-    source = if acc == "", do: text, else: acc <> " " <> text
-    byte_end = start_offset + byte_size(text)
-
-    candidate = %__MODULE__{
-      id: id,
-      text: text,
-      byte_start: start_offset,
-      byte_end: byte_end,
-      meta: meta
+  defp parse_segment!({segment, index}) do
+    %{
+      id: segment_id!(segment, index),
+      text: segment_text!(segment),
+      meta: segment_meta!(segment)
     }
+  end
 
-    {source, [candidate | candidates], byte_end}
+  defp reject_duplicate_ids!(rows) do
+    case Enum.find(Enum.frequencies_by(rows, & &1.id), fn {_id, n} -> n > 1 end) do
+      nil ->
+        rows
+
+      {id, _n} ->
+        raise ArgumentError, "segment ids must be unique, duplicated: #{inspect(id)}"
+    end
+  end
+
+  defp put_offsets(rows) do
+    {candidates, _next} =
+      Enum.map_reduce(rows, 0, fn row, start ->
+        byte_end = start + byte_size(row.text)
+
+        candidate = %__MODULE__{
+          id: row.id,
+          text: row.text,
+          byte_start: start,
+          byte_end: byte_end,
+          meta: row.meta
+        }
+
+        {candidate, byte_end + 1}
+      end)
+
+    candidates
   end
 
   defp segment_text!(%{text: text}) when is_binary(text) do
@@ -119,15 +135,6 @@ defmodule Cite.Candidate do
   end
 
   defp segment_meta!(_segment), do: %{}
-
-  defp unique_ids!(candidates) do
-    ids = Enum.map(candidates, & &1.id)
-
-    case Enum.uniq(ids -- Enum.uniq(ids)) do
-      [] -> candidates
-      dupes -> raise ArgumentError, "segment ids must be unique, duplicated: #{inspect(dupes)}"
-    end
-  end
 
   defp auto_id(index) do
     "C" <> String.pad_leading(Integer.to_string(index), 3, "0")

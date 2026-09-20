@@ -4,7 +4,7 @@ defmodule Cite.CandidateTest do
   alias Cite.Candidate
 
   describe "from_segments/1" do
-    test "joins segment texts with a space and assigns cumulative byte offsets" do
+    test "assigns cumulative byte offsets for a space-joined document" do
       # Arrange
       segments = [
         %{text: "Hello there", meta: %{speaker: "A", start: 0, end: 1100}},
@@ -12,7 +12,8 @@ defmodule Cite.CandidateTest do
       ]
 
       # Act
-      {source, candidates} = Candidate.from_segments(segments)
+      candidates = Candidate.from_segments(segments)
+      source = Enum.map_join(candidates, " ", & &1.text)
 
       # Assert
       assert source == "Hello there world"
@@ -43,12 +44,15 @@ defmodule Cite.CandidateTest do
       end
     end
 
-    test "trims segment texts before join and offsets" do
-      {source, [first, second]} =
+    test "trims segment texts before offsets" do
+      candidates =
         Candidate.from_segments([
           %{text: "  Hello there  "},
           %{text: "\tworld\n"}
         ])
+
+      source = Enum.map_join(candidates, " ", & &1.text)
+      [first, second] = candidates
 
       assert source == "Hello there world"
       assert first.text == "Hello there"
@@ -67,7 +71,8 @@ defmodule Cite.CandidateTest do
       ]
 
       # Act
-      {source, [first, second]} = Candidate.from_segments(segments)
+      [first, second] = candidates = Candidate.from_segments(segments)
+      source = Enum.map_join(candidates, " ", & &1.text)
 
       # Assert
       assert source == "£100 — okay"
@@ -82,17 +87,17 @@ defmodule Cite.CandidateTest do
     end
 
     test "honours an explicit segment id" do
-      {_, [candidate]} = Candidate.from_segments([%{text: "hi", id: "turn-9"}])
+      [candidate] = Candidate.from_segments([%{text: "hi", id: "turn-9"}])
       assert candidate.id == "turn-9"
     end
 
     test "defaults meta to an empty map" do
-      {_, [candidate]} = Candidate.from_segments([%{text: "hi"}])
+      [candidate] = Candidate.from_segments([%{text: "hi"}])
       assert candidate.meta == %{}
     end
 
-    test "empty list yields empty source and no candidates" do
-      assert Candidate.from_segments([]) == {"", []}
+    test "empty list yields no candidates" do
+      assert Candidate.from_segments([]) == []
     end
 
     test "raises when given a non-list" do
@@ -144,7 +149,7 @@ defmodule Cite.CandidateTest do
     end
 
     test "raises when ids collide, including with auto-generated ones" do
-      assert_raise ArgumentError, ~r/ids must be unique, duplicated: \["C001"\]/, fn ->
+      assert_raise ArgumentError, ~r/ids must be unique, duplicated: "C001"/, fn ->
         Candidate.from_segments([%{text: "a", id: "C001"}, %{text: "b"}])
       end
     end
