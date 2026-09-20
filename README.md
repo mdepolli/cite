@@ -19,7 +19,7 @@ evidence byte-exact from the source. Nothing is generated; nothing is aligned.
    their offsets, the cluster's class, and the labelled answers.
 
 ```elixir
-judge = Cite.judge(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
+client = Cite.new(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
 
 candidates =
   Cite.Candidate.from_segments([
@@ -61,7 +61,7 @@ spec = %{
   end
 }
 
-%Cite.Result{spans: spans} = Cite.select(judge, source, candidates, spec)
+%Cite.Result{spans: spans} = Cite.select(client, source, candidates, spec)
 ```
 
 Each span carries `text`, `byte_start`, `byte_end`, `candidate_id`, `class`,
@@ -70,14 +70,15 @@ and one label per Score or Choice). `Cite.Result` also holds the scan index,
 every rejected cluster with its answers, token usage, and one `Cite.Error`
 per failed judge call — a run is diagnosable without another request.
 
-See the `Cite` module docs for the judge and spec contracts and the options
+See the `Cite` module docs for the client and spec contracts and the options
 (`window_size`, `atomic_threshold`, `review_band`, `confidence_floor`).
 
 ## Providers
 
-`Cite.judge/2` builds a judge from any module implementing `Cite.Provider`;
-`Cite.Provider.TypeSafe` ships with the library. Any 1-arity function of the
-right shape works directly, which is how the tests run without a key.
+`Cite.new/2` builds a client from any module implementing `Cite.Provider`;
+`Cite.Provider.TypeSafe` ships with the library. Build it once, where the
+credentials live. Any 1-arity function of the right shape works directly,
+which is how the tests run without a key.
 
 Scan windows are judged one after another; a long document is one request
 per window. Each request may take up to 120 seconds, and the TypeSafe

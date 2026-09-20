@@ -2,7 +2,7 @@ defmodule Cite.Provider.TypeSafe do
   @moduledoc """
   TypeSafe System One over HTTP (`POST /v1/systemone`).
 
-  Options for `Cite.judge/2`: `:api_key` (or `JEV_API_KEY`; missing raises),
+  Options for `Cite.new/2`: `:api_key` (or `JEV_API_KEY`; missing raises),
   `:model` (`"jev-1.13.0"`), `:base_url`, and `:req_options`, merged into
   the Req client last — a test passes `plug: {Req.Test, name}`.
   """

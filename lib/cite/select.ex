@@ -1,13 +1,13 @@
 defmodule Cite.Select do
-  # The imperative shell: chunks, calls the judge, retries on overflow, and
+  # The imperative shell: chunks, calls the client, retries on overflow, and
   # hands every decision to Scan, Compare, and Emit. Entry point is Cite.select/5.
   @moduledoc false
 
   alias Cite.{Candidate, Compare, Emit, Result, Scan}
 
-  @spec select(Cite.judge(), String.t(), [Candidate.t()], Cite.spec(), keyword()) :: Result.t()
-  def select(judge, source, candidates, spec, opts \\ [])
-      when is_function(judge, 1) and is_binary(source) and is_list(candidates) and is_map(spec) do
+  @spec select(Cite.client(), String.t(), [Candidate.t()], Cite.spec(), keyword()) :: Result.t()
+  def select(client, source, candidates, spec, opts \\ [])
+      when is_function(client, 1) and is_binary(source) and is_list(candidates) and is_map(spec) do
     opts =
       Keyword.validate!(opts,
         window_size: 40,
@@ -31,7 +31,7 @@ defmodule Cite.Select do
       candidates
       |> Scan.candidates(source)
       |> Enum.chunk_every(window_size)
-      |> Enum.flat_map(&judge_window(judge, &1, atomics, extra_state))
+      |> Enum.flat_map(&judge_window(client, &1, atomics, extra_state))
       |> Scan.resolve(atomics)
 
     compare =
@@ -39,7 +39,7 @@ defmodule Cite.Select do
       |> Scan.drop_below(atomic_threshold)
       |> compose.(candidates)
       |> Compare.clusters(candidates)
-      |> Enum.map(&{&1, judge_cluster(judge, &1, extra_state)})
+      |> Enum.map(&{&1, judge_cluster(client, &1, extra_state)})
       |> Compare.resolve(review_band)
 
     %Result{
@@ -67,30 +67,30 @@ defmodule Cite.Select do
 
   # A window over the request token cap is split in half and both halves
   # judged; only a single candidate that still exceeds it is an error.
-  defp judge_window(judge, window, atomics, extra_state) do
-    case call(judge, Scan.request(window, atomics, extra_state)) do
+  defp judge_window(client, window, atomics, extra_state) do
+    case call(client, Scan.request(window, atomics, extra_state)) do
       {:error, :request_too_large} when length(window) > 1 ->
         {left, right} = Enum.split(window, div(length(window), 2))
 
-        judge_window(judge, left, atomics, extra_state) ++
-          judge_window(judge, right, atomics, extra_state)
+        judge_window(client, left, atomics, extra_state) ++
+          judge_window(client, right, atomics, extra_state)
 
       verdict ->
         [{window, verdict}]
     end
   end
 
-  defp judge_cluster(judge, cluster, extra_state) do
+  defp judge_cluster(client, cluster, extra_state) do
     case Compare.request(cluster, extra_state) do
       nil -> :unasked
-      request -> call(judge, request)
+      request -> call(client, request)
     end
   end
 
-  # The judge is the caller's function; its return is checked here, once, and
+  # The client is the caller's function; its return is checked here, once, and
   # trusted everywhere after. A verdict may omit :usage.
-  defp call(judge, request) do
-    case judge.(request) do
+  defp call(client, request) do
+    case client.(request) do
       {:ok, %{answers: answers} = verdict} when is_map(answers) ->
         {:ok, Map.put_new(verdict, :usage, nil)}
 
@@ -99,7 +99,7 @@ defmodule Cite.Select do
 
       other ->
         raise ArgumentError,
-              "judge must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, " <>
+              "client must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, " <>
                 "got: #{inspect(other)}"
     end
   end

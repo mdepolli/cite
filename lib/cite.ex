@@ -16,10 +16,10 @@ defmodule Cite do
   `select/5` returns a `Cite.Result` of `Cite.Span`s and `Cite.Error`s. Read
   them; do not build them.
 
-  ## The judge
+  ## The client
 
-  `judge/2` builds one from a `Cite.Provider` module. Any 1-arity function
-  of the same shape works in its place:
+  `new/2` builds one from a `Cite.Provider` module. Any 1-arity function of
+  the same shape works in its place:
 
       request -> {:ok, verdict} | {:error, reason}
 
@@ -50,22 +50,22 @@ defmodule Cite do
 
   @type usage :: Result.usage()
   @type verdict :: %{answers: map(), usage: usage() | nil}
-  @type judge :: (map() -> {:ok, verdict()} | {:error, term()})
+  @type client :: (map() -> {:ok, verdict()} | {:error, term()})
   @type atomic :: %{name: String.t(), question: (Candidate.t() -> Question.t())}
   @type spec :: %{atomics: [atomic()], compose: (map(), [Candidate.t()] -> [Cluster.t()])}
 
   @doc """
-  A judge backed by `provider`, a module implementing `Cite.Provider`;
+  A client backed by `provider`, a module implementing `Cite.Provider`;
   `opts` are the provider's. The result is the 1-arity function `select/5`
-  takes, closed over the provider's client. Cite ships
-  `Cite.Provider.TypeSafe`.
+  takes. Cite ships `Cite.Provider.TypeSafe`. Build it once, where the
+  credentials live, and pass it in.
 
-      judge = Cite.judge(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
+      client = Cite.new(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
   """
-  @spec judge(module(), keyword()) :: judge()
-  def judge(provider, opts \\ []) when is_atom(provider) and is_list(opts) do
-    client = provider.new(opts)
-    &provider.judge(client, &1)
+  @spec new(module(), keyword()) :: client()
+  def new(provider, opts \\ []) when is_atom(provider) and is_list(opts) do
+    handle = provider.new(opts)
+    &provider.judge(handle, &1)
   end
 
   @doc """
@@ -73,6 +73,6 @@ defmodule Cite do
   (0.5), `review_band` (`{0.4, 0.6}`), `confidence_floor` (0.5), `state`
   (`%{}`, merged under every request).
   """
-  @spec select(judge(), String.t(), [Candidate.t()], spec(), keyword()) :: Result.t()
-  defdelegate select(judge, source, candidates, spec, opts \\ []), to: Select
+  @spec select(client(), String.t(), [Candidate.t()], spec(), keyword()) :: Result.t()
+  defdelegate select(client, source, candidates, spec, opts \\ []), to: Select
 end

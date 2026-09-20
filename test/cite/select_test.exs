@@ -342,7 +342,7 @@ defmodule Cite.SelectTest do
       end
     end
 
-    test "raises when the judge returns the wrong shape, and tolerates a missing usage" do
+    test "raises when the client returns the wrong shape, and tolerates a missing usage" do
       spec = %{
         atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
         compose: fn _, _ -> [] end
@@ -351,7 +351,7 @@ defmodule Cite.SelectTest do
       {source, candidates} = household_fixture()
 
       for bad <- [{:ok, %{}}, {:ok, %{answers: []}}, :done, %{answers: %{}}] do
-        assert_raise ArgumentError, ~r/judge must return/, fn ->
+        assert_raise ArgumentError, ~r/client must return/, fn ->
           Cite.select(fn _ -> bad end, source, candidates, spec)
         end
       end

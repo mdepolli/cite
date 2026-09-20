@@ -17,6 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with Jason or the built-in `JSON`; every failed judge call is an `Error`
   with its byte range and candidate ids.
 - `Cite.Provider` behaviour and `Cite.Provider.TypeSafe`, a Req client for
-  TypeSafe System One; `Cite.judge/2` builds the judge function.
+  TypeSafe System One; `Cite.new/2` builds the client function `select/5` takes.
 - Windows over the provider's size cap are halved and retried
   (`:request_too_large`).

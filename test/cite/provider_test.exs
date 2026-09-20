@@ -16,15 +16,15 @@ defmodule Cite.ProviderTest do
 
   @request %{"state" => %{}, "questions" => %{"U0:d" => %{"type" => "noul"}}}
 
-  test "judge/2 closes a custom provider's client into the judge function" do
-    judge = Cite.judge(Echo, score: 0.9)
+  test "new/2 closes a custom provider's handle into the client function" do
+    client = Cite.new(Echo, score: 0.9)
 
-    assert is_function(judge, 1)
-    assert judge.(@request) == {:ok, %{answers: %{"U0:d" => %{"noul" => 0.9}}, usage: nil}}
+    assert is_function(client, 1)
+    assert client.(@request) == {:ok, %{answers: %{"U0:d" => %{"noul" => 0.9}}, usage: nil}}
   end
 
-  test "judge/1 takes a provider module with no options" do
-    assert {:ok, %{answers: %{"U0:d" => %{"noul" => 0.5}}}} = Cite.judge(Echo).(@request)
+  test "new/1 takes a provider module with no options" do
+    assert {:ok, %{answers: %{"U0:d" => %{"noul" => 0.5}}}} = Cite.new(Echo).(@request)
   end
 
   test "a custom provider runs the whole pipeline" do
@@ -55,7 +55,7 @@ defmodule Cite.ProviderTest do
       end
     }
 
-    result = Cite.select(Cite.judge(Echo, score: 0.9), source, candidates, spec)
+    result = Cite.select(Cite.new(Echo, score: 0.9), source, candidates, spec)
     assert [%Cite.Span{candidate_id: "C000", text: "four kids at home"}] = result.spans
   end
 end

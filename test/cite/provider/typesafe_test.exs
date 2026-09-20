@@ -10,7 +10,7 @@ defmodule Cite.Provider.TypeSafeTest do
   }
 
   defp judge(opts \\ []) do
-    Cite.judge(
+    Cite.new(
       TypeSafe,
       [api_key: "k", req_options: [plug: {Req.Test, __MODULE__}, retry: false]] ++ opts
     )
@@ -18,7 +18,7 @@ defmodule Cite.Provider.TypeSafeTest do
 
   # The adapter's own retry policy; the stubs send Retry-After: 0 to keep it fast.
   defp retrying_judge do
-    Cite.judge(TypeSafe, api_key: "k", req_options: [plug: {Req.Test, __MODULE__}])
+    Cite.new(TypeSafe, api_key: "k", req_options: [plug: {Req.Test, __MODULE__}])
   end
 
   describe "new/1" do

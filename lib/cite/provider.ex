@@ -3,9 +3,9 @@ defmodule Cite.Provider do
   A System One provider: builds a client, then answers one wire-shaped
   request at a time.
 
-  `Cite.judge/2` turns a provider into the 1-arity function `Cite.select/5`
-  takes, so the pipeline never sees the client. Implementations:
-  `Cite.Provider.TypeSafe`.
+  `Cite.new/2` turns a provider into the client — the 1-arity function
+  `Cite.select/5` takes — so the pipeline never sees the provider's own
+  handle. Implementations: `Cite.Provider.TypeSafe`.
 
   ## Requests
 
@@ -31,12 +31,12 @@ defmodule Cite.Provider do
 
   @type reason :: :request_too_large | term()
 
-  @doc "Builds a client from options. Bad options are a caller error and raise."
-  @callback new(keyword()) :: client :: term()
+  @doc "Builds the provider's handle from options. Bad options are a caller error and raise."
+  @callback new(keyword()) :: handle :: term()
 
   @doc """
   Answers a request of `%{"state" => map(), "questions" => map()}`.
   """
-  @callback judge(client :: term(), request :: map()) ::
+  @callback judge(handle :: term(), request :: map()) ::
               {:ok, Cite.verdict()} | {:error, reason()}
 end
