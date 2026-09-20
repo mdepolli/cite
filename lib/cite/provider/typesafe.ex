@@ -51,6 +51,14 @@ defmodule Cite.Provider.TypeSafe do
       raise ArgumentError, "missing API key: pass :api_key or set JEV_API_KEY"
     end
 
+    # Req forbids :retry_delay next to a retry function that returns its own
+    # delays; better to say so here than inside the first call.
+    if Keyword.has_key?(req_overrides, :retry_delay) and
+         not Keyword.has_key?(req_overrides, :retry) do
+      raise ArgumentError,
+            "req_options :retry_delay needs its own :retry; the adapter's retry sets delays itself"
+    end
+
     req_options =
       [
         base_url: base_url,

@@ -29,6 +29,12 @@ defmodule Cite.Provider.TypeSafeTest do
       assert_raise ArgumentError, ~r/missing API key/, fn -> TypeSafe.new(api_key: "") end
     end
 
+    test "refuses retry_delay without a retry of its own" do
+      assert_raise ArgumentError, ~r/retry_delay needs its own :retry/, fn ->
+        TypeSafe.new(api_key: "k", req_options: [retry_delay: fn _ -> 0 end])
+      end
+    end
+
     test "hides the http client from inspect" do
       refute inspect(TypeSafe.new(api_key: "k")) =~ "http_client"
     end
