@@ -39,8 +39,8 @@ defmodule Cite.MixProject do
 
   defp description do
     """
-    Candidates in, grounded citations out. Uses Arbiter (System One) to judge;
-    Cite windows, selects, and copies evidence byte-exact.
+    Candidates in, grounded citations out. A System One judge answers typed
+    questions; Cite windows, selects, and copies evidence byte-exact.
     """
   end
 
