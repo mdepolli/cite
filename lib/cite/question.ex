@@ -44,11 +44,11 @@ defmodule Cite.Question do
 
     %__MODULE__{
       type: :noul,
-      question: question(fetch_opt!(opts, :question)),
-      inspect: inspect_path(fetch_opt!(opts, :inspect)),
+      question: question(fetch_opt(opts, :question)),
+      inspect: inspect_path(fetch_opt(opts, :inspect)),
       criteria: %{
-        true: criteria(fetch_opt!(opts, true)),
-        false: criteria(fetch_opt!(opts, false))
+        true: criteria(fetch_opt(opts, true)),
+        false: criteria(fetch_opt(opts, false))
       }
     }
   end
@@ -68,9 +68,9 @@ defmodule Cite.Question do
 
     %__MODULE__{
       type: :score,
-      question: question(fetch_opt!(opts, :question)),
-      inspect: inspect_path(fetch_opt!(opts, :inspect)),
-      criteria: score_criteria(fetch_opt!(opts, :criteria))
+      question: question(fetch_opt(opts, :question)),
+      inspect: inspect_path(fetch_opt(opts, :inspect)),
+      criteria: score_criteria(fetch_opt(opts, :criteria))
     }
   end
 
@@ -90,9 +90,9 @@ defmodule Cite.Question do
 
     %__MODULE__{
       type: :choice,
-      question: question(fetch_opt!(opts, :question)),
-      inspect: inspect_path(fetch_opt!(opts, :inspect)),
-      criteria: choice_criteria(fetch_opt!(opts, :criteria))
+      question: question(fetch_opt(opts, :question)),
+      inspect: inspect_path(fetch_opt(opts, :inspect)),
+      criteria: choice_criteria(fetch_opt(opts, :criteria))
     }
   end
 
@@ -119,7 +119,7 @@ defmodule Cite.Question do
     raise ArgumentError, "expected a Cite.Question, got: #{inspect(other)}"
   end
 
-  defp fetch_opt!(opts, key) do
+  defp fetch_opt(opts, key) do
     case Keyword.fetch(opts, key) do
       {:ok, value} -> value
       :error -> raise ArgumentError, "missing required key: #{inspect(key)}"

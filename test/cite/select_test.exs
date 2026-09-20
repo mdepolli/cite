@@ -209,7 +209,7 @@ defmodule Cite.SelectTest do
 
         cond do
           length(ids) > 1 ->
-            {:error, {:bad_request, "max_tokens_exceeded"}}
+            {:error, :request_too_large}
 
           Map.has_key?(request["questions"], "fits") ->
             {:ok, %{answers: %{"fits" => %{"noul" => 0.2}}, usage: nil}}
@@ -298,7 +298,7 @@ defmodule Cite.SelectTest do
         compose: fn _, _ -> [] end
       }
 
-      judge = fn _request -> {:error, {:bad_request, "max_tokens_exceeded"}} end
+      judge = fn _request -> {:error, :request_too_large} end
 
       # Act
       result = Cite.select(judge, source, [candidate], spec)
@@ -308,12 +308,23 @@ defmodule Cite.SelectTest do
                %Error{
                  byte_start: 0,
                  byte_end: 18,
-                 reason: {:bad_request, "max_tokens_exceeded"}
+                 reason: :request_too_large
                }
              ] =
                result.errors
 
       assert result.spans == []
+    end
+
+    test "raises on option values that cannot work" do
+      spec = %{atomics: [], compose: fn _, _ -> [] end}
+      judge = fn _ -> {:ok, %{answers: %{}, usage: nil}} end
+
+      for bad <- [[window_size: 0], [review_band: {0.6, 0.4}], [confidence_floor: "high"]] do
+        assert_raise ArgumentError, ~r/invalid options/, fn ->
+          Cite.select(judge, "", [], spec, bad)
+        end
+      end
     end
 
     test "raises on unknown options" do

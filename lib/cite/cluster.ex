@@ -156,7 +156,7 @@ defmodule Cite.Cluster do
 
     member_questions
     |> Map.keys()
-    |> ensure_subset!(
+    |> ensure_subset(
       MapSet.new(members, & &1.id),
       "member_questions ids are not cluster members"
     )
@@ -164,7 +164,7 @@ defmodule Cite.Cluster do
     member_questions
     |> Map.values()
     |> List.flatten()
-    |> ensure_subset!(
+    |> ensure_subset(
       MapSet.new(Map.keys(questions)),
       "member_questions keys are not in questions"
     )
@@ -183,7 +183,7 @@ defmodule Cite.Cluster do
     end)
   end
 
-  defp ensure_subset!(values, allowed, message) do
+  defp ensure_subset(values, allowed, message) do
     unknown =
       values
       |> Enum.uniq()

@@ -79,16 +79,30 @@ defmodule Cite.Provider.TypeSafeTest do
       assert {:ok, %{usage: nil}} = judge().(@request)
     end
 
-    test "keeps TypeSafe's error_type on a 400 so the shell can halve a window" do
-      # Arrange
+    test "maps the token cap to :request_too_large and keeps other 400 names" do
       Req.Test.stub(__MODULE__, fn conn ->
         conn
         |> Plug.Conn.put_status(400)
         |> Req.Test.json(%{"detail" => %{"error_type" => "max_tokens_exceeded"}})
       end)
 
-      # Act + Assert
-      assert judge().(@request) == {:error, {:bad_request, "max_tokens_exceeded"}}
+      assert judge().(@request) == {:error, :request_too_large}
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        conn
+        |> Plug.Conn.put_status(400)
+        |> Req.Test.json(%{"detail" => %{"error_type" => "invalid_question"}})
+      end)
+
+      assert judge().(@request) == {:error, {:bad_request, "invalid_question"}}
+    end
+
+    test "a 200 without a map of answers is a malformed reply, not a verdict" do
+      Req.Test.stub(__MODULE__, &Req.Test.json(&1, %{"ok" => true}))
+      assert {:error, {:malformed_reply, _}} = judge().(@request)
+
+      Req.Test.stub(__MODULE__, &Req.Test.json(&1, %{"answers" => []}))
+      assert {:error, {:malformed_reply, _}} = judge().(@request)
     end
 
     test "maps 401, 429 with retry-after, and 5xx" do

@@ -25,6 +25,8 @@ defmodule Cite.Select do
     atomics = Map.fetch!(spec, :atomics)
     compose = Map.fetch!(spec, :compose)
 
+    check_options(window_size, atomic_threshold, review_band, confidence_floor, extra_state)
+
     scan =
       candidates
       |> Scan.candidates()
@@ -49,11 +51,25 @@ defmodule Cite.Select do
     }
   end
 
+  defp check_options(window_size, atomic_threshold, {low, high}, confidence_floor, state)
+       when is_integer(window_size) and window_size > 0 and is_number(atomic_threshold) and
+              is_number(low) and is_number(high) and low <= high and
+              is_number(confidence_floor) and is_map(state) do
+    :ok
+  end
+
+  defp check_options(window_size, atomic_threshold, review_band, confidence_floor, state) do
+    raise ArgumentError,
+          "invalid options: window_size must be a positive integer, atomic_threshold and " <>
+            "confidence_floor numbers, review_band {low, high} with low <= high, state a map; " <>
+            "got #{inspect(window_size: window_size, atomic_threshold: atomic_threshold, review_band: review_band, confidence_floor: confidence_floor, state: state)}"
+  end
+
   # A window over the request token cap is split in half and both halves
   # judged; only a single candidate that still exceeds it is an error.
   defp judge_window(judge, window, atomics, extra_state) do
     case judge.(Scan.request(window, atomics, extra_state)) do
-      {:error, {:bad_request, "max_tokens_exceeded"}} when length(window) > 1 ->
+      {:error, :request_too_large} when length(window) > 1 ->
         {left, right} = Enum.split(window, div(length(window), 2))
 
         judge_window(judge, left, atomics, extra_state) ++

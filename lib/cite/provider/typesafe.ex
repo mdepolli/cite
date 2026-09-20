@@ -16,9 +16,11 @@ defmodule Cite.Provider.TypeSafe do
   @type t :: %__MODULE__{http_client: Req.Request.t(), model: String.t()}
 
   @type error ::
-          :unauthorized
+          :request_too_large
+          | :unauthorized
           | :server_error
           | {:bad_request, String.t()}
+          | {:malformed_reply, String.t()}
           | {:rate_limited, non_neg_integer() | nil}
           | {:api_error, pos_integer(), String.t()}
           | {:request_error, Exception.t()}
@@ -71,15 +73,25 @@ defmodule Cite.Provider.TypeSafe do
     |> decode()
   end
 
-  defp decode({:ok, %Req.Response{status: 200, body: %{} = body}}) do
-    {:ok, %{answers: body["answers"] || %{}, usage: usage(body["usage"])}}
+  defp decode({:ok, %Req.Response{status: 200, body: %{"answers" => answers} = body}})
+       when is_map(answers) do
+    {:ok, %{answers: answers, usage: usage(body["usage"])}}
   end
 
-  # TypeSafe names the failure in the 400 body; keep that name so the shell
-  # can act on it (a window over the request token cap is halved).
+  # A 200 Cite cannot read is a network fact, not a verdict of "no" everywhere.
+  defp decode({:ok, %Req.Response{status: 200, body: body}}) do
+    {:error, {:malformed_reply, preview(body)}}
+  end
+
+  # TypeSafe names the failure in the 400 body. Its token cap is the
+  # provider-neutral :request_too_large the pipeline halves windows on;
+  # other names pass through as-is.
   defp decode({:ok, %Req.Response{status: 400, body: %{"detail" => %{"error_type" => type}}}})
        when is_binary(type) do
-    {:error, {:bad_request, type}}
+    case type do
+      "max_tokens_exceeded" -> {:error, :request_too_large}
+      other -> {:error, {:bad_request, other}}
+    end
   end
 
   defp decode({:ok, %Req.Response{status: 400, body: body}}),
