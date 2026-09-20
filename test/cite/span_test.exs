@@ -5,7 +5,7 @@ defmodule Cite.SpanTest do
   alias Cite.Span
 
   describe "from_candidates/2" do
-    test "copies candidate byte ranges and keeps candidate_id" do
+    test "copies each candidate's source slice with offsets and id" do
       # Arrange
       source = "Hello there world"
 
@@ -19,50 +19,81 @@ defmodule Cite.SpanTest do
 
       # Assert
       assert [
-               %Span{text: "Hello there", byte_start: 0, byte_end: 11, candidate_id: "U000"},
-               %Span{text: "world", byte_start: 12, byte_end: 17, candidate_id: "U001"}
+               %Span{
+                 text: "Hello there",
+                 byte_start: 0,
+                 byte_end: 11,
+                 candidate_id: "U000",
+                 class: nil,
+                 attributes: %{}
+               },
+               %Span{
+                 text: "world",
+                 byte_start: 12,
+                 byte_end: 17,
+                 candidate_id: "U001",
+                 class: nil,
+                 attributes: %{}
+               }
              ] = spans
     end
 
-    test "raises when the source slice does not equal candidate text" do
-      source = "Hello
-
-there"
-      candidate = %Candidate{id: "U000", text: "there", byte_start: 6, byte_end: 11}
+    test "raises when the source slice does not match candidate text" do
+      candidate = %Candidate{id: "U000", text: "Nope", byte_start: 0, byte_end: 5}
 
       assert_raise ArgumentError, ~r/does not match source slice/, fn ->
-        Span.from_candidates(source, [candidate])
+        Span.from_candidates("Hello", [candidate])
+      end
+    end
+
+    test "raises on invalid offsets" do
+      candidate = %Candidate{id: "U000", text: "Hi", byte_start: 0, byte_end: 99}
+
+      assert_raise ArgumentError, ~r/invalid candidate offsets/, fn ->
+        Span.from_candidates("Hi", [candidate])
       end
     end
 
     test "raises when offsets are inverted" do
-      source = "Hello there"
-      candidate = %Candidate{id: "U000", text: "there", byte_start: 11, byte_end: 6}
+      candidate = %Candidate{id: "U000", text: "Hi", byte_start: 2, byte_end: 0}
 
       assert_raise ArgumentError, ~r/invalid candidate offsets/, fn ->
-        Span.from_candidates(source, [candidate])
+        Span.from_candidates("Hi", [candidate])
       end
     end
 
-    test "raises when offsets fall outside the source" do
-      source = "Hi"
-      candidate = %Candidate{id: "U000", text: "Hi!", byte_start: 0, byte_end: 3}
-
-      assert_raise ArgumentError, ~r/invalid candidate offsets/, fn ->
-        Span.from_candidates(source, [candidate])
-      end
-    end
-
-    test "raises when given a non-list" do
+    test "raises when candidates is not a list" do
       assert_raise ArgumentError, ~r/expected a list of candidates/, fn ->
         Span.from_candidates("Hi", %Candidate{id: "U000", text: "Hi", byte_start: 0, byte_end: 2})
       end
     end
 
     test "raises when an element is not a Candidate" do
-      assert_raise ArgumentError, ~r/expected %Cite.Candidate{}/, fn ->
+      assert_raise ArgumentError, ~r/expected a Candidate/, fn ->
         Span.from_candidates("Hi", [%{id: "U000", text: "Hi", byte_start: 0, byte_end: 2}])
       end
+    end
+  end
+
+  describe "Jason.Encoder" do
+    test "encodes enforced fields plus class and attributes" do
+      span = %Span{
+        text: "Hello there",
+        byte_start: 0,
+        byte_end: 11,
+        candidate_id: "U000",
+        class: "life_events",
+        attributes: %{"review" => true}
+      }
+
+      assert Jason.decode!(Jason.encode!(span)) == %{
+               "text" => "Hello there",
+               "byte_start" => 0,
+               "byte_end" => 11,
+               "candidate_id" => "U000",
+               "class" => "life_events",
+               "attributes" => %{"review" => true}
+             }
     end
   end
 end
