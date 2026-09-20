@@ -18,8 +18,8 @@ defmodule Cite do
 
   ## The judge
 
-  `judge/1` builds one for TypeSafe System One. Any 1-arity function of the
-  same shape works in its place:
+  `judge/2` builds one from a `Cite.Provider` (TypeSafe System One by
+  default). Any 1-arity function of the same shape works in its place:
 
       request -> {:ok, verdict} | {:error, reason}
 
@@ -44,7 +44,7 @@ defmodule Cite do
   question names; the caller maps score integers to its own labels.
   """
 
-  alias Cite.{Candidate, Cluster, Judge, Question, Result, Select}
+  alias Cite.{Candidate, Cluster, Provider, Question, Result, Select}
 
   @type usage :: Result.usage()
   @type verdict :: %{answers: map(), usage: usage() | nil}
@@ -53,14 +53,17 @@ defmodule Cite do
   @type spec :: %{atomics: [atomic()], compose: (map(), [Candidate.t()] -> [Cluster.t()])}
 
   @doc """
-  A TypeSafe System One judge. Reads `:api_key` or `JEV_API_KEY` (missing is
-  a caller error and raises); `:model` (`"jev-1.13.0"`), `:base_url`, and
-  `:req_options` (merged into the HTTP client, e.g. a `Req.Test` plug).
+  A judge backed by `provider`, a `Cite.Provider` module; `opts` are the
+  provider's. Defaults to `Cite.Provider.TypeSafe`, which reads `:api_key`
+  or `JEV_API_KEY`.
   """
   @spec judge(keyword()) :: judge()
-  def judge(opts \\ []) do
-    client = Judge.new(opts)
-    &Judge.judge(client, &1)
+  def judge(opts \\ []) when is_list(opts), do: judge(Provider.TypeSafe, opts)
+
+  @spec judge(module(), keyword()) :: judge()
+  def judge(provider, opts) when is_atom(provider) and is_list(opts) do
+    client = provider.new(opts)
+    &provider.judge(client, &1)
   end
 
   @doc """

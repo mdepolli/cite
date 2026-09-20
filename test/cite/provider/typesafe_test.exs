@@ -1,7 +1,7 @@
-defmodule Cite.JudgeTest do
+defmodule Cite.Provider.TypeSafeTest do
   use ExUnit.Case, async: true
 
-  alias Cite.Judge
+  alias Cite.Provider.TypeSafe
 
   @request %{
     "state" => %{"candidates" => %{"U0" => %{"text" => "hi"}}},
@@ -16,17 +16,17 @@ defmodule Cite.JudgeTest do
     test "raises without an api key" do
       System.delete_env("JEV_API_KEY")
 
-      assert_raise ArgumentError, ~r/missing API key/, fn -> Judge.new() end
-      assert_raise ArgumentError, ~r/missing API key/, fn -> Judge.new(api_key: "") end
+      assert_raise ArgumentError, ~r/missing API key/, fn -> TypeSafe.new() end
+      assert_raise ArgumentError, ~r/missing API key/, fn -> TypeSafe.new(api_key: "") end
     end
 
     test "hides the http client from inspect" do
-      refute inspect(Judge.new(api_key: "k")) =~ "http_client"
+      refute inspect(TypeSafe.new(api_key: "k")) =~ "http_client"
     end
 
     test "rejects unknown options" do
       assert_raise ArgumentError, ~r/unknown keys \[:modle\]/, fn ->
-        Judge.new(api_key: "k", modle: "x")
+        TypeSafe.new(api_key: "k", modle: "x")
       end
     end
   end

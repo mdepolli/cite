@@ -1,9 +1,13 @@
-defmodule Cite.Judge do
-  # TypeSafe System One over HTTP (`POST /v1/systemone`). `new/1` builds the
-  # client; `judge/2` sends one request. The public entry is `Cite.judge/1`,
-  # which closes over a client and returns the 1-arity function
-  # `Cite.select/5` takes, so callers never hold this struct.
-  @moduledoc false
+defmodule Cite.Provider.TypeSafe do
+  @moduledoc """
+  TypeSafe System One over HTTP (`POST /v1/systemone`).
+
+  Options for `Cite.judge/2`: `:api_key` (or `JEV_API_KEY`; missing raises),
+  `:model` (`"jev-1.13.0"`), `:base_url`, and `:req_options`, merged into
+  the Req client last — a test passes `plug: {Req.Test, name}`.
+  """
+
+  @behaviour Cite.Provider
 
   @default_model "jev-1.13.0"
   @default_base_url "https://api.typesafe.ai"
@@ -23,11 +27,7 @@ defmodule Cite.Judge do
   @enforce_keys [:http_client, :model]
   defstruct [:http_client, :model]
 
-  @doc """
-  Builds a client. Reads `:api_key` or `JEV_API_KEY`; a missing key is a
-  caller error and raises. `:req_options` are merged last, so a test can
-  pass `plug: {Req.Test, name}`.
-  """
+  @impl Cite.Provider
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
     opts =
@@ -57,9 +57,7 @@ defmodule Cite.Judge do
     %__MODULE__{http_client: Req.new(req_options), model: opts[:model]}
   end
 
-  @doc """
-  Evaluates a wire-shaped request (`%{"state" => _, "questions" => _}`).
-  """
+  @impl Cite.Provider
   @spec judge(t(), map()) :: {:ok, Cite.verdict()} | {:error, error()}
   def judge(%__MODULE__{http_client: req, model: model}, %{
         "state" => state,
