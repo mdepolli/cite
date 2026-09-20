@@ -102,6 +102,10 @@ defmodule Cite.Compare do
   defp answers({:ok, %{answers: answers}}), do: answers
   defp answers({:error, _reason}), do: nil
 
+  defp cluster_members(%Cluster{id: cluster_id, members: []}, _known) do
+    raise ArgumentError, "cluster #{inspect(cluster_id)} has no members"
+  end
+
   defp cluster_members(%Cluster{id: cluster_id, members: members}, known) do
     Enum.each(members, &member(&1, cluster_id, known))
   end

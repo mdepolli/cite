@@ -56,6 +56,14 @@ defmodule Cite.CompareTest do
       end
     end
 
+    test "raises on a hand-built cluster with no members" do
+      empty = %Cluster{id: "e", class: "k", members: [], state: %{}, questions: %{}}
+
+      assert_raise ArgumentError, ~r/cluster "e" has no members/, fn ->
+        Compare.clusters([empty], [cand("U0")])
+      end
+    end
+
     test "raises on duplicate cluster ids" do
       assert_raise ArgumentError, ~r/duplicate cluster ids: \["c", "c"\]/, fn ->
         Compare.clusters([cluster([]), cluster([])], [cand("U0"), cand("U1", 2)])
