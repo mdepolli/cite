@@ -1,5 +1,9 @@
 # Cite
 
+[![Hex.pm](https://img.shields.io/hexpm/v/cite)](https://hex.pm/packages/cite)
+[![Documentation](https://img.shields.io/badge/docs-hexdocs-blue)](https://hexdocs.pm/cite)
+[![CI](https://github.com/mdepolli/cite/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mdepolli/cite/actions/workflows/ci.yml)
+
 Candidates in, grounded citations out.
 
 Code proposes candidates — utterances, rows, sentences, anything it can
