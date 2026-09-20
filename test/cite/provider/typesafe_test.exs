@@ -1,5 +1,6 @@
 defmodule Cite.Provider.TypeSafeTest do
-  use ExUnit.Case, async: true
+  # Not async: new/1 tests clear JEV_API_KEY, which is process-global.
+  use ExUnit.Case, async: false
 
   alias Cite.Provider.TypeSafe
 
@@ -100,6 +101,11 @@ defmodule Cite.Provider.TypeSafeTest do
       end)
 
       assert judge().(@request) == {:error, {:bad_request, "invalid_question"}}
+    end
+
+    test "a 400 without TypeSafe's detail carries the body preview" do
+      Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 400, "nope"))
+      assert judge().(@request) == {:error, {:bad_request, "nope"}}
     end
 
     test "a 200 without a map of answers is a malformed reply, not a verdict" do

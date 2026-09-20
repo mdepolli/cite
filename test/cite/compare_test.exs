@@ -13,16 +13,21 @@ defmodule Cite.CompareTest do
   defp score_q, do: Question.score(question: "S?", inspect: "`x`", criteria: ["a", "b"])
 
   defp cluster(opts) do
+    id = Keyword.get(opts, :id, "c")
     members = Keyword.get(opts, :members, [cand("U0"), cand("U1", 2)])
+    state = Keyword.get(opts, :state, %{})
+    questions = Keyword.get(opts, :questions, %{"fits" => noul_q()})
+    member_questions = Keyword.get(opts, :member_questions, %{})
+    match = Keyword.get(opts, :match, :all)
 
     Cluster.new(
-      id: Keyword.get(opts, :id, "c"),
+      id: id,
       class: "k",
       members: members,
-      state: Keyword.get(opts, :state, %{}),
-      questions: Keyword.get(opts, :questions, %{"fits" => noul_q()}),
-      member_questions: Keyword.get(opts, :member_questions, %{}),
-      match: Keyword.get(opts, :match, :all)
+      state: state,
+      questions: questions,
+      member_questions: member_questions,
+      match: match
     )
   end
 
