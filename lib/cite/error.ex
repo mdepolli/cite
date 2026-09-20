@@ -40,10 +40,12 @@ defmodule Cite.Error do
   @doc false
   @spec from_candidates([Candidate.t(), ...], term()) :: t()
   def from_candidates([_ | _] = candidates, reason) do
-    starts = Enum.map(candidates, & &1.byte_start)
-    stops = Enum.map(candidates, & &1.byte_end)
-    error = from_range(Enum.min(starts), Enum.max(stops), reason)
-    %__MODULE__{error | candidate_ids: Enum.map(candidates, & &1.id)}
+    %__MODULE__{
+      byte_start: candidates |> Enum.map(& &1.byte_start) |> Enum.min(),
+      byte_end: candidates |> Enum.map(& &1.byte_end) |> Enum.max(),
+      candidate_ids: Enum.map(candidates, & &1.id),
+      reason: reason
+    }
   end
 
   # The one wire shape, for both encoders.
