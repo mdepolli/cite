@@ -126,12 +126,12 @@ defmodule Cite.Provider.TypeSafe do
   # TypeSafe's published docs: it is what the API returned on oversized
   # windows during the prototype, and the halving behaviour was built on it.
   defp decode({:ok, %Req.Response{status: 400, body: %{"detail" => %{"error_type" => type}}}})
-       when is_binary(type) do
-    case type do
-      "max_tokens_exceeded" -> {:error, :request_too_large}
-      other -> {:error, {:bad_request, other}}
-    end
-  end
+       when type == "max_tokens_exceeded",
+       do: {:error, :request_too_large}
+
+  defp decode({:ok, %Req.Response{status: 400, body: %{"detail" => %{"error_type" => type}}}})
+       when is_binary(type),
+       do: {:error, {:bad_request, type}}
 
   defp decode({:ok, %Req.Response{status: 400, body: body}}),
     do: {:error, {:bad_request, preview(body)}}
