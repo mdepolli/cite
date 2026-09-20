@@ -65,6 +65,17 @@ defmodule Cite.Select do
             "got #{inspect(window_size: window_size, atomic_threshold: atomic_threshold, review_band: review_band, confidence_floor: confidence_floor, state: state)}"
   end
 
+  defp usage(nil), do: :ok
+
+  defp usage(%{input_tokens: input, output_tokens: output})
+       when is_integer(input) and input >= 0 and is_integer(output) and output >= 0,
+       do: :ok
+
+  defp usage(other) do
+    raise ArgumentError,
+          "client usage must be nil or %{input_tokens: n, output_tokens: n}, got: #{inspect(other)}"
+  end
+
   # A window over the request token cap is split in half and both halves
   # judged; only a single candidate that still exceeds it is an error.
   defp judge_window(client, window, atomics, extra_state) do
@@ -88,11 +99,12 @@ defmodule Cite.Select do
   end
 
   # The client is the caller's function; its return is checked here, once, and
-  # trusted everywhere after. A verdict may omit :usage.
+  # trusted everywhere after.
   defp call(client, request) do
     case client.(request) do
-      {:ok, %{answers: answers} = verdict} when is_map(answers) ->
-        {:ok, Map.put_new(verdict, :usage, nil)}
+      {:ok, %{answers: answers, usage: usage}} = verdict when is_map(answers) ->
+        usage(usage)
+        verdict
 
       {:error, _reason} = error ->
         error

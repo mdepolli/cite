@@ -342,7 +342,7 @@ defmodule Cite.SelectTest do
       end
     end
 
-    test "raises when the client returns the wrong shape, and tolerates a missing usage" do
+    test "raises when the client returns the wrong shape, including a bad usage" do
       spec = %{
         atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
         compose: fn _, _ -> [] end
@@ -350,15 +350,27 @@ defmodule Cite.SelectTest do
 
       {source, candidates} = household_fixture()
 
-      for bad <- [{:ok, %{}}, {:ok, %{answers: []}}, :done, %{answers: %{}}] do
+      for bad <- [
+            {:ok, %{}},
+            {:ok, %{answers: []}},
+            {:ok, %{answers: %{}}},
+            :done,
+            %{answers: %{}}
+          ] do
         assert_raise ArgumentError, ~r/client must return/, fn ->
           Cite.select(fn _ -> bad end, source, candidates, spec)
         end
       end
 
-      result = Cite.select(fn _ -> {:ok, %{answers: %{}}} end, source, candidates, spec)
-      assert result.usage == nil
-      assert result.errors == []
+      for usage <- [
+            "lots",
+            %{"input_tokens" => 1, "output_tokens" => 1},
+            %{input_tokens: -1, output_tokens: 0}
+          ] do
+        assert_raise ArgumentError, ~r/client usage must be nil or/, fn ->
+          Cite.select(fn _ -> {:ok, %{answers: %{}, usage: usage}} end, source, candidates, spec)
+        end
+      end
     end
 
     test "raises on malformed atomics before any judge call" do
