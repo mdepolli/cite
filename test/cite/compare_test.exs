@@ -213,7 +213,10 @@ defmodule Cite.CompareTest do
                "x" => %{"members" => ["U0", "U1"], "answers" => %{"fits" => noul(0.1)}}
              }
 
-      assert resolved.errors == [%Error{byte_start: 10, byte_end: 21, reason: :boom}]
+      assert resolved.errors == [
+               %Error{byte_start: 10, byte_end: 21, candidate_ids: ["U5", "U4"], reason: :boom}
+             ]
+
       assert resolved.usages == [%{input_tokens: 1, output_tokens: 0}, nil, nil]
     end
   end

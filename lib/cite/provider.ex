@@ -7,6 +7,16 @@ defmodule Cite.Provider do
   takes, so the pipeline never sees the client. Implementations:
   `Cite.Provider.TypeSafe`.
 
+  ## Requests
+
+  The request is the System One question schema: `"state"` plus
+  `"questions"`, each question a map with `"type"` (`noul`, `score`,
+  `choice`), `"instructions"` (`question`, `inspect`) and `"criteria"`.
+  TypeSafe Jev and Laya share it, so a provider for either sends it as is; a
+  provider for a model with different inputs converts from it. Cite encodes
+  questions to that schema before they reach a provider; the provider never
+  sees a `Cite.Question` struct.
+
   ## Errors
 
   A provider raises on caller error (bad options) and returns `{:error,

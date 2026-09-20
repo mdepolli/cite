@@ -16,6 +16,32 @@ defmodule Cite.ErrorTest do
     end
   end
 
+  describe "from_candidates/2" do
+    test "spans the candidates' bytes and records their ids in the order given" do
+      candidates = [
+        %Cite.Candidate{id: "U2", text: "cc", byte_start: 6, byte_end: 8},
+        %Cite.Candidate{id: "U1", text: "bb", byte_start: 3, byte_end: 5}
+      ]
+
+      assert Error.from_candidates(candidates, :boom) ==
+               %Error{byte_start: 3, byte_end: 8, candidate_ids: ["U2", "U1"], reason: :boom}
+    end
+  end
+
+  describe "JSON.Encoder" do
+    test "encodes the same shape as Jason, reasons normalised" do
+      error = Error.from_range(0, 10, {:bad_request, "x"})
+      assert JSON.decode!(JSON.encode!(error)) == Jason.decode!(Jason.encode!(error))
+
+      assert JSON.decode!(JSON.encode!(error)) == %{
+               "byte_start" => 0,
+               "byte_end" => 10,
+               "candidate_ids" => [],
+               "reason" => ~s({:bad_request, "x"})
+             }
+    end
+  end
+
   describe "Jason.Encoder" do
     test "encodes atom reasons as strings" do
       error = Error.from_range(0, 10, :timeout)
@@ -23,6 +49,7 @@ defmodule Cite.ErrorTest do
       assert Jason.decode!(Jason.encode!(error)) == %{
                "byte_start" => 0,
                "byte_end" => 10,
+               "candidate_ids" => [],
                "reason" => "timeout"
              }
     end

@@ -38,18 +38,16 @@ defmodule Cite.SpanTest do
     end
   end
 
+  describe "JSON.Encoder" do
+    test "matches Jason's output" do
+      value = encodable()
+      assert JSON.decode!(JSON.encode!(value)) == Jason.decode!(Jason.encode!(value))
+    end
+  end
+
   describe "Jason.Encoder" do
     test "encodes enforced fields plus class and attributes" do
-      span = %Span{
-        text: "Hello there",
-        byte_start: 0,
-        byte_end: 11,
-        candidate_id: "U000",
-        class: "life_events",
-        attributes: %{"review" => true}
-      }
-
-      assert Jason.decode!(Jason.encode!(span)) == %{
+      assert Jason.decode!(Jason.encode!(encodable())) == %{
                "text" => "Hello there",
                "byte_start" => 0,
                "byte_end" => 11,
@@ -58,5 +56,16 @@ defmodule Cite.SpanTest do
                "attributes" => %{"review" => true}
              }
     end
+  end
+
+  defp encodable do
+    %Span{
+      text: "Hello there",
+      byte_start: 0,
+      byte_end: 11,
+      candidate_id: "U000",
+      class: "life_events",
+      attributes: %{"review" => true}
+    }
   end
 end

@@ -130,7 +130,11 @@ defmodule Cite.ScanTest do
 
       # Assert
       assert Map.keys(resolved.index) == ["U0"]
-      assert resolved.errors == [%Error{byte_start: 5, byte_end: 14, reason: :boom}]
+
+      assert resolved.errors == [
+               %Error{byte_start: 5, byte_end: 14, candidate_ids: ["U2", "U1"], reason: :boom}
+             ]
+
       assert resolved.usages == [%{input_tokens: 3, output_tokens: 0}]
     end
   end

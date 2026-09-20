@@ -13,8 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compare round with a review band, and byte-exact spans out.
 - `Cite.Candidate.from_segments/1`, `Cite.Question.noul/1`, `score/1`,
   `choice/1`, and `Cite.Cluster.new/1` as the typed inputs.
-- `Cite.Result`, `Cite.Span`, and `Cite.Error` as the outputs, all
-  JSON-encodable; every failed judge call is an `Error` with its byte range.
+- `Cite.Result`, `Cite.Span`, and `Cite.Error` as the outputs, encodable
+  with Jason or the built-in `JSON`; every failed judge call is an `Error`
+  with its byte range and candidate ids.
 - `Cite.Provider` behaviour and `Cite.Provider.TypeSafe`, a Req client for
   TypeSafe System One; `Cite.judge/1` and `judge/2` build the judge function.
 - Windows over the provider's size cap are halved and retried

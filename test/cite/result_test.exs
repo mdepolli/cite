@@ -38,25 +38,16 @@ defmodule Cite.ResultTest do
     end
   end
 
+  describe "JSON.Encoder" do
+    test "matches Jason's output" do
+      value = encodable()
+      assert JSON.decode!(JSON.encode!(value)) == Jason.decode!(Jason.encode!(value))
+    end
+  end
+
   describe "Jason.Encoder" do
     test "encodes the full result including nested spans and errors" do
-      span = %Span{
-        text: "hi",
-        byte_start: 0,
-        byte_end: 2,
-        candidate_id: "U000",
-        class: "life_events"
-      }
-
-      result = %Result{
-        spans: [span],
-        errors: [Error.from_range(0, 2, :timeout)],
-        usage: %{input_tokens: 1, output_tokens: 2},
-        scan: %{"U000" => %{"life_event" => 0.9}},
-        rejected: %{"health:U001" => %{"members" => ["U001"]}}
-      }
-
-      assert Jason.decode!(Jason.encode!(result)) == %{
+      assert Jason.decode!(Jason.encode!(encodable())) == %{
                "spans" => [
                  %{
                    "text" => "hi",
@@ -68,12 +59,35 @@ defmodule Cite.ResultTest do
                  }
                ],
                "errors" => [
-                 %{"byte_start" => 0, "byte_end" => 2, "reason" => "timeout"}
+                 %{
+                   "byte_start" => 0,
+                   "byte_end" => 2,
+                   "candidate_ids" => [],
+                   "reason" => "timeout"
+                 }
                ],
                "usage" => %{"input_tokens" => 1, "output_tokens" => 2},
                "scan" => %{"U000" => %{"life_event" => 0.9}},
                "rejected" => %{"health:U001" => %{"members" => ["U001"]}}
              }
     end
+  end
+
+  defp encodable do
+    span = %Span{
+      text: "hi",
+      byte_start: 0,
+      byte_end: 2,
+      candidate_id: "U000",
+      class: "life_events"
+    }
+
+    %Result{
+      spans: [span],
+      errors: [Error.from_range(0, 2, :timeout)],
+      usage: %{input_tokens: 1, output_tokens: 2},
+      scan: %{"U000" => %{"life_event" => 0.9}},
+      rejected: %{"health:U001" => %{"members" => ["U001"]}}
+    }
   end
 end

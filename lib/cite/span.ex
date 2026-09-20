@@ -11,8 +11,10 @@ defmodule Cite.Span do
 
   alias Cite.Candidate
 
-  @derive {Jason.Encoder,
-           only: [:text, :byte_start, :byte_end, :candidate_id, :class, :attributes]}
+  @derive [
+    {Jason.Encoder, only: [:text, :byte_start, :byte_end, :candidate_id, :class, :attributes]},
+    {JSON.Encoder, only: [:text, :byte_start, :byte_end, :candidate_id, :class, :attributes]}
+  ]
 
   @type t :: %__MODULE__{
           text: String.t(),

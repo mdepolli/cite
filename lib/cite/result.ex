@@ -9,7 +9,10 @@ defmodule Cite.Result do
 
   alias Cite.{Error, Span}
 
-  @derive {Jason.Encoder, only: [:spans, :errors, :usage, :scan, :rejected]}
+  @derive [
+    {Jason.Encoder, only: [:spans, :errors, :usage, :scan, :rejected]},
+    {JSON.Encoder, only: [:spans, :errors, :usage, :scan, :rejected]}
+  ]
 
   @type usage :: %{input_tokens: non_neg_integer(), output_tokens: non_neg_integer()}
   @type scan :: %{String.t() => %{String.t() => number()}}
