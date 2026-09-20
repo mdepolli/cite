@@ -83,14 +83,16 @@ defmodule Cite.Scan do
   @spec resolve([outcome()], [atomic()]) :: %{
           index: index(),
           errors: [Error.t()],
-          usages: [Cite.usage() | nil]
+          usages: [Cite.usage() | nil],
+          models: [String.t()]
         }
   def resolve(outcomes, atomics) do
     %{
       index: Enum.reduce(outcomes, %{}, &merge(&1, &2, atomics)),
       errors:
         for({window, {:error, reason}} <- outcomes, do: Error.from_candidates(window, reason)),
-      usages: for({_window, {:ok, verdict}} <- outcomes, do: verdict.usage)
+      usages: for({_window, {:ok, verdict}} <- outcomes, do: verdict.usage),
+      models: for({_window, {:ok, %{model: model}}} <- outcomes, do: model)
     }
   end
 

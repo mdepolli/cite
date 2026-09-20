@@ -25,8 +25,9 @@ defmodule Cite do
 
       request -> {:ok, verdict} | {:error, reason}
 
-  where `verdict` is `%{answers: map(), usage: usage | nil}` and `usage` is
-  `%{input_tokens: n, output_tokens: n}`. Requests are wire-shaped (string
+  where `verdict` is `%{answers: map(), usage: usage | nil}` — plus `model`,
+  the versioned id that answered, when the provider reports it — and
+  `usage` is `%{input_tokens: n, output_tokens: n}`. Requests are wire-shaped (string
   keys); Cite encodes questions at that edge, so callers never see them.
 
   ## The spec
@@ -51,7 +52,11 @@ defmodule Cite do
   alias Cite.{Candidate, Cluster, Question, Result, Select}
 
   @type usage :: Result.usage()
-  @type verdict :: %{answers: map(), usage: usage() | nil}
+  @type verdict :: %{
+          required(:answers) => map(),
+          required(:usage) => usage() | nil,
+          optional(:model) => String.t()
+        }
   @type client :: (map() -> {:ok, verdict()} | {:error, term()})
   @type atomic :: %{name: String.t(), question: (Candidate.t() -> Question.t())}
   @type spec :: %{atomics: [atomic()], compose: (map(), [Candidate.t()] -> [Cluster.t()])}

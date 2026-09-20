@@ -53,6 +53,7 @@ defmodule Cite.Select do
       spans: Emit.spans(source, compare.accepted, confidence_floor),
       errors: scan.errors ++ compare.errors,
       usage: Result.total_usage(scan.usages ++ compare.usages),
+      models: Enum.uniq(scan.models ++ compare.models),
       scan: scan.index,
       rejected: compare.rejected
     }
@@ -79,6 +80,14 @@ defmodule Cite.Select do
     if Map.has_key?(state, "candidates") or Map.has_key?(state, :candidates) do
       raise ArgumentError, "state must not use the \"candidates\" key; the scan window goes there"
     end
+  end
+
+  defp model(nil), do: :ok
+  defp model(model) when is_binary(model) and model != "", do: :ok
+
+  defp model(other) do
+    raise ArgumentError,
+          "client model must be a non-empty binary when given, got: #{inspect(other)}"
   end
 
   defp usage(nil), do: :ok
@@ -120,8 +129,9 @@ defmodule Cite.Select do
   # an error for the whole request rather than read as "no".
   defp call(client, request) do
     case client.(request) do
-      {:ok, %{answers: answers, usage: usage}} = verdict when is_map(answers) ->
+      {:ok, %{answers: answers, usage: usage} = fields} = verdict when is_map(answers) ->
         usage(usage)
+        model(Map.get(fields, :model))
 
         case Map.keys(request["questions"]) -- Map.keys(answers) do
           [] -> verdict

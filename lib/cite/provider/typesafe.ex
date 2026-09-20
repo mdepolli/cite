@@ -114,7 +114,12 @@ defmodule Cite.Provider.TypeSafe do
 
   defp decode({:ok, %Req.Response{status: 200, body: %{"answers" => answers} = body}})
        when is_map(answers) do
-    {:ok, %{answers: answers, usage: usage(body["usage"])}}
+    verdict = %{answers: answers, usage: usage(body["usage"])}
+
+    case body["model"] do
+      model when is_binary(model) and model != "" -> {:ok, Map.put(verdict, :model, model)}
+      _ -> {:ok, verdict}
+    end
   end
 
   # A 200 Cite cannot read is a network fact, not a verdict of "no" everywhere.

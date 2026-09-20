@@ -206,6 +206,7 @@ it could be answered." — and the Choice as its option. Either becomes
   spans: [%Cite.Span{...}],
   errors: [],
   usage: %{input_tokens: 800, output_tokens: 0},
+  models: ["jev-1.13.0"],
   scan: %{"C000" => %{"riddle" => 0.94}, "C001" => %{"riddle" => 0.03}},
   rejected: %{}
 }

@@ -65,7 +65,8 @@ defmodule Cite.Compare do
           accepted: [accepted()],
           rejected: %{String.t() => map()},
           errors: [Error.t()],
-          usages: [Cite.usage() | nil]
+          usages: [Cite.usage() | nil],
+          models: [String.t()]
         }
   def resolve(outcomes, band) do
     decisions =
@@ -86,7 +87,8 @@ defmodule Cite.Compare do
         for {cluster, {:error, reason}} <- outcomes do
           Error.from_candidates(cluster.members, reason)
         end,
-      usages: for({_cluster, {:ok, verdict}} <- outcomes, do: verdict.usage)
+      usages: for({_cluster, {:ok, verdict}} <- outcomes, do: verdict.usage),
+      models: for({_cluster, {:ok, %{model: model}}} <- outcomes, do: model)
     }
   end
 

@@ -5,14 +5,17 @@ defmodule Cite.Result do
   Span order follows compose emit order (not necessarily document order).
   `errors` holds scan errors first, in window order, then compare errors in
   cluster order. `scan` and `rejected` are set by Select.
-  `usage` totals token counts when the judge reported them (`nil` otherwise).
+  `usage` totals token counts when the provider reported them (`nil`
+  otherwise). `models` lists every versioned model id that answered, in
+  order of first appearance — one entry on a healthy run, more if the
+  provider switched models mid-run, none if it never says.
   """
 
   alias Cite.{Error, Span}
 
   @derive [
-    {Jason.Encoder, only: [:spans, :errors, :usage, :scan, :rejected]},
-    {JSON.Encoder, only: [:spans, :errors, :usage, :scan, :rejected]}
+    {Jason.Encoder, only: [:spans, :errors, :usage, :models, :scan, :rejected]},
+    {JSON.Encoder, only: [:spans, :errors, :usage, :models, :scan, :rejected]}
   ]
 
   @type usage :: %{input_tokens: non_neg_integer(), output_tokens: non_neg_integer()}
@@ -23,12 +26,13 @@ defmodule Cite.Result do
           spans: [Span.t()],
           errors: [Error.t()],
           usage: usage() | nil,
+          models: [String.t()],
           scan: scan() | nil,
           rejected: rejected() | nil
         }
 
-  @enforce_keys [:spans, :errors, :usage, :scan, :rejected]
-  defstruct [:spans, :errors, :usage, :scan, :rejected]
+  @enforce_keys [:spans, :errors, :usage, :models, :scan, :rejected]
+  defstruct [:spans, :errors, :usage, :models, :scan, :rejected]
 
   @doc false
   @spec total_usage([usage() | nil]) :: usage() | nil

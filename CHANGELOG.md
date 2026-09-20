@@ -21,8 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with Jason or the built-in `JSON`. Spans carry the cluster's class, a label
   per Score (the level index) and Choice (the option) — `"uncertain"` below
   `confidence_floor` — and the raw answers. `Result` keeps the pre-threshold
-  scan index, every rejected cluster with its answers, and token usage; every
-  failed request is an `Error` with its byte range and candidate ids.
+  scan index, every rejected cluster with its answers, token usage, and the
+  model ids that answered; every failed request is an `Error` with its byte
+  range and candidate ids.
 - `Cite.Provider` behaviour and `Cite.Provider.TypeSafe`, a Req client for
   TypeSafe System One; `Cite.new/2` builds the client function `select/5`
   takes. The TypeSafe client retries 429, 529, 500–504, and connection

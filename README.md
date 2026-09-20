@@ -258,13 +258,15 @@ the network did is a value:
   spans: [...],
   errors: [%Cite.Error{byte_start: 0, byte_end: 412, candidate_ids: ["C000", ...], reason: :server_error}],
   usage: %{input_tokens: 48_120, output_tokens: 0},
+  models: ["jev-1.13.0"],
   scan: %{"C000" => %{"riddle" => 0.91, ...}, ...},
   rejected: %{"riddle:C002" => %{"members" => ["C002"], "answers" => %{...}}}
 }
 ```
 
 `scan` is every candidate's score before thresholding; `rejected` is every
-cluster that reached compare and failed, with its answers. A run is
+cluster that reached compare and failed, with its answers; `models` is every
+versioned model id that answered, so a run records what judged it. A run is
 diagnosable without another request. Candidates in a failed window have no
 `scan` row, so compose should look them up with `Map.get/2`.
 

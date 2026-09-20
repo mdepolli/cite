@@ -74,10 +74,11 @@ defmodule Cite.Provider.TypeSafeTest do
   end
 
   describe "judge/2 replies" do
-    test "returns answers and usage on 200" do
+    test "returns answers, usage, and the model that answered on 200" do
       # Arrange
       Req.Test.stub(__MODULE__, fn conn ->
         Req.Test.json(conn, %{
+          "model" => "jev-1.13.0",
           "answers" => %{"U0:d" => %{"noul" => 0.8}},
           "usage" => %{"input_tokens" => 12, "output_tokens" => 0}
         })
@@ -88,8 +89,15 @@ defmodule Cite.Provider.TypeSafeTest do
                {:ok,
                 %{
                   answers: %{"U0:d" => %{"noul" => 0.8}},
-                  usage: %{input_tokens: 12, output_tokens: 0}
+                  usage: %{input_tokens: 12, output_tokens: 0},
+                  model: "jev-1.13.0"
                 }}
+    end
+
+    test "omits model when the reply does not name one" do
+      Req.Test.stub(__MODULE__, &Req.Test.json(&1, %{"answers" => %{}}))
+      assert {:ok, verdict} = judge().(@request)
+      refute Map.has_key?(verdict, :model)
     end
 
     test "usage is nil when the reply omits it" do

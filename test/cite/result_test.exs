@@ -25,6 +25,7 @@ defmodule Cite.ResultTest do
         spans: [span],
         errors: [error],
         usage: %{input_tokens: 1, output_tokens: 2},
+        models: ["jev-test"],
         scan: %{"U000" => %{"life_event" => 0.9}},
         rejected: %{"health:U001" => %{"members" => ["U001"]}}
       }
@@ -65,6 +66,7 @@ defmodule Cite.ResultTest do
                  }
                ],
                "usage" => %{"input_tokens" => 1, "output_tokens" => 2},
+               "models" => ["jev-test"],
                "scan" => %{"U000" => %{"life_event" => 0.9}},
                "rejected" => %{"health:U001" => %{"members" => ["U001"]}}
              }
@@ -84,6 +86,7 @@ defmodule Cite.ResultTest do
       spans: [span],
       errors: [Error.from_range(0, 2, :timeout)],
       usage: %{input_tokens: 1, output_tokens: 2},
+      models: ["jev-test"],
       scan: %{"U000" => %{"life_event" => 0.9}},
       rejected: %{"health:U001" => %{"members" => ["U001"]}}
     }

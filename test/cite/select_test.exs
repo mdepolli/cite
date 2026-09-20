@@ -327,7 +327,7 @@ defmodule Cite.SelectTest do
 
       judge = fn _ -> flunk("judge was called with nothing to judge") end
 
-      assert %Result{spans: [], errors: [], usage: nil, scan: %{}, rejected: %{}} =
+      assert %Result{spans: [], errors: [], usage: nil, models: [], scan: %{}, rejected: %{}} =
                Cite.select(judge, "", [], spec)
     end
 
@@ -361,6 +361,44 @@ defmodule Cite.SelectTest do
       assert result.scan == %{}
       assert [%Error{reason: {:missing_answers, missing}}] = result.errors
       assert length(missing) == 3
+    end
+
+    test "records every model that answered, once each, and rejects a bad model" do
+      {source, candidates} = household_fixture()
+
+      spec = %{
+        atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
+        compose: fn _, _ -> [] end
+      }
+
+      client = fn %{"questions" => qs} ->
+        {:ok,
+         %{
+           answers: Map.new(qs, fn {k, _} -> {k, %{"noul" => 0.1}} end),
+           usage: nil,
+           model: "jev-1.13.0"
+         }}
+      end
+
+      assert Cite.select(client, source, candidates, spec).models == ["jev-1.13.0"]
+
+      assert Cite.select(
+               fn q ->
+                 {:ok, %{answers: Map.new(q["questions"], fn {k, _} -> {k, %{}} end), usage: nil}}
+               end,
+               source,
+               candidates,
+               spec
+             ).models == []
+
+      assert_raise ArgumentError, ~r/client model must be a non-empty binary/, fn ->
+        Cite.select(
+          fn _ -> {:ok, %{answers: %{}, usage: nil, model: ""}} end,
+          source,
+          candidates,
+          spec
+        )
+      end
     end
 
     test "raises when the client returns the wrong shape, including a bad usage" do
