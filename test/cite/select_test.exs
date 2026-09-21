@@ -319,6 +319,40 @@ defmodule Cite.SelectTest do
       assert result.spans == []
     end
 
+    test "stops splitting once a single candidate is too large; siblings are errors without a call" do
+      # Arrange — 16 candidates, every request refused as too large.
+      candidates =
+        for i <- 0..15 do
+          %Candidate{id: "U#{i}", text: "x", byte_start: i * 2, byte_end: i * 2 + 1}
+        end
+
+      source = Enum.map_join(candidates, " ", & &1.text)
+
+      spec = %{
+        atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
+        compose: fn _, _ -> [] end
+      }
+
+      {:ok, calls} = Agent.start_link(fn -> 0 end)
+
+      client = fn _ ->
+        Agent.update(calls, &(&1 + 1))
+        {:error, :request_too_large}
+      end
+
+      # Act
+      result = Cite.select(client, source, candidates, spec, window_size: 16)
+
+      # Assert — 16 → 8 → 4 → 2 → 1 is five calls; every right sibling is skipped.
+      assert Agent.get(calls, & &1) == 5
+      assert Enum.all?(result.errors, &(&1.reason == :request_too_large))
+
+      assert result.errors |> Enum.flat_map(& &1.candidate_ids) |> Enum.sort() ==
+               Enum.sort(Enum.map(candidates, & &1.id))
+
+      assert result.scan == %{}
+    end
+
     test "no candidates means no calls and an empty result" do
       spec = %{
         atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],

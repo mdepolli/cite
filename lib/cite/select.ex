@@ -109,18 +109,30 @@ defmodule Cite.Select do
   end
 
   # A window over the request token cap is split in half and both halves
-  # judged; only a single candidate that still exceeds it is an error.
+  # judged; only a single candidate that still exceeds it is an error. Once
+  # one candidate alone is too large, the caller's state is what does not fit,
+  # and no sibling of that window will fare better: they are recorded as the
+  # same error without a call. That bounds a state-too-large run at about
+  # log2(window) requests per window instead of two per candidate.
   defp judge_window(client, window, atomics, extra_state, scan_key) do
     case call(client, Scan.request(window, atomics, extra_state, scan_key)) do
       {:error, :request_too_large} when length(window) > 1 ->
         {left, right} = Enum.split(window, div(length(window), 2))
+        left_outcomes = judge_window(client, left, atomics, extra_state, scan_key)
 
-        judge_window(client, left, atomics, extra_state, scan_key) ++
-          judge_window(client, right, atomics, extra_state, scan_key)
+        if singleton_too_large?(left_outcomes) do
+          left_outcomes ++ [{right, {:error, :request_too_large}}]
+        else
+          left_outcomes ++ judge_window(client, right, atomics, extra_state, scan_key)
+        end
 
       verdict ->
         [{window, verdict}]
     end
+  end
+
+  defp singleton_too_large?(outcomes) do
+    Enum.any?(outcomes, &match?({[_one], {:error, :request_too_large}}, &1))
   end
 
   defp judge_cluster(client, cluster, extra_state) do

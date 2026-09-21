@@ -168,7 +168,9 @@ covered. The run never raises on the model's account — only on yours.
 The scan sends `window_size` candidates per request (default 40). A request
 the provider refuses as too large (`{:error, :request_too_large}`) is split
 in half and both halves are sent; only a single candidate that still
-exceeds the cap becomes an error.
+exceeds the cap becomes an error. Once one does, its remaining siblings are
+recorded as the same error without a call — a lone candidate over the cap
+means the `state` itself is too big, and splitting further cannot help.
 
 Windows are judged one after another. A long document is one request per
 window, each up to 120 seconds plus retries. Concurrency is not yet an
