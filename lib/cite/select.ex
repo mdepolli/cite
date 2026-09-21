@@ -79,7 +79,7 @@ defmodule Cite.Select do
   # would be overwritten without a word. The key is the word every scan
   # question names in its path, which is why it lives with the questions.
   defp check_state(state, scan_key) when is_binary(scan_key) and scan_key != "" do
-    if Map.has_key?(Wire.map(state), scan_key) do
+    if Enum.any?(Map.keys(state), &(Wire.key(&1) == scan_key)) do
       raise ArgumentError,
             "state must not use the #{inspect(scan_key)} key; the scan window goes there"
     end

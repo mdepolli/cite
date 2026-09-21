@@ -56,10 +56,12 @@ defmodule Cite.Wire do
     Map.new(questions, fn {key, %Question{} = question} -> {key, Question.encode(question)} end)
   end
 
-  defp key(key) when is_atom(key), do: Atom.to_string(key)
-  defp key(key) when is_binary(key), do: key
+  @doc "A state or meta key on the wire: atoms become strings, binaries stay."
+  @spec key(atom() | String.t()) :: String.t()
+  def key(key) when is_atom(key), do: Atom.to_string(key)
+  def key(key) when is_binary(key), do: key
 
-  defp key(other) do
+  def key(other) do
     raise ArgumentError, "state and meta keys must be atoms or binaries, got: #{inspect(other)}"
   end
 
