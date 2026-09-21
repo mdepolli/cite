@@ -43,7 +43,7 @@ defmodule Cite.Wire do
     Object.new(
       for candidate <- candidates do
         wired = candidate(candidate)
-        {wired["id"], wired}
+        {candidate.id, wired}
       end
     )
   end
