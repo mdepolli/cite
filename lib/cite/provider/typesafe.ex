@@ -172,8 +172,10 @@ defmodule Cite.Provider.TypeSafe do
 
   defp decode({:error, exception}), do: {:error, {:request_error, exception}}
 
+  # A count the shell would refuse (negative, non-integer) is the network's
+  # doing, not the caller's: report no usage rather than raise.
   defp usage(%{"input_tokens" => input, "output_tokens" => output})
-       when is_integer(input) and is_integer(output) do
+       when is_integer(input) and input >= 0 and is_integer(output) and output >= 0 do
     %{input_tokens: input, output_tokens: output}
   end
 

@@ -100,8 +100,17 @@ defmodule Cite.Provider.TypeSafeTest do
       refute Map.has_key?(verdict, :model)
     end
 
-    test "usage is nil when the reply omits it" do
+    test "usage is nil when the reply omits it or reports a count the shell would refuse" do
       Req.Test.stub(__MODULE__, &Req.Test.json(&1, %{"answers" => %{}}))
+      assert {:ok, %{usage: nil}} = judge().(@request)
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        Req.Test.json(conn, %{
+          "answers" => %{},
+          "usage" => %{"input_tokens" => -1, "output_tokens" => 0}
+        })
+      end)
+
       assert {:ok, %{usage: nil}} = judge().(@request)
     end
 
