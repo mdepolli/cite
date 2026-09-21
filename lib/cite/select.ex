@@ -9,7 +9,7 @@ defmodule Cite.Select do
   `Cite.Emit`, which never see the client. Internal; use `Cite.select/5`.
   """
 
-  alias Cite.{Candidate, Compare, Emit, Result, Scan}
+  alias Cite.{Candidate, Compare, Emit, Result, Scan, Wire}
 
   @spec select(Cite.client(), String.t(), [Candidate.t()], Cite.spec(), keyword()) :: Result.t()
   def select(client, source, candidates, spec, opts \\ [])
@@ -79,7 +79,7 @@ defmodule Cite.Select do
   # would be overwritten without a word. The key is the word every scan
   # question names in its path, which is why it lives with the questions.
   defp check_state(state, scan_key) when is_binary(scan_key) and scan_key != "" do
-    if Map.has_key?(state, scan_key) or Map.has_key?(state, String.to_atom(scan_key)) do
+    if Map.has_key?(Wire.map(state), scan_key) do
       raise ArgumentError,
             "state must not use the #{inspect(scan_key)} key; the scan window goes there"
     end
