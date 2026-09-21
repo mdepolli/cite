@@ -32,6 +32,14 @@ defmodule Cite.Provider.TypeSafeTest do
       assert_raise ArgumentError, ~r/missing API key/, fn -> TypeSafe.new(api_key: "") end
     end
 
+    test "refuses a max_retry_delay that would not cap anything" do
+      for bad <- [nil, "30000", -1] do
+        assert_raise ArgumentError, ~r/max_retry_delay must be a non-negative integer/, fn ->
+          TypeSafe.new(api_key: "k", max_retry_delay: bad)
+        end
+      end
+    end
+
     test "refuses retry_delay without a retry of its own" do
       assert_raise ArgumentError, ~r/retry_delay needs its own :retry/, fn ->
         TypeSafe.new(api_key: "k", req_options: [retry_delay: fn _ -> 0 end])

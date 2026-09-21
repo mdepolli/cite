@@ -57,6 +57,11 @@ defmodule Cite.Provider.TypeSafe do
       raise ArgumentError, "missing API key: pass :api_key or set JEV_API_KEY"
     end
 
+    unless is_integer(max_retry_delay) and max_retry_delay >= 0 do
+      raise ArgumentError,
+            "max_retry_delay must be a non-negative integer (ms), got: #{inspect(max_retry_delay)}"
+    end
+
     # Req forbids :retry_delay next to a retry function that returns its own
     # delays; better to say so here than inside the first call.
     if Keyword.has_key?(req_overrides, :retry_delay) and
