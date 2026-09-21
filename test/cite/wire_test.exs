@@ -31,6 +31,22 @@ defmodule Cite.WireTest do
     end
   end
 
+  describe "map/1 rejects what it cannot send" do
+    test "an unknown struct anywhere in the tree" do
+      assert_raise ArgumentError, ~r/got a URI struct/, fn ->
+        Wire.map(%{"when" => %{"at" => URI.parse("x")}})
+      end
+    end
+
+    test "a candidate list with a non-candidate in it" do
+      c = %Candidate{id: "C0", text: "a", byte_start: 0, byte_end: 1}
+
+      assert_raise ArgumentError, ~r/expected a Cite.Candidate in state, got: :x/, fn ->
+        Wire.map(%{"lines" => [c, :x]})
+      end
+    end
+  end
+
   describe "map/1 keys" do
     test "raises on a key that is neither atom nor binary" do
       assert_raise ArgumentError, ~r/keys must be atoms or binaries, got: 1/, fn ->

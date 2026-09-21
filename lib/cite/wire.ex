@@ -30,13 +30,22 @@ defmodule Cite.Wire do
     |> Map.put("text", text)
   end
 
+  def candidate(other) do
+    raise ArgumentError, "expected a Cite.Candidate in state, got: #{inspect(other)}"
+  end
+
   @doc """
   Candidates on the wire as one object keyed by id, in the order given. A
   plain map would lose that order past 32 entries.
   """
   @spec candidates([Candidate.t()]) :: Object.t()
   def candidates(candidates) when is_list(candidates) do
-    Object.new(Enum.map(candidates, &{&1.id, candidate(&1)}))
+    Object.new(
+      for candidate <- candidates do
+        wired = candidate(candidate)
+        {wired["id"], wired}
+      end
+    )
   end
 
   @doc """
@@ -56,7 +65,14 @@ defmodule Cite.Wire do
 
   defp value(%Candidate{} = candidate), do: candidate(candidate)
   defp value(%Object{} = object), do: object
+
   defp value(%{} = map) when not is_struct(map), do: map(map)
+
+  defp value(%{__struct__: module}) do
+    raise ArgumentError,
+          "state and meta may hold plain maps, lists, scalars, and candidates; got a #{inspect(module)} struct"
+  end
+
   defp value([%Candidate{} | _] = candidates), do: candidates(candidates)
   defp value(list) when is_list(list), do: Enum.map(list, &value/1)
   defp value(value), do: value

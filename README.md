@@ -241,9 +241,9 @@ the stage's own: the scan adds `"candidates"`, compare adds the cluster's
 `state`. Atom keys become strings; a `%Cite.Candidate{}` anywhere in the tree
 becomes `%{"id" => …, "text" => …}` plus its `meta`; a *list* of candidates
 becomes an object keyed by id that keeps their order on the wire, which a
-plain map does not past 32 entries — and the model reads neighbours. Structs
-other than candidates and keys that are neither atoms nor binaries are
-rejected before the first request.
+plain map does not past 32 entries — and the model reads neighbours. Any
+other struct, a list that mixes candidates with other values, or a key that
+is neither an atom nor a binary is rejected before the first request.
 
 The scan's key is the spec's `scan_key` (default `"candidates"`); a `:state`
 that uses it is rejected. The word appears in every scan question, so it
