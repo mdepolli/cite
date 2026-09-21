@@ -441,6 +441,7 @@ defmodule Cite.SelectTest do
             {[], ~r/non-empty list/},
             {[%{name: :dependents, question: question}], ~r/non-empty binary/},
             {[%{name: "d", question: fn -> nil end}], ~r/fun\/1/},
+            {[%{name: "b:c", question: question}], ~r/must not contain ":"/},
             {[%{name: "d", question: question}, %{name: "d", question: question}],
              ~r/duplicated: \["d"\]/}
           ] do

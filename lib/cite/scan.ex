@@ -17,8 +17,9 @@ defmodule Cite.Scan do
 
   @doc """
   Checks the caller's atomics: a non-empty list of `%{name, question}` with
-  unique non-empty binary names (an atom would leak into the index as an
-  atom key) and 1-arity question functions. Raises `ArgumentError`.
+  unique non-empty binary names — no `:`, since scan keys are
+  `"\#{candidate_id}:\#{name}"` and the name must be the part after the last
+  colon — and 1-arity question functions. Raises `ArgumentError`.
   """
   @spec atomics(term()) :: [atomic()]
   def atomics([_ | _] = atomics) do
@@ -108,8 +109,11 @@ defmodule Cite.Scan do
   end
 
   defp atomic(%{name: name, question: question})
-       when is_binary(name) and name != "" and is_function(question, 1),
-       do: :ok
+       when is_binary(name) and name != "" and is_function(question, 1) do
+    if String.contains?(name, ":") do
+      raise ArgumentError, "atomic names must not contain \":\", got: #{inspect(name)}"
+    end
+  end
 
   defp atomic(other) do
     raise ArgumentError,
