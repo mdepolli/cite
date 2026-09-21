@@ -222,6 +222,21 @@ defmodule Cite.ClusterTest do
   end
 
   describe "new/1 reserved keys" do
+    test "rejects member_questions that name a Score or Choice" do
+      score = Question.score(question: "S?", inspect: "`x`", criteria: ["a", "b"])
+
+      assert_raise ArgumentError, ~r/must name Noul questions.*\["sev"\]/, fn ->
+        Cluster.new(
+          id: "x",
+          class: "y",
+          members: [cand("U001")],
+          state: %{},
+          questions: Map.put(q(), "sev", score),
+          member_questions: %{"U001" => ["sev"]}
+        )
+      end
+    end
+
     test "rejects question keys reserved for span attributes" do
       assert_raise ArgumentError, ~r/\["compare", "review"\] are reserved/, fn ->
         Cluster.new(

@@ -8,7 +8,8 @@ defmodule Cite.Cluster do
   their order; put candidates there rather than building maps by hand.
   Empty `:questions` is allowed (atomic-only emit with no compare round).
   When `:member_questions` is non-empty, every id must name a member and
-  every question key must exist in `:questions`.
+  every question key must name a Noul in `:questions` — only a Noul can clear
+  the reject edge that grounds a member.
   """
 
   alias Cite.{Candidate, Question}
@@ -163,12 +164,14 @@ defmodule Cite.Cluster do
       "member_questions ids are not cluster members"
     )
 
+    nouls = for {key, %Question{type: :noul}} <- questions, into: MapSet.new(), do: key
+
     member_questions
     |> Map.values()
     |> List.flatten()
     |> ensure_subset(
-      MapSet.new(Map.keys(questions)),
-      "member_questions keys are not in questions"
+      nouls,
+      "member_questions must name Noul questions; these are not Nouls or not in questions"
     )
 
     member_questions
