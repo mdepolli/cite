@@ -66,7 +66,7 @@ defmodule Cite.Scan do
   def request(window, atomics, extra_state, scan_key) do
     questions =
       for %Candidate{} = candidate <- window, atomic <- atomics, into: %{} do
-        {key(candidate.id, atomic.name), atomic.question.(candidate)}
+        {key(candidate.id, atomic.name), noul_question(atomic, candidate)}
       end
 
     state =
@@ -157,6 +157,23 @@ defmodule Cite.Scan do
   defp text(id, text) do
     raise ArgumentError,
           "candidate #{inspect(id)} text must be non-empty valid UTF-8, got: #{inspect(text)}"
+  end
+
+  # The index holds probabilities, so an atomic is a Noul by definition; a
+  # question of another type is a caller error, caught before any request.
+  defp noul_question(%{name: name, question: build}, candidate) do
+    case build.(candidate) do
+      %Question{type: :noul} = question ->
+        question
+
+      %Question{type: type} ->
+        raise ArgumentError,
+              "atomic #{inspect(name)} must build a Noul question, got a #{inspect(type)}"
+
+      other ->
+        raise ArgumentError,
+              "atomic #{inspect(name)} must build a Cite.Question, got: #{inspect(other)}"
+    end
   end
 
   defp merge({_window, {:error, _reason}}, index, _atomics), do: index

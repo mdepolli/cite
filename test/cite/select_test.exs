@@ -481,6 +481,17 @@ defmodule Cite.SelectTest do
       end
     end
 
+    test "raises before any call when an atomic builds a Score instead of a Noul" do
+      {source, candidates} = household_fixture()
+      score = fn _ -> Question.score(question: "S?", inspect: "`x`", criteria: ["a", "b"]) end
+      spec = %{atomics: [%{name: "sev", question: score}], compose: fn _, _ -> [] end}
+      client = fn _ -> flunk("judge was called with a non-Noul atomic") end
+
+      assert_raise ArgumentError, ~r/atomic "sev" must build a Noul question, got a :score/, fn ->
+        Cite.select(client, source, candidates, spec)
+      end
+    end
+
     test "raises on malformed atomics before any judge call" do
       judge = fn _ -> flunk("judge was called with bad atomics") end
       {source, candidates} = household_fixture()

@@ -32,7 +32,8 @@ defmodule Cite do
 
   ## The spec
 
-  `spec.atomics` is a list of `%{name: String.t(), question: (Candidate.t() -> Question.t())}`.
+  `spec.atomics` is a list of `%{name: String.t(), question: (Candidate.t() -> Question.t())}`,
+  each question a Noul — the index holds probabilities.
   Scan keys are `"\#{candidate.id}:\#{atomic.name}"`.
 
   `spec.scan_key` (default `"candidates"`) is the state key each scan window
