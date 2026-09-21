@@ -50,6 +50,18 @@ defmodule Cite.CompareTest do
       assert Compare.clusters(clusters, [cand("U0"), cand("U1", 2)]) == clusters
     end
 
+    test "resolves members by id so a stale struct from compose cannot supply the bytes" do
+      # Arrange — compose hands back U0 with U1's offsets.
+      checked = [cand("U0"), cand("U1", 2)]
+      stale = %Candidate{cand("U0") | byte_start: 2, byte_end: 3}
+
+      # Act
+      [resolved] = Compare.clusters([cluster(id: "a", members: [stale])], checked)
+
+      # Assert
+      assert resolved.members == [cand("U0")]
+    end
+
     test "raises when a member is not among the candidates" do
       assert_raise ArgumentError, ~r/cluster "c" member "U9" is not in candidates/, fn ->
         Compare.clusters([cluster(members: [cand("U9")])], [cand("U0")])

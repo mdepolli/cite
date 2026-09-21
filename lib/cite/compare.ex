@@ -22,11 +22,16 @@ defmodule Cite.Compare do
   @doc """
   Checks what `compose` returned: a list of `%Cluster{}` with unique ids whose
   members are all among `candidates`. Raises `ArgumentError` otherwise.
+
+  Members come back resolved *by id* from `candidates` — the list
+  `Cite.Scan.candidates/2` checked against the source — so a struct compose
+  built by hand, with offsets of its own, is never the one whose bytes are
+  copied.
   """
   @spec clusters(term(), [Candidate.t()]) :: [Cluster.t()]
   def clusters(clusters, candidates) when is_list(clusters) do
-    known = MapSet.new(candidates, & &1.id)
-    Enum.each(clusters, &cluster_members(&1, known))
+    known = Map.new(candidates, &{&1.id, &1})
+    clusters = Enum.map(clusters, &with_known_members(&1, known))
 
     ids = Enum.map(clusters, fn %Cluster{id: id} -> id end)
 
@@ -109,26 +114,30 @@ defmodule Cite.Compare do
   defp answers({:ok, %{answers: answers}}), do: answers
   defp answers({:error, _reason}), do: nil
 
-  defp cluster_members(%Cluster{id: cluster_id, members: []}, _known) do
+  defp with_known_members(%Cluster{id: cluster_id, members: []}, _known) do
     raise ArgumentError, "cluster #{inspect(cluster_id)} has no members"
   end
 
-  defp cluster_members(%Cluster{id: cluster_id, members: members}, known) do
-    Enum.each(members, &member(&1, cluster_id, known))
+  defp with_known_members(%Cluster{id: cluster_id, members: members} = cluster, known) do
+    %Cluster{cluster | members: Enum.map(members, &known_member(&1, cluster_id, known))}
   end
 
-  defp cluster_members(other, _known) do
+  defp with_known_members(other, _known) do
     raise ArgumentError, "compose must return Cluster structs, got: #{inspect(other)}"
   end
 
-  defp member(%Candidate{id: id}, cluster_id, known) do
-    unless MapSet.member?(known, id) do
-      raise ArgumentError,
-            "cluster #{inspect(cluster_id)} member #{inspect(id)} is not in candidates"
+  defp known_member(%Candidate{id: id}, cluster_id, known) do
+    case known do
+      %{^id => candidate} ->
+        candidate
+
+      _ ->
+        raise ArgumentError,
+              "cluster #{inspect(cluster_id)} member #{inspect(id)} is not in candidates"
     end
   end
 
-  defp member(other, cluster_id, _known) do
+  defp known_member(other, cluster_id, _known) do
     raise ArgumentError,
           "cluster #{inspect(cluster_id)} members must be Candidate structs, got: #{inspect(other)}"
   end
