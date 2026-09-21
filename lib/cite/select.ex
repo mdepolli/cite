@@ -9,7 +9,7 @@ defmodule Cite.Select do
   `Cite.Emit`, which never see the client. Internal; use `Cite.select/5`.
   """
 
-  alias Cite.{Candidate, Compare, Emit, Result, Scan, Wire}
+  alias Cite.{Answer, Candidate, Compare, Emit, Result, Scan, Wire}
 
   @spec select(Cite.client(), String.t(), [Candidate.t()], Cite.spec(), keyword()) :: Result.t()
   def select(client, source, candidates, spec, opts \\ [])
@@ -131,18 +131,28 @@ defmodule Cite.Select do
   end
 
   # The client is the caller's function; its return is checked here, once, and
-  # trusted everywhere after. A reply that skips a question is not a verdict
-  # on it — the model promises one answer per question — so it is recorded as
-  # an error for the whole request rather than read as "no".
+  # trusted everywhere after. A reply that skips a question, or answers it in
+  # a shape its type cannot have, is not a verdict on it — the model promises
+  # one well-formed answer per question — so the whole request becomes an
+  # error rather than a "no".
   defp call(client, request) do
     case client.(request) do
       {:ok, %{answers: answers, usage: usage} = fields} = verdict when is_map(answers) ->
         usage(usage)
         model(Map.get(fields, :model))
 
-        case Map.keys(request["questions"]) -- Map.keys(answers) do
-          [] -> verdict
-          missing -> {:error, {:missing_answers, Enum.sort(missing)}}
+        questions = request["questions"]
+        missing = Map.keys(questions) -- Map.keys(answers)
+
+        malformed =
+          for {key, question} <- questions,
+              not Answer.well_formed?(question["type"], answers[key]),
+              do: key
+
+        cond do
+          missing != [] -> {:error, {:missing_answers, Enum.sort(missing)}}
+          malformed != [] -> {:error, {:malformed_answers, Enum.sort(malformed)}}
+          true -> verdict
         end
 
       {:error, _reason} = error ->

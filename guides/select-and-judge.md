@@ -161,10 +161,12 @@ or above 0.6 accepts it; anything else sends it out for review. With
 cluster with no Nouls has nothing to gate and is accepted; a cluster with
 no questions at all is accepted without a request.
 
-A reply that skips a question is not a verdict on it. The model promises one
-answer per question, so the request becomes a `Cite.Error` with reason
-`{:missing_answers, keys}` and nothing from it is read — a scan window
-contributes no index rows, a cluster is neither accepted nor rejected.
+A reply that skips a question, or answers it in a shape its type cannot
+have, is not a verdict on it. The model promises one well-formed answer per
+question, so the request becomes a `Cite.Error` with reason
+`{:missing_answers, keys}` or `{:malformed_answers, keys}` and nothing from
+it is read — a scan window contributes no index rows, a cluster is neither
+accepted nor rejected.
 
 `member_questions` narrows which members are grounded: name the Noul(s)
 that vouch for a member and it is emitted only when one of them is above

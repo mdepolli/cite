@@ -96,7 +96,7 @@ defmodule Cite.EmitTest do
       Emit.spans(
         @source,
         [
-          %{cluster: cluster(questions()), members: [hd(members())], answers: %{}, review?: false}
+          %{cluster: cluster(%{}), members: [hd(members())], answers: %{}, review?: false}
         ],
         0.5
       )

@@ -142,8 +142,8 @@ defmodule Cite.Compare do
           "cluster #{inspect(cluster_id)} members must be Candidate structs, got: #{inspect(other)}"
   end
 
-  # Gate over every :noul question key, so a malformed answer reads as 0.0
-  # rather than dropping out of :all. (A missing answer never gets this far.)
+  # Gate over every :noul question key. Every answer here is present and
+  # well-formed; the shell turned any reply that was not into an error.
   # No Noul questions → accept (Score/Choice-only clusters have nothing to gate).
   defp gate(%Cluster{match: match, questions: questions}, answers, band) do
     values =

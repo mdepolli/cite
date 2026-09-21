@@ -190,9 +190,11 @@ nothing to gate and is accepted once judged; a cluster with no questions at
 all is accepted without a request. Rejected clusters land in
 `Result.rejected` with their answers.
 
-A reply that skips a question is not read as "no": the model promises one
-answer per question, so the whole request is recorded as a `Cite.Error`
-(`{:missing_answers, keys}`) and nothing from it enters the index.
+A reply that skips a question, or answers it in a shape its type cannot
+have, is not read as "no": the model promises one well-formed answer per
+question, so the whole request is recorded as a `Cite.Error`
+(`{:missing_answers, keys}` or `{:malformed_answers, keys}`) and nothing
+from it enters the index.
 
 ## Grounding members
 

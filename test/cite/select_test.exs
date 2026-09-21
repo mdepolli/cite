@@ -401,6 +401,21 @@ defmodule Cite.SelectTest do
       end
     end
 
+    test "records a reply with a malformed answer as an error, not as no" do
+      {source, candidates} = household_fixture()
+
+      client = fn %{"questions" => qs} ->
+        answers = Map.new(qs, fn {k, _} -> {k, %{"noul" => 0.9}} end)
+        [first | _] = answers |> Map.keys() |> Enum.sort()
+        {:ok, %{answers: Map.put(answers, first, %{"noul" => "high"}), usage: nil}}
+      end
+
+      result = Cite.select(client, source, candidates, household_spec())
+
+      assert result.scan == %{}
+      assert [%Error{reason: {:malformed_answers, [_]}}] = result.errors
+    end
+
     test "raises when the client returns the wrong shape, including a bad usage" do
       spec = %{
         atomics: [%{name: "d", question: fn _ -> noul_q("d?") end}],
