@@ -17,10 +17,10 @@ defmodule Cite.Provider.TypeSafeTest do
   end
 
   # The adapter's own retry policy; the stubs send Retry-After: 0 to keep it fast.
-  defp retrying_judge do
-    Cite.new(TypeSafe,
-      api_key: "k",
-      req_options: [plug: {Req.Test, __MODULE__}, retry_log_level: false]
+  defp retrying_judge(opts \\ []) do
+    Cite.new(
+      TypeSafe,
+      [api_key: "k", req_options: [plug: {Req.Test, __MODULE__}, retry_log_level: false]] ++ opts
     )
   end
 
@@ -187,6 +187,21 @@ defmodule Cite.Provider.TypeSafeTest do
 
       assert retrying_judge().(@request) == {:error, {:rate_limited, 0}}
       assert Agent.get(calls, & &1) == 4
+    end
+
+    test "an unparseable Retry-After falls back to backoff instead of raising mid-retry" do
+      {:ok, calls} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0 do
+          conn |> Plug.Conn.put_resp_header("retry-after", "soon") |> Plug.Conn.send_resp(429, "")
+        else
+          Req.Test.json(conn, %{"answers" => %{}})
+        end
+      end)
+
+      assert {:ok, _} = retrying_judge(max_retry_delay: 0).(@request)
+      assert Agent.get(calls, & &1) == 2
     end
 
     test "does not retry a timeout" do

@@ -3,8 +3,10 @@ defmodule Cite.Provider.TypeSafe do
   TypeSafe System One over HTTP (`POST /v1/systemone`).
 
   Options for `Cite.new/2`: `:api_key` (or `JEV_API_KEY`; missing raises),
-  `:model` (`"jev-1.13.0"`), `:base_url`, and `:req_options`, merged into
-  the Req client last — a test passes `plug: {Req.Test, name}`.
+  `:model` (`"jev-1.13.0"`), `:base_url`, `:max_retry_delay` (ms, 30 000 —
+  the cap on any one retry wait, `Retry-After` included), and
+  `:req_options`, merged into the Req client last — a test passes
+  `plug: {Req.Test, name}`.
   """
 
   @behaviour Cite.Provider
@@ -41,12 +43,14 @@ defmodule Cite.Provider.TypeSafe do
         :api_key,
         :req_options,
         model: @default_model,
-        base_url: @default_base_url
+        base_url: @default_base_url,
+        max_retry_delay: @max_retry_delay_ms
       ])
 
     api_key = opts[:api_key] || System.get_env("JEV_API_KEY")
     model = opts[:model]
     base_url = opts[:base_url]
+    max_retry_delay = opts[:max_retry_delay]
     req_overrides = opts[:req_options] || []
 
     if api_key in [nil, ""] do
@@ -72,7 +76,12 @@ defmodule Cite.Provider.TypeSafe do
       ]
       |> Keyword.merge(req_overrides)
 
-    %__MODULE__{http_client: Req.new(req_options), model: model}
+    http_client =
+      req_options
+      |> Req.new()
+      |> Req.Request.put_private(:cite_max_retry_delay, max_retry_delay)
+
+    %__MODULE__{http_client: http_client, model: model}
   end
 
   @impl Cite.Provider
@@ -91,22 +100,25 @@ defmodule Cite.Provider.TypeSafe do
 
   # Req owns retries: 429, 529 and 5xx (TypeSafe documents 529 as transient,
   # Req's :transient list does not include it) and connection failures, at
-  # most @max_retries times with a delay capped at @max_retry_delay_ms even
+  # most @max_retries times with a delay capped at :max_retry_delay (30 s) even
   # when Retry-After says longer. A timeout is not retried: a 120 s call
   # retried is eight minutes, and a slow success would be billed twice. What
   # reaches decode/1 has already had its retries; a 429 there still carries
   # Retry-After so the caller knows what the server asked for.
   defp retry(request, %Req.Response{status: status} = response)
        when status == 429 or status == 529 or status in 500..504 do
-    {:delay,
-     min(Req.Response.get_retry_after(response) || backoff_ms(request), @max_retry_delay_ms)}
+    {:delay, min(retry_after_ms(response) || backoff_ms(request), max_retry_delay(request))}
   end
 
   defp retry(request, %Req.TransportError{reason: reason}) when reason != :timeout do
-    {:delay, min(backoff_ms(request), @max_retry_delay_ms)}
+    {:delay, min(backoff_ms(request), max_retry_delay(request))}
   end
 
   defp retry(_request, _response_or_exception), do: false
+
+  defp max_retry_delay(request) do
+    Req.Request.get_private(request, :cite_max_retry_delay, @max_retry_delay_ms)
+  end
 
   defp backoff_ms(request) do
     Integer.pow(2, Req.Request.get_private(request, :req_retry_count, 0)) * 1_000
