@@ -1,20 +1,35 @@
 defmodule Cite.Policy.ChecksTest do
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureIO
+
   alias Spark.Error.DslError
 
   # Each policy gets its own module name so the tests can run concurrently.
+  # Spark also prints each error as a diagnostic; it is captured, not shown.
   defmacrop assert_policy_error(message, do: body) do
     name = Module.concat(__MODULE__, "P#{System.unique_integer([:positive])}")
 
     quote do
-      assert_raise DslError, unquote(message), fn ->
-        defmodule unquote(name) do
-          use Cite.Policy
-          unquote(body)
+      capture_io(:stderr, fn ->
+        assert_raise DslError, unquote(message), fn ->
+          defmodule unquote(name) do
+            use Cite.Policy
+            unquote(body)
+          end
         end
-      end
+      end)
     end
+  end
+
+  # Compiled from a string, so the line an error points at is fixed.
+  defp compile_error(source) do
+    {error, _diagnostic} =
+      with_io(:stderr, fn ->
+        assert_raise DslError, fn -> Code.compile_string(source, "policy.ex") end
+      end)
+
+    error
   end
 
   describe "indicators and fits" do
@@ -473,6 +488,70 @@ defmodule Cite.Policy.ChecksTest do
           option :a, "again"
         end
       end
+    end
+  end
+
+  describe "error location" do
+    test "points at a top-level declaration" do
+      # Arrange
+      source = """
+      defmodule Cite.Policy.ChecksTest.TopLevel do
+        use Cite.Policy
+
+        filter :f do
+          question "Is the client speaking?"
+          yes "y"
+          no "n"
+        end
+      end
+      """
+
+      # Act
+      error = compile_error(source)
+
+      # Assert
+      assert {:erl_anno.file(error.location), :erl_anno.line(error.location)} ==
+               {~c"policy.ex", 4}
+    end
+
+    test "points at a declaration nested in a concern" do
+      # Arrange
+      source = """
+      defmodule Cite.Policy.ChecksTest.Nested do
+        use Cite.Policy
+
+        factor :kids do
+          question "Does {passage} mention kids?"
+          yes "y"
+          no "n"
+        end
+
+        concern :k do
+          category :c
+          role :household, factor: :kids
+
+          check :fits do
+            question "Does {household} fit?"
+            yes "y"
+            no "n"
+          end
+
+          check :lonely do
+            distinct true
+            question "Is {household} alone?"
+            yes "y"
+            no "n"
+          end
+        end
+      end
+      """
+
+      # Act
+      error = compile_error(source)
+
+      # Assert
+      assert :erl_anno.line(error.location) == 20
+      assert error.message =~ "distinct check :lonely must name at least two roles"
     end
   end
 end
