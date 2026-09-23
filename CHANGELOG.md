@@ -7,35 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- Elixir requirement is `~> 1.18`.
-
 ### Added
 
-- `Cite.select/5`: atomic scan over candidates in windows, code-composed
-  clusters, a compare round gated by a review band, and byte-exact spans out.
-  Options: `window_size`, `atomic_threshold`, `review_band`,
-  `confidence_floor`, `state`.
-- `Cite.Candidate.from_segments/1`, `Cite.Question.noul/1`, `score/1`,
-  `choice/1`, and `Cite.Cluster.new/1` as the typed inputs. A cluster's
-  `member_questions` names the Nouls that ground each member; `match: :all`
-  or `:any` sets how its Nouls combine.
-- `Cite.Result`, `Cite.Span`, and `Cite.Error` as the outputs, encodable
-  with Jason. Spans carry the cluster's class, a label
-  per Score (the level index) and Choice (the option) — `"uncertain"` below
-  `confidence_floor` — and the raw answers. `Result` keeps the pre-threshold
-  scan index, every rejected cluster with its answers, token usage, and the
-  model ids that answered; every failed request is an `Error` with its byte
-  range and candidate ids.
+- `use Cite.Policy`: a policy declared once in a module, built on Spark.
+  Filters, concerns (screened directly with a detect and an optional
+  confirm, or built from factors with roles and checks), factors, and Score or
+  Choice descriptors; `exclusive` keeps a passage with one concern. Questions
+  name what they read by placeholder (`{passage}`, `{household}`) and Cite
+  writes the path. Every mistake in a policy is a compile error.
+- A DSL reference in `Cite.Policy`'s docs, generated from the DSL by Spark.
+- `Cite.source/2`: the caller's passages, kept byte for byte, with `as:` for
+  the word they sit under and `show:` for the meta the model sees.
+- `Cite.judge/4`: two fixed rounds. A screen of every passage for every
+  detect in windows, fixed rules that gather matches into findings, and
+  one judgment per finding on its own evidence, gated by a review band.
+  Options: `threshold`, `review_band`, `window`, `max_evidence`.
+- `Cite.Report`, `Cite.Finding`, `Cite.Citation`, `Cite.Passage`, and
+  `Cite.Error` as the outputs, encodable with Jason. A finding carries its
+  verdict, the raw answers to its checks and descriptors, the passages it
+  cites, those its confirm dropped, and those past `max_evidence`; the report
+  keeps every round-1 score, token usage, and the model ids that answered.
 - `Cite.Provider` behaviour and `Cite.Provider.TypeSafe`, a Req client for
-  TypeSafe System One; `Cite.new/2` builds the client function `select/5`
-  takes. The TypeSafe client retries 429, 529, 500–504, and connection
-  failures up to three times, honouring `Retry-After`, delays capped at 30
-  seconds; timeouts are not retried.
-- Windows over the provider's size cap (`{:error, :request_too_large}`) are
-  halved and retried.
-- Caller errors raise before the first request: candidates are checked
-  against the source, atomics and options are validated, and what compose
-  returns is checked. Anything the model or the network did is an `Error`
-  in the result, never an exception.
+  TypeSafe System One; `Cite.client/2` builds the client function
+  `judge/4` takes. The TypeSafe client retries 429, 529, 500–504, and
+  connection failures up to three times, honouring `Retry-After`, delays
+  capped at 30 seconds; timeouts are not retried.
+- Round-1 windows over the provider's size cap (`{:error,
+  :request_too_large}`) are halved and retried.
+- Requires Elixir `~> 1.18`.

@@ -1,4 +1,46 @@
 # Used by "mix format"
+spark_locals_without_parens = [
+  category: 1,
+  check: 1,
+  check: 2,
+  choice: 1,
+  choice: 2,
+  concern: 1,
+  concern: 2,
+  confirm: 0,
+  confirm: 1,
+  detect: 0,
+  detect: 1,
+  distinct: 1,
+  examples: 1,
+  exclusive: 1,
+  factor: 1,
+  factor: 2,
+  filter: 1,
+  filter: 2,
+  focus: 1,
+  levels: 1,
+  no: 0,
+  no: 1,
+  no: 2,
+  not_for: 1,
+  option: 2,
+  option: 3,
+  optional: 1,
+  question: 1,
+  role: 1,
+  role: 2,
+  score: 1,
+  score: 2,
+  what: 1,
+  yes: 0,
+  yes: 1,
+  yes: 2
+]
+
 [
-  inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"]
+  import_deps: [:spark],
+  inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"],
+  locals_without_parens: spark_locals_without_parens,
+  export: [locals_without_parens: spark_locals_without_parens]
 ]

@@ -1,118 +1,248 @@
 defmodule Cite.WireTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Candidate, Question, Wire}
+  alias Cite.{Passage, Wire}
+  alias Cite.Policy.Question
   alias Cite.Wire.Object
 
-  describe "map/1" do
-    test "stringifies atom keys recursively and leaves binary keys alone" do
-      assert Wire.map(%{"b" => %{c: [%{d: 2}]}, a: 1}) == %{
-               "a" => 1,
-               "b" => %{"c" => [%{"d" => 2}]}
+  describe "passages/2" do
+    test "keys passages by id in source order, with only the shown meta" do
+      # Arrange
+      passages = [
+        %Passage{
+          id: "U014",
+          text: "behind on the mortgage",
+          meta: %{speaker: "B", start: 81_230}
+        },
+        %Passage{id: "U015", text: "the cashflow chart", meta: %{speaker: "A"}}
+      ]
+
+      # Act
+      object = Wire.passages(passages, [:speaker])
+
+      # Assert
+      assert object == %Object{
+               pairs: [
+                 {"U014",
+                  %{"id" => "U014", "speaker" => "B", "text" => "behind on the mortgage"}},
+                 {"U015", %{"id" => "U015", "speaker" => "A", "text" => "the cashflow chart"}}
+               ]
              }
     end
 
-    test "wires a candidate found anywhere in the tree" do
+    test "sends no meta when show is empty" do
+      # Act
+      object = Wire.passages([%Passage{id: "P0", text: "a", meta: %{speaker: "B"}}], [])
+
+      # Assert
+      assert object == %Object{pairs: [{"P0", %{"id" => "P0", "text" => "a"}}]}
+    end
+
+    test "matches show keys exactly as given" do
       # Arrange
-      candidate = %Candidate{
-        id: "U007",
-        text: "hi",
-        byte_start: 0,
-        byte_end: 2,
-        meta: %{speaker: "A"}
+      passages = [%Passage{id: "P0", text: "a", meta: %{"speaker" => "B", "role" => "client"}}]
+
+      # Act + Assert
+      assert Wire.passages(passages, [:speaker, "role"]) ==
+               %Object{pairs: [{"P0", %{"id" => "P0", "text" => "a", "role" => "client"}}]}
+    end
+  end
+
+  describe "passage/2" do
+    test "wires one passage with its shown meta" do
+      # Arrange
+      passage = %Passage{id: "U003", text: "two kids", meta: %{speaker: "B", start: 9}}
+
+      # Act + Assert
+      assert Wire.passage(passage, [:speaker]) ==
+               %{"id" => "U003", "speaker" => "B", "text" => "two kids"}
+    end
+  end
+
+  describe "question/3" do
+    test "encodes a Noul with its placeholder path and structured criteria" do
+      # Arrange
+      question = %Question{
+        type: :noul,
+        text: "Does {passage} say money is short?",
+        focus: nil,
+        criteria: %{
+          true: %{what: "Short now.", examples: ["behind"]},
+          false: %{what: "No strain.", not_for: "Bills as facts."}
+        }
       }
 
       # Act
-      wired = Wire.map(%{"household" => candidate, nested: %{list: [1, candidate]}})
+      wired = Wire.question(question, %{"passage" => "utterances.U014.text"}, [])
 
       # Assert
-      expected = %{"id" => "U007", "text" => "hi", "speaker" => "A"}
-      assert wired == %{"household" => expected, "nested" => %{"list" => [1, expected]}}
-    end
-  end
-
-  describe "map/1 rejects what it cannot send" do
-    test "an unknown struct anywhere in the tree" do
-      assert_raise ArgumentError, ~r/got a URI struct/, fn ->
-        Wire.map(%{"when" => %{"at" => URI.parse("x")}})
-      end
-    end
-
-    test "a candidate list with a non-candidate in it" do
-      c = %Candidate{id: "C0", text: "a", byte_start: 0, byte_end: 1}
-
-      assert_raise ArgumentError, ~r/expected a Cite.Candidate in state, got: :x/, fn ->
-        Wire.map(%{"lines" => [c, :x]})
-      end
-    end
-  end
-
-  describe "map/1 keys" do
-    test "raises on a key that is neither atom nor binary" do
-      assert_raise ArgumentError, ~r/keys must be atoms or binaries, got: 1/, fn ->
-        Wire.map(%{1 => "x"})
-      end
-    end
-  end
-
-  describe "candidates/1" do
-    test "keeps window order on the wire past 32 entries, under both encoders" do
-      # Arrange — 40 candidates; a plain map of these encodes in hash order.
-      candidates =
-        for i <- 0..39 do
-          id = "U" <> String.pad_leading(Integer.to_string(i), 3, "0")
-          %Candidate{id: id, text: "t#{i}", byte_start: 0, byte_end: 1}
-        end
-
-      ids = Enum.map(candidates, & &1.id)
-
-      # Act
-      object = Wire.candidates(candidates)
-
-      # Assert
-      assert object["U039"] == %{"id" => "U039", "text" => "t39"}
-      assert wire_keys(Jason.encode!(object)) == ids
-      refute wire_keys(Jason.encode!(Map.new(object.pairs))) == ids
+      assert wired == %{
+               "type" => "noul",
+               "instructions" => %{
+                 "question" => "Does `utterances.U014.text` say money is short?",
+                 "inspect" => "`utterances.U014.text`"
+               },
+               "criteria" => %{
+                 "true" => %{"what" => "Short now.", "examples" => ["behind"]},
+                 "false" => %{"what" => "No strain.", "not_for" => "Bills as facts."}
+               }
+             }
     end
 
-    test "a list of candidates inside state is wired the same way" do
-      c0 = %Candidate{id: "C000", text: "a", byte_start: 0, byte_end: 1}
-      c5 = %Candidate{id: "C005", text: "b", byte_start: 2, byte_end: 3}
-
-      assert %{"lines" => %Object{pairs: [{"C000", _}, {"C005", _}]}} =
-               Wire.map(%{"lines" => [c0, c5]})
-    end
-  end
-
-  describe "candidate/1" do
-    test "is meta plus id and text, with text winning over a meta key" do
-      candidate = %Candidate{
-        id: "U1",
-        text: "real",
-        byte_start: 0,
-        byte_end: 4,
-        meta: %{text: "meta"}
+    test "encodes a Score with its focus and compare over the fallback paths" do
+      # Arrange
+      question = %Question{
+        type: :score,
+        text: "How bad?",
+        focus: "Judge impact.",
+        criteria: ["a", "b"]
       }
 
-      assert Wire.candidate(candidate) == %{"id" => "U1", "text" => "real"}
+      # Act + Assert
+      assert Wire.question(question, %{}, ["household.text", "income.text"]) == %{
+               "type" => "score",
+               "instructions" => %{
+                 "question" => "How bad?",
+                 "focus" => "Judge impact.",
+                 "compare" => ["`household.text`", "`income.text`"]
+               },
+               "criteria" => ["a", "b"]
+             }
     end
-  end
 
-  describe "questions/1" do
-    test "encodes every question under its key" do
+    test "encodes a Choice and expands placeholders in its focus" do
       # Arrange
-      question = Question.noul(question: "Q?", inspect: "`x`", true: "yes", false: "no")
+      question = %Question{
+        type: :choice,
+        text: "Is {passage} temporary?",
+        focus: "Read {passage} only.",
+        criteria: %{"transient" => "recovers", "persistent" => "lasting"}
+      }
 
-      # Act
-      wired = Wire.questions(%{"fits" => question})
-
-      # Assert
-      assert %{"fits" => %{"type" => "noul", "instructions" => %{"question" => "Q?"}}} = wired
+      # Act + Assert
+      assert Wire.question(question, %{"passage" => "p.P0.text"}, []) == %{
+               "type" => "choice",
+               "instructions" => %{
+                 "question" => "Is `p.P0.text` temporary?",
+                 "focus" => "Read `p.P0.text` only.",
+                 "inspect" => "`p.P0.text`"
+               },
+               "criteria" => %{"transient" => "recovers", "persistent" => "lasting"}
+             }
     end
   end
+
+  describe "shown meta" do
+    test "stringifies nested keys and leaves binary keys alone" do
+      # Arrange
+      passage = %Passage{id: "U1", text: "a", meta: %{about: %{"role" => [%{kind: :client}]}}}
+
+      # Act + Assert
+      assert Wire.passage(passage, [:about]) == %{
+               "id" => "U1",
+               "text" => "a",
+               "about" => %{"role" => [%{"kind" => :client}]}
+             }
+    end
+  end
+
+  test "passages keep source order on the wire past 32 entries" do
+    # Arrange: 40 passages; a plain map of these encodes in hash order.
+    passages = for i <- 0..39, do: %Passage{id: id(i), text: "t#{i}"}
+
+    # Act
+    json = Jason.encode!(Wire.passages(passages, []))
+
+    # Assert
+    assert wire_keys(json) == [
+             "U000",
+             "U001",
+             "U002",
+             "U003",
+             "U004",
+             "U005",
+             "U006",
+             "U007",
+             "U008",
+             "U009",
+             "U010",
+             "U011",
+             "U012",
+             "U013",
+             "U014",
+             "U015",
+             "U016",
+             "U017",
+             "U018",
+             "U019",
+             "U020",
+             "U021",
+             "U022",
+             "U023",
+             "U024",
+             "U025",
+             "U026",
+             "U027",
+             "U028",
+             "U029",
+             "U030",
+             "U031",
+             "U032",
+             "U033",
+             "U034",
+             "U035",
+             "U036",
+             "U037",
+             "U038",
+             "U039"
+           ]
+  end
+
+  defp id(i), do: "U" <> String.pad_leading(Integer.to_string(i), 3, "0")
 
   # Top-level key order as it appears in the JSON text.
   defp wire_keys(json) do
-    Regex.scan(~r/"(U\d{3})":\{/, json) |> Enum.map(fn [_, key] -> key end)
+    ~r/"(U\d{3})":\{/
+    |> Regex.scan(json)
+    |> Enum.map(fn [_, key] -> key end)
+  end
+
+  describe "Object" do
+    setup do
+      %{object: Object.new([{"U1", %{"text" => "a"}}, {"U2", %{"text" => "b"}}])}
+    end
+
+    test "reads a key like a map, and nil for a missing one", %{object: object} do
+      assert object["U2"] == %{"text" => "b"}
+      assert object["U9"] == nil
+    end
+
+    test "updates a value in place, keeping the order", %{object: object} do
+      assert update_in(object["U1"]["text"], &String.upcase/1) ==
+               %Object{pairs: [{"U1", %{"text" => "A"}}, {"U2", %{"text" => "b"}}]}
+    end
+
+    test "puts a new key last", %{object: object} do
+      assert put_in(object["U3"], %{"text" => "c"}) ==
+               %Object{
+                 pairs: [
+                   {"U1", %{"text" => "a"}},
+                   {"U2", %{"text" => "b"}},
+                   {"U3", %{"text" => "c"}}
+                 ]
+               }
+    end
+
+    test "pops a key, and nothing for a missing one", %{object: object} do
+      assert pop_in(object["U1"]) ==
+               {%{"text" => "a"}, %Object{pairs: [{"U2", %{"text" => "b"}}]}}
+
+      assert pop_in(object["U9"]) == {nil, object}
+    end
+
+    test "pops from inside an update", %{object: object} do
+      assert get_and_update_in(object["U2"], fn _ -> :pop end) ==
+               {%{"text" => "b"}, %Object{pairs: [{"U1", %{"text" => "a"}}]}}
+    end
   end
 end

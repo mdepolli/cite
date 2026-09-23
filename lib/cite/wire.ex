@@ -2,80 +2,74 @@ defmodule Cite.Wire do
   @moduledoc """
   Values to request maps.
 
-  The one place atom keys become strings and a `Cite.Candidate` becomes its
-  wire shape; nothing past this edge sees an Elixir value. Internal.
+  The one place passages and compiled questions become the maps a client
+  receives: atom keys become strings, and placeholders become backticked
+  paths, built by `text_path/1` and `text_path/2`.
+  Past this edge a client sees string-keyed maps, lists, and scalars, and a
+  `Cite.Wire.Object` wherever key order matters. Internal.
   """
 
-  alias Cite.{Candidate, Question}
+  alias Cite.{Passage, Placeholder}
+  alias Cite.Policy.Question
   alias Cite.Wire.Object
 
   @doc """
-  Stringifies keys recursively. A `%Candidate{}` anywhere in the tree becomes
-  its wire shape via `candidate/1`; a list of candidates becomes an object
-  keyed by id that keeps their order (`candidates/1`).
+  Passages on the wire as one object keyed by id, in source order, each with
+  only the meta keys `show` names. A plain map would lose that order past
+  32 entries, and the model reads neighbours.
   """
-  @spec map(map()) :: map()
-  def map(map) when is_map(map) do
-    Map.new(map, fn {key, value} -> {key(key), value(value)} end)
+  @spec passages([Passage.t()], [atom() | String.t()]) :: Object.t()
+  def passages(passages, show) when is_list(passages) do
+    Object.new(for passage <- passages, do: {passage.id, passage(passage, show)})
   end
 
-  @doc """
-  A candidate on the wire: its `meta` (keys stringified) plus `"id"` and `"text"`.
-  """
-  @spec candidate(Candidate.t()) :: map()
-  def candidate(%Candidate{id: id, text: text, meta: meta}) do
+  @doc "One passage on the wire: `id`, `text`, and the meta keys `show` names."
+  @spec passage(Passage.t(), [atom() | String.t()]) :: map()
+  def passage(%Passage{id: id, text: text, meta: meta}, show) do
     meta
-    |> map()
+    |> Map.take(show)
+    |> stringify()
     |> Map.put("id", id)
     |> Map.put("text", text)
   end
 
-  def candidate(other) do
-    raise ArgumentError, "expected a Cite.Candidate in state, got: #{inspect(other)}"
-  end
+  @doc "The path to a passage's text under the source's `as`: `utterances.U014.text`."
+  @spec text_path(String.t(), String.t()) :: String.t()
+  def text_path(as, id), do: "#{as}.#{id}.text"
+
+  @doc "The path to the text of the passage filling a role: `household.text`."
+  @spec text_path(atom()) :: String.t()
+  def text_path(role) when is_atom(role), do: "#{role}.text"
 
   @doc """
-  Candidates on the wire as one object keyed by id, in the order given. A
-  plain map would lose that order past 32 entries.
+  One compiled question on the wire. `paths` maps each placeholder name to
+  its path in the request's state; a question with no placeholders in its
+  text or focus compares the `fallback` paths.
   """
-  @spec candidates([Candidate.t()]) :: Object.t()
-  def candidates(candidates) when is_list(candidates) do
-    Object.new(
-      for candidate <- candidates do
-        wired = candidate(candidate)
-        {candidate.id, wired}
-      end
-    )
+  @spec question(Question.t(), %{String.t() => String.t()}, [String.t()]) :: map()
+  def question(%Question{} = question, paths, fallback) do
+    %{
+      "type" => Atom.to_string(question.type),
+      "instructions" => Placeholder.instructions(question.text, question.focus, paths, fallback),
+      "criteria" => criteria(question.type, question.criteria)
+    }
   end
 
-  @doc """
-  Encodes every question in a `%{key => Question.t()}` map.
-  """
-  @spec questions(%{String.t() => Question.t()}) :: %{String.t() => map()}
-  def questions(questions) do
-    Map.new(questions, fn {key, %Question{} = question} -> {key, Question.encode(question)} end)
+  defp criteria(:noul, %{true: yes, false: no}),
+    do: %{"true" => stringify(yes), "false" => stringify(no)}
+
+  defp criteria(_type, criteria), do: criteria
+
+  defp stringify(map) do
+    Map.new(map, fn {key, value} -> {key(key), value(value)} end)
   end
 
-  @doc "A state or meta key on the wire: atoms become strings, binaries stay."
-  @spec key(atom() | String.t()) :: String.t()
-  def key(key) when is_atom(key), do: Atom.to_string(key)
-  def key(key) when is_binary(key), do: key
+  # `Cite.Source` has already checked shown meta is JSON, so only atom keys
+  # need turning into strings.
+  defp key(key) when is_atom(key), do: Atom.to_string(key)
+  defp key(key), do: key
 
-  def key(other) do
-    raise ArgumentError, "state and meta keys must be atoms or binaries, got: #{inspect(other)}"
-  end
-
-  defp value(%Candidate{} = candidate), do: candidate(candidate)
-  defp value(%Object{} = object), do: object
-
-  defp value(%{} = map) when not is_struct(map), do: map(map)
-
-  defp value(%{__struct__: module}) do
-    raise ArgumentError,
-          "state and meta may hold plain maps, lists, scalars, and candidates; got a #{inspect(module)} struct"
-  end
-
-  defp value([%Candidate{} | _] = candidates), do: candidates(candidates)
+  defp value(%{} = map), do: stringify(map)
   defp value(list) when is_list(list), do: Enum.map(list, &value/1)
   defp value(value), do: value
 end

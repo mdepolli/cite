@@ -10,6 +10,9 @@ defmodule Cite.MixProject do
       version: @version,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
+      elixirc_paths: elixirc_paths(Mix.env()),
+      test_elixirc_options: [debug_info: true],
+      test_coverage: [ignore_modules: [~r/^Cite\.Policy\.Dsl\.Policy(\.|$)/, ~r/^Cite\.Test/]],
       deps: deps(),
       name: "Cite",
       description: description(),
@@ -24,10 +27,15 @@ defmodule Cite.MixProject do
     []
   end
 
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_env), do: ["lib"]
+
   defp deps do
     [
       {:jason, "~> 1.4"},
       {:req, "~> 0.6"},
+      {:spark, "~> 2.7"},
+      {:sourceror, "~> 1.2", only: [:dev, :test], runtime: false},
       {:plug, "~> 1.0", only: :test},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
@@ -37,9 +45,9 @@ defmodule Cite.MixProject do
 
   defp description do
     """
-    Citations copied from the source, never written by a model. Your code lists
-    the candidates, a decision model judges which ones hold up, and Cite returns
-    those exact bytes.
+    Judgments plus grounding: declare a policy, hand over your document's
+    passages, and a decision model's findings come back citing those passages,
+    unchanged.
     """
   end
 
@@ -67,8 +75,8 @@ defmodule Cite.MixProject do
       source_url: @source_url,
       extras: [
         "README.md",
-        "guides/select-and-judge.md",
-        "guides/writing-questions.md",
+        "guides/writing-policies.md",
+        "guides/how-judging-works.md",
         "CHANGELOG.md"
       ],
       # Groups mirror the stability tiers (see README "Stability"): Core API
@@ -78,29 +86,48 @@ defmodule Cite.MixProject do
       groups_for_modules: [
         "Core API": [
           Cite,
-          Cite.Candidate,
-          Cite.Question,
-          Cite.Cluster,
-          Cite.Result,
-          Cite.Span,
+          Cite.Policy,
+          Cite.Source,
+          Cite.Passage,
+          Cite.Report,
+          Cite.Finding,
+          Cite.Citation,
           Cite.Error
         ],
-        Providers: [Cite.Provider, Cite.Provider.TypeSafe],
+        Providers: [Cite.Provider, Cite.Provider.TypeSafe, Cite.Wire.Object],
         Internal: [
-          Cite.Select,
-          Cite.Scan,
-          Cite.Compare,
-          Cite.Emit,
+          Cite.Run,
+          Cite.Screen,
+          Cite.Gather,
+          Cite.Gathered,
+          Cite.Judge,
+          Cite.Placeholder,
           Cite.Wire,
-          Cite.Wire.Object,
-          Cite.Answer
+          Cite.Answer,
+          Cite.Policy.Dsl,
+          Cite.Policy.Checks,
+          Cite.Policy.Build,
+          Cite.Policy.Terms,
+          Cite.Policy.Question,
+          Cite.Policy.Concern,
+          Cite.Policy.Role,
+          Cite.Policy.Check
         ]
       ],
       # Renders ```mermaid``` fences in extras (README + guides) on HexDocs.
       # GitHub renders them natively; ExDoc needs the CDN + init hook.
+      before_closing_head_tag: &before_closing_head_tag/1,
       before_closing_body_tag: &before_closing_body_tag/1
     ]
   end
+
+  # Spark marks a required option in the `Cite.Policy` DSL reference with
+  # this class alone; the rule is the one its cheat sheets carry.
+  defp before_closing_head_tag(:html) do
+    ~s(<style>.spark-required::after { content: "*"; color: red !important; }</style>)
+  end
+
+  defp before_closing_head_tag(_), do: ""
 
   # Copied verbatim from ex_doc's README (0.40.x), mermaid pin included.
   # To upgrade, adopt the recipe of whatever ExDoc version we're on —

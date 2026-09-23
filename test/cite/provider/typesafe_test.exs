@@ -5,12 +5,12 @@ defmodule Cite.Provider.TypeSafeTest do
   alias Cite.Provider.TypeSafe
 
   @request %{
-    "state" => %{"candidates" => %{"U0" => %{"text" => "hi"}}},
+    "state" => %{"passages" => %{"U0" => %{"text" => "hi"}}},
     "questions" => %{"U0:d" => %{"type" => "noul"}}
   }
 
   defp judge(opts \\ []) do
-    Cite.new(
+    Cite.client(
       TypeSafe,
       [api_key: "k", req_options: [plug: {Req.Test, __MODULE__}, retry: false]] ++ opts
     )
@@ -18,7 +18,7 @@ defmodule Cite.Provider.TypeSafeTest do
 
   # The adapter's own retry policy; the stubs send Retry-After: 0 to keep it fast.
   defp retrying_judge(opts \\ []) do
-    Cite.new(
+    Cite.client(
       TypeSafe,
       [api_key: "k", req_options: [plug: {Req.Test, __MODULE__}, retry_log_level: false]] ++ opts
     )
@@ -33,17 +33,32 @@ defmodule Cite.Provider.TypeSafeTest do
     end
 
     test "refuses a max_retry_delay that would not cap anything" do
-      for bad <- [nil, "30000", -1] do
-        assert_raise ArgumentError, ~r/max_retry_delay must be a non-negative integer/, fn ->
+      for {bad, message} <- [
+            {nil,
+             "invalid value for :max_retry_delay option: expected non negative integer, got: nil"},
+            {"30000",
+             ~s(invalid value for :max_retry_delay option: expected non negative integer, got: "30000")},
+            {-1,
+             "invalid value for :max_retry_delay option: expected non negative integer, got: -1"}
+          ] do
+        assert_raise ArgumentError, message, fn ->
           TypeSafe.new(api_key: "k", max_retry_delay: bad)
         end
       end
     end
 
     test "refuses retry_delay without a retry of its own" do
-      assert_raise ArgumentError, ~r/retry_delay needs its own :retry/, fn ->
-        TypeSafe.new(api_key: "k", req_options: [retry_delay: fn _ -> 0 end])
-      end
+      assert_raise ArgumentError,
+                   "invalid value for :req_options option: :retry_delay needs its own :retry; the adapter's retry sets delays itself",
+                   fn ->
+                     TypeSafe.new(api_key: "k", req_options: [retry_delay: fn _ -> 0 end])
+                   end
+    end
+
+    test "refuses req_options that are not a keyword list" do
+      assert_raise ArgumentError,
+                   "invalid value for :req_options option: expected a keyword list, got: :nope",
+                   fn -> TypeSafe.new(api_key: "k", req_options: :nope) end
     end
 
     test "hides the http client from inspect" do
@@ -51,7 +66,7 @@ defmodule Cite.Provider.TypeSafeTest do
     end
 
     test "rejects unknown options" do
-      assert_raise ArgumentError, ~r/unknown keys \[:modle\]/, fn ->
+      assert_raise ArgumentError, ~r/unknown options \[:modle\]/, fn ->
         TypeSafe.new(api_key: "k", modle: "x")
       end
     end
@@ -160,13 +175,17 @@ defmodule Cite.Provider.TypeSafeTest do
       assert judge().(@request) == {:error, :unauthorized}
 
       Req.Test.stub(__MODULE__, fn conn ->
-        conn |> Plug.Conn.put_resp_header("retry-after", "7") |> Plug.Conn.send_resp(429, "")
+        conn
+        |> Plug.Conn.put_resp_header("retry-after", "7")
+        |> Plug.Conn.send_resp(429, "")
       end)
 
       assert judge().(@request) == {:error, {:rate_limited, 7000}}
 
       Req.Test.stub(__MODULE__, fn conn ->
-        conn |> Plug.Conn.put_resp_header("retry-after", "soon") |> Plug.Conn.send_resp(429, "")
+        conn
+        |> Plug.Conn.put_resp_header("retry-after", "soon")
+        |> Plug.Conn.send_resp(429, "")
       end)
 
       assert judge().(@request) == {:error, {:rate_limited, nil}}
@@ -199,7 +218,10 @@ defmodule Cite.Provider.TypeSafeTest do
 
       Req.Test.stub(__MODULE__, fn conn ->
         Agent.update(calls, &(&1 + 1))
-        conn |> Plug.Conn.put_resp_header("retry-after", "0") |> Plug.Conn.send_resp(429, "")
+
+        conn
+        |> Plug.Conn.put_resp_header("retry-after", "0")
+        |> Plug.Conn.send_resp(429, "")
       end)
 
       assert retrying_judge().(@request) == {:error, {:rate_limited, 0}}
@@ -211,13 +233,66 @@ defmodule Cite.Provider.TypeSafeTest do
 
       Req.Test.stub(__MODULE__, fn conn ->
         if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0 do
-          conn |> Plug.Conn.put_resp_header("retry-after", "soon") |> Plug.Conn.send_resp(429, "")
+          conn
+          |> Plug.Conn.put_resp_header("retry-after", "soon")
+          |> Plug.Conn.send_resp(429, "")
         else
           Req.Test.json(conn, %{"answers" => %{}})
         end
       end)
 
       assert {:ok, _} = retrying_judge(max_retry_delay: 0).(@request)
+      assert Agent.get(calls, & &1) == 2
+    end
+
+    test "retries a connection failure, then succeeds" do
+      {:ok, calls} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0 do
+          Req.Test.transport_error(conn, :econnrefused)
+        else
+          Req.Test.json(conn, %{"answers" => %{}})
+        end
+      end)
+
+      assert {:ok, _} = retrying_judge(max_retry_delay: 0).(@request)
+      assert Agent.get(calls, & &1) == 2
+    end
+
+    test "a missing, negative, or fractional Retry-After falls back to backoff" do
+      for value <- [nil, "-1", "7.5"] do
+        {:ok, calls} = Agent.start_link(fn -> 0 end)
+
+        Req.Test.stub(__MODULE__, fn conn ->
+          if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0 do
+            conn
+            |> then(&if(value, do: Plug.Conn.put_resp_header(&1, "retry-after", value), else: &1))
+            |> Plug.Conn.send_resp(503, "")
+          else
+            Req.Test.json(conn, %{"answers" => %{}})
+          end
+        end)
+
+        assert {:ok, _} = retrying_judge(max_retry_delay: 0).(@request)
+        assert Agent.get(calls, & &1) == 2
+      end
+    end
+
+    test "an HTTP-date Retry-After already past waits no longer" do
+      {:ok, calls} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0 do
+          conn
+          |> Plug.Conn.put_resp_header("retry-after", "Thu, 01 Jan 2015 00:00:00 GMT")
+          |> Plug.Conn.send_resp(429, "")
+        else
+          Req.Test.json(conn, %{"answers" => %{}})
+        end
+      end)
+
+      assert {:ok, _} = retrying_judge().(@request)
       assert Agent.get(calls, & &1) == 2
     end
 

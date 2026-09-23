@@ -3,69 +3,70 @@ defmodule Cite.ErrorTest do
 
   alias Cite.Error
 
-  describe "from_range/3" do
-    test "builds an error for a byte range" do
-      assert %Error{byte_start: 0, byte_end: 10, reason: :timeout} =
-               Error.from_range(0, 10, :timeout)
-    end
-
-    test "raises on inverted range" do
-      assert_raise ArgumentError, fn ->
-        Error.from_range(10, 0, :timeout)
-      end
-    end
-  end
-
-  describe "from_candidates/2" do
-    test "spans the candidates' bytes and records their ids in the order given" do
-      candidates = [
-        %Cite.Candidate{id: "U2", text: "cc", byte_start: 6, byte_end: 8},
-        %Cite.Candidate{id: "U1", text: "bb", byte_start: 3, byte_end: 5}
-      ]
-
-      assert Error.from_candidates(candidates, :boom) ==
-               %Error{byte_start: 3, byte_end: 8, candidate_ids: ["U2", "U1"], reason: :boom}
-    end
-  end
-
   describe "Jason.Encoder" do
-    test "encodes atom reasons as strings" do
-      error = Error.from_range(0, 10, :timeout)
+    test "encodes the concern, passage ids, and an atom reason as strings" do
+      error = %Error{concern: :household_income, passage_ids: ["U3", "U9"], reason: :timeout}
 
       assert Jason.decode!(Jason.encode!(error)) == %{
-               "byte_start" => 0,
-               "byte_end" => 10,
-               "candidate_ids" => [],
+               "concern" => "household_income",
+               "passage_ids" => ["U3", "U9"],
                "reason" => "timeout"
              }
     end
 
-    test "passes through binaries maps and lists" do
-      assert Jason.decode!(Jason.encode!(Error.from_range(0, 1, "x")))["reason"] == "x"
+    test "encodes a screening error's missing concern as null" do
+      error = %Error{concern: nil, passage_ids: ["P0"], reason: :timeout}
 
-      assert Jason.decode!(Jason.encode!(Error.from_range(0, 1, %{"tag" => "a"})))["reason"] ==
-               %{"tag" => "a"}
+      assert Jason.decode!(Jason.encode!(error)) == %{
+               "concern" => nil,
+               "passage_ids" => ["P0"],
+               "reason" => "timeout"
+             }
+    end
 
-      assert Jason.decode!(Jason.encode!(Error.from_range(0, 1, ["a", 1])))["reason"] == ["a", 1]
+    test "passes through binaries, maps, and lists" do
+      for {reason, encoded} <- [
+            {"x", "x"},
+            {%{"tag" => "a"}, %{"tag" => "a"}},
+            {["a", 1], ["a", 1]}
+          ] do
+        error = %Error{concern: nil, passage_ids: [], reason: reason}
+        assert Jason.decode!(Jason.encode!(error))["reason"] == encoded
+      end
     end
 
     test "inspects tuples and exception structs so dumps never crash" do
-      tuple = Error.from_range(0, 10, {:bad_request, "max_tokens_exceeded"})
+      tuple = %Error{concern: nil, passage_ids: [], reason: {:bad_request, "max_tokens_exceeded"}}
+      exception = %Error{concern: nil, passage_ids: [], reason: %RuntimeError{message: "boom"}}
 
       assert Jason.decode!(Jason.encode!(tuple))["reason"] ==
                ~s({:bad_request, "max_tokens_exceeded"})
-
-      exception = Error.from_range(0, 10, %RuntimeError{message: "boom"})
 
       assert Jason.decode!(Jason.encode!(exception))["reason"] ==
                ~s(%RuntimeError{message: "boom"})
     end
 
     test "inspects tuples nested inside lists and maps" do
-      nested = Error.from_range(0, 1, %{"causes" => [{:a, 1}, "ok"], "meta" => %{k: {:b, 2}}})
+      error = %Error{
+        concern: nil,
+        passage_ids: [],
+        reason: %{"causes" => [{:a, 1}, "ok"], "meta" => %{k: {:b, 2}}}
+      }
 
-      assert Jason.decode!(Jason.encode!(nested))["reason"] ==
+      assert Jason.decode!(Jason.encode!(error))["reason"] ==
                %{"causes" => ["{:a, 1}", "ok"], "meta" => %{"k" => "{:b, 2}"}}
+    end
+
+    test "inspects what JSON cannot hold: non-string keys, invalid UTF-8, improper lists" do
+      for {reason, encoded} <- [
+            {%{{:a, 1} => "x", 2 => "y"}, %{"{:a, 1}" => "x", "2" => "y"}},
+            {<<0xFF>>, "<<255>>"},
+            {%{<<0xFE>> => <<0xFF>>}, %{"<<254>>" => "<<255>>"}},
+            {[1 | 2], "[1 | 2]"}
+          ] do
+        error = %Error{concern: nil, passage_ids: [], reason: reason}
+        assert Jason.decode!(Jason.encode!(error))["reason"] == encoded
+      end
     end
   end
 end

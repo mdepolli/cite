@@ -2,52 +2,53 @@ defmodule Cite.Answer do
   @moduledoc """
   Reply maps to values.
 
-  Reads one answer at a time and knows the reply shape of each question
-  type — the Noul probability, the Score level, the Choice option — and
-  nothing else. Every answer that reaches `noul/1` or `label/3` has passed
-  `well_formed?/2` in the shell; a reply that fails it is an error for its
-  whole request, never a value. Internal.
+  Knows what an answer to each question type may be, and nothing else.
+  Every answer that reaches `noul/1` has passed `check/2`; a reply that
+  fails it is an error for its whole request, never a value. Internal.
   """
-
-  alias Cite.Question
 
   @doc """
-  Whether an answer has the shape its question type promises: a numeric
-  `"noul"`; a numeric `"score"` with a numeric `"confidence"`; a binary
-  `"choice"` with a numeric `"confidence"`. `type` is the wire type string.
+  Checks a reply against the questions it answers, as they went on the wire:
+  `:ok` when every question has one well-formed answer, otherwise `{:error, {:missing_answers, keys}}`
+  or `{:error, {:malformed_answers, keys}}`, keys sorted, missing first. A
+  reply that fails is an error for its whole request, never a "no".
   """
-  @spec well_formed?(String.t(), term()) :: boolean()
-  def well_formed?("noul", %{"noul" => p}) when is_number(p), do: true
+  @spec check(%{String.t() => map()}, map()) ::
+          :ok | {:error, {:missing_answers | :malformed_answers, [String.t()]}}
+  def check(questions, answers) when is_map(questions) and is_map(answers) do
+    missing = Map.keys(questions) -- Map.keys(answers)
 
-  def well_formed?("score", %{"score" => s, "confidence" => c})
-      when is_number(s) and is_number(c),
-      do: true
+    malformed =
+      for {key, question} <- questions,
+          Map.has_key?(answers, key),
+          not well_formed?(question, answers[key]),
+          do: key
 
-  def well_formed?("choice", %{"choice" => o, "confidence" => c})
-      when is_binary(o) and is_number(c),
-      do: true
+    cond do
+      missing != [] -> {:error, {:missing_answers, Enum.sort(missing)}}
+      malformed != [] -> {:error, {:malformed_answers, Enum.sort(malformed)}}
+      true -> :ok
+    end
+  end
 
-  def well_formed?(_type, _answer), do: false
+  # One well-formed answer: a "noul" probability; a "score" that is a level
+  # index, from 0 to the last level; a "choice" that is one of the options.
+  # Every confidence is a probability. A score may fall between levels.
+  defp well_formed?(%{"type" => "noul"}, %{"noul" => p}), do: probability?(p)
+
+  defp well_formed?(%{"type" => "score", "criteria" => levels}, %{"score" => s} = answer) do
+    is_number(s) and s >= 0 and s <= length(levels) - 1 and probability?(answer["confidence"])
+  end
+
+  defp well_formed?(%{"type" => "choice", "criteria" => options}, %{"choice" => o} = answer) do
+    Map.has_key?(options, o) and probability?(answer["confidence"])
+  end
+
+  defp well_formed?(_question, _answer), do: false
+
+  defp probability?(p), do: is_number(p) and p >= 0 and p <= 1
 
   @doc "The Noul probability of a well-formed Noul answer."
   @spec noul(map()) :: number()
   def noul(%{"noul" => value}), do: value
-
-  @doc """
-  The label a well-formed answer earns under its question type, or `nil` for
-  a Noul, which labels nothing.
-
-  A Score labels as `round(score)`; a Choice as its `choice`. Either becomes
-  `"uncertain"` when `confidence` is below `floor`.
-  """
-  @spec label(Question.t(), map(), number()) :: integer() | String.t() | nil
-  def label(%Question{type: :score}, %{"score" => score, "confidence" => confidence}, floor) do
-    if confidence >= floor, do: round(score), else: "uncertain"
-  end
-
-  def label(%Question{type: :choice}, %{"choice" => choice, "confidence" => confidence}, floor) do
-    if confidence >= floor, do: choice, else: "uncertain"
-  end
-
-  def label(%Question{type: :noul}, _answer, _floor), do: nil
 end
