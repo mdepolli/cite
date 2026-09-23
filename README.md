@@ -194,9 +194,8 @@ pass `req_options: [plug: {Req.Test, name}]` to `Cite.client/2`.
 `Cite.client/2` builds a client from any module implementing
 `Cite.Provider`. `Cite.Provider.TypeSafe` ships with the library and talks to
 [TypeSafe](https://typesafe.ai)'s Jev, what TypeSafe calls a System One
-model. Its options: `:api_key` (or `JEV_API_KEY`), `:model`
-(`"jev-1.13.0"`), `:base_url`, and `:req_options`, merged into the Req
-client last.
+model. Its options, with their defaults, are in the docs of
+`Cite.Provider.TypeSafe`, generated from the schema that validates them.
 
 A provider raises on your mistakes and returns `{:error, reason}` for
 anything the network did. One reason is shared across providers,
