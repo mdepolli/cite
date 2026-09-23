@@ -111,16 +111,24 @@ defmodule Cite.Run do
     }
   end
 
-  # The client is the caller's function; its return is checked here, once,
-  # and trusted everywhere after. A reply that skips a question, or answers
-  # it in a shape its type cannot have, is not a verdict on it: the whole
-  # request becomes an error rather than a "no".
+  # A reply must be well-shaped and answer every question well; a reply that
+  # skips a question or answers it in a shape its type cannot have is not a
+  # verdict on it, so the whole request becomes an error rather than a "no".
   defp call(client, request) do
+    with {:ok, verdict} <- reply(client, request),
+         :ok <- Answer.check(request["questions"], verdict.answers) do
+      {:ok, verdict}
+    end
+  end
+
+  # The client is the caller's function; its return is checked here, once,
+  # and trusted everywhere after.
+  defp reply(client, request) do
     case client.(request) do
-      {:ok, %{answers: answers, usage: usage} = fields} = verdict when is_map(answers) ->
+      {:ok, %{answers: answers, usage: usage} = verdict} when is_map(answers) ->
         check_usage(usage)
-        check_model(Map.get(fields, :model))
-        check_answers(request["questions"], answers, verdict)
+        check_model(Map.get(verdict, :model))
+        {:ok, verdict}
 
       {:error, _reason} = error ->
         error
@@ -130,22 +138,6 @@ defmodule Cite.Run do
         client must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, \
         got: #{inspect(other)}
         """
-    end
-  end
-
-  defp check_answers(questions, answers, verdict) do
-    missing = Map.keys(questions) -- Map.keys(answers)
-
-    malformed =
-      for {key, question} <- questions,
-          Map.has_key?(answers, key),
-          not Answer.well_formed?(question["type"], answers[key]),
-          do: key
-
-    cond do
-      missing != [] -> {:error, {:missing_answers, Enum.sort(missing)}}
-      malformed != [] -> {:error, {:malformed_answers, Enum.sort(malformed)}}
-      true -> verdict
     end
   end
 

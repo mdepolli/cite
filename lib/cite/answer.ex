@@ -3,28 +3,48 @@ defmodule Cite.Answer do
   Reply maps to values.
 
   Knows the reply shape of each question type and nothing else. Every
-  answer that reaches `noul/1` has passed `well_formed?/2` in the shell; a
-  reply that fails it is an error for its whole request, never a value.
-  Internal.
+  answer that reaches `noul/1` has passed `check/2`; a reply that fails it
+  is an error for its whole request, never a value. Internal.
   """
 
   @doc """
-  Whether an answer has the shape its question type promises: a numeric
-  `"noul"`; a numeric `"score"` with a numeric `"confidence"`; a binary
-  `"choice"` with a numeric `"confidence"`. `type` is the wire type string.
+  Checks a reply against the questions it answers: `:ok` when every question
+  has one well-formed answer, otherwise `{:error, {:missing_answers, keys}}`
+  or `{:error, {:malformed_answers, keys}}`, keys sorted, missing first. A
+  reply that fails is an error for its whole request, never a "no".
   """
-  @spec well_formed?(String.t(), term()) :: boolean()
-  def well_formed?("noul", %{"noul" => p}) when is_number(p), do: true
+  @spec check(%{String.t() => map()}, map()) ::
+          :ok | {:error, {:missing_answers | :malformed_answers, [String.t()]}}
+  def check(questions, answers) when is_map(questions) and is_map(answers) do
+    missing = Map.keys(questions) -- Map.keys(answers)
 
-  def well_formed?("score", %{"score" => s, "confidence" => c})
-      when is_number(s) and is_number(c),
-      do: true
+    malformed =
+      for {key, question} <- questions,
+          Map.has_key?(answers, key),
+          not well_formed?(question["type"], answers[key]),
+          do: key
 
-  def well_formed?("choice", %{"choice" => o, "confidence" => c})
-      when is_binary(o) and is_number(c),
-      do: true
+    cond do
+      missing != [] -> {:error, {:missing_answers, Enum.sort(missing)}}
+      malformed != [] -> {:error, {:malformed_answers, Enum.sort(malformed)}}
+      true -> :ok
+    end
+  end
 
-  def well_formed?(_type, _answer), do: false
+  # One well-formed answer: a numeric "noul"; a numeric "score" with a numeric
+  # "confidence"; a binary "choice" with a numeric "confidence". `type` is the
+  # wire type string.
+  defp well_formed?("noul", %{"noul" => p}) when is_number(p), do: true
+
+  defp well_formed?("score", %{"score" => s, "confidence" => c})
+       when is_number(s) and is_number(c),
+       do: true
+
+  defp well_formed?("choice", %{"choice" => o, "confidence" => c})
+       when is_binary(o) and is_number(c),
+       do: true
+
+  defp well_formed?(_type, _answer), do: false
 
   @doc "The Noul probability of a well-formed Noul answer."
   @spec noul(map()) :: number()
