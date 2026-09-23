@@ -337,7 +337,7 @@ defmodule Cite.Policy.ChecksTest do
     end
 
     test "a check naming no role" do
-      assert_policy_error ~r/check :c must use at least one of its concern's roles/ do
+      assert_policy_error ~r/check :c must name at least one of its concern's roles in its question/ do
         factor :f do
           question "Does {passage} x?"
           yes "y"
@@ -349,6 +349,27 @@ defmodule Cite.Policy.ChecksTest do
 
           check :c do
             question "Is this fine?"
+            yes "y"
+            no "n"
+          end
+        end
+      end
+    end
+
+    test "a check naming its only role in its focus" do
+      assert_policy_error ~r/check :c must name at least one of its concern's roles in its question/ do
+        factor :f do
+          question "Does {passage} x?"
+          yes "y"
+          no "n"
+        end
+
+        concern :k do
+          role :a, factor: :f
+
+          check :c do
+            question "Is the household statement credible?"
+            focus "Read {a} closely."
             yes "y"
             no "n"
           end

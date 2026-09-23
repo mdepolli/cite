@@ -43,27 +43,17 @@ defmodule Cite.Wire do
 
   @doc """
   One compiled question on the wire. `paths` maps each placeholder name to
-  its path in the request's state; a question with no placeholders compares
-  the `fallback` paths.
+  its path in the request's state; a question with no placeholders in its
+  text or focus compares the `fallback` paths.
   """
   @spec question(Question.t(), %{String.t() => String.t()}, [String.t()]) :: map()
   def question(%Question{} = question, paths, fallback) do
-    instructions =
-      question.text
-      |> Placeholder.instructions(paths, fallback)
-      |> put_focus(question.focus, paths)
-
     %{
       "type" => Atom.to_string(question.type),
-      "instructions" => instructions,
+      "instructions" => Placeholder.instructions(question.text, question.focus, paths, fallback),
       "criteria" => criteria(question.type, question.criteria)
     }
   end
-
-  defp put_focus(instructions, nil, _paths), do: instructions
-
-  defp put_focus(instructions, focus, paths),
-    do: Map.put(instructions, "focus", Placeholder.expand(focus, paths))
 
   defp criteria(:noul, %{true: yes, false: no}),
     do: %{"true" => stringify(yes), "false" => stringify(no)}

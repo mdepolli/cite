@@ -188,10 +188,12 @@ Questions name what they read, and Cite writes the backticked path.
 - `{passage}` is the passage an indicator or fit is asked about; `{household}`
   names a role. A placeholder means the passage's text.
 - Placeholders expand in `question` and `focus`, not in criteria.
-- Filters, factors, indicators, and fits use `{passage}` and nothing else. A
-  check uses at least one of its concern's roles and nothing else.
+- Filters, factors, indicators, and fits use `{passage}` and nothing else,
+  and name it in the question. A check uses its concern's roles and nothing
+  else, and names at least one in the question; its focus may name more.
   Descriptors use none: they read all of the finding's evidence.
-- One placeholder becomes the question's `inspect`; several become
+- The placeholders of the question and focus together, in order of first
+  use, are what the model reads: one becomes `inspect`, several become
   `compare`, TypeSafe's field for "a list of things to check or to compare".
 - Any `{word}` is a placeholder, so a question cannot contain literal braces
   around a word.

@@ -262,6 +262,29 @@ defmodule Cite.JudgeTest do
       # Assert
       assert Map.keys(questions) == ["same_household"]
     end
+
+    test "once the role is filled, reads it beside the roles the question names", ctx do
+      # Arrange
+      terms = TestTerms.focus_role()
+      [household] = terms.concerns
+
+      gathered = %Gathered{
+        concern: household,
+        passages: [@u3, @u4, @u9],
+        roles: %{household: @u3, income: @u9, other_earner: @u4}
+      }
+
+      # Act
+      %{"questions" => questions} =
+        Judge.request(TestRun.new(terms, source: ctx.source), gathered)
+
+      # Assert
+      assert questions["concentrated_income"]["instructions"] == %{
+               "question" => "Does one person's pay in `income.text` support `household.text`?",
+               "focus" => "Weigh `other_earner.text` against it.",
+               "compare" => ["`income.text`", "`household.text`", "`other_earner.text`"]
+             }
+    end
   end
 
   describe "resolve/2 over round 2" do

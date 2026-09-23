@@ -5,7 +5,7 @@ defmodule Cite.Placeholder do
 
   A policy's questions name what they look at by role (`{passage}`,
   `{household}`); Cite writes the path. The policy's compile-time checks use
-  `names/1` and `name?/1`; `Cite.Wire` uses `instructions/3`. Internal.
+  `names/1` and `name?/1`; `Cite.Wire` uses `instructions/4`. Internal.
   """
 
   @placeholder ~r/\{(\w+)\}/
@@ -45,20 +45,27 @@ defmodule Cite.Placeholder do
   end
 
   @doc """
-  The wire `instructions` for a question: the expanded text, and `inspect`
-  for one placeholder, `compare` for several, or `compare` over `fallback`
-  when there are none.
+  The wire `instructions` for a question and its focus (`nil` for none): each
+  text expanded, and what to read. The placeholders of both, in order of first
+  use, become `inspect` for one and `compare` for several; with none, it is
+  `compare` over `fallback`.
   """
-  @spec instructions(String.t(), %{String.t() => String.t()}, [String.t()]) :: map()
-  def instructions(text, paths, fallback) when is_list(fallback) do
-    question = expand(text, paths)
-
-    case Enum.map(names(text), &Map.fetch!(paths, &1)) do
-      [path] -> %{"question" => question, "inspect" => backtick(path)}
-      [] -> %{"question" => question, "compare" => Enum.map(fallback, &backtick/1)}
-      several -> %{"question" => question, "compare" => Enum.map(several, &backtick/1)}
-    end
+  @spec instructions(String.t(), String.t() | nil, %{String.t() => String.t()}, [String.t()]) ::
+          map()
+  def instructions(text, focus, paths, fallback) when is_list(fallback) do
+    %{"question" => expand(text, paths)}
+    |> put_focus(focus, paths)
+    |> Map.merge(targets(Enum.map(names([text, focus]), &Map.fetch!(paths, &1)), fallback))
   end
+
+  defp put_focus(instructions, nil, _paths), do: instructions
+
+  defp put_focus(instructions, focus, paths),
+    do: Map.put(instructions, "focus", expand(focus, paths))
+
+  defp targets([path], _fallback), do: %{"inspect" => backtick(path)}
+  defp targets([], fallback), do: %{"compare" => Enum.map(fallback, &backtick/1)}
+  defp targets(several, _fallback), do: %{"compare" => Enum.map(several, &backtick/1)}
 
   defp backtick(path), do: "`" <> path <> "`"
 end

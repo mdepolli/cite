@@ -178,8 +178,9 @@ defmodule Cite.Policy.Checks do
       named = placeholders(check)
 
       cond do
-        named == [] ->
-          {:error, "check #{inspect(check.name)} must use at least one of its concern's roles",
+        Placeholder.names(check.question) == [] ->
+          {:error,
+           "check #{inspect(check.name)} must name at least one of its concern's roles in its question",
            [concern.name, check.name], check}
 
         (unknown = named -- roles) != [] ->
