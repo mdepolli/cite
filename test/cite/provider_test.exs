@@ -16,46 +16,22 @@ defmodule Cite.ProviderTest do
 
   @request %{"state" => %{}, "questions" => %{"U0:d" => %{"type" => "noul"}}}
 
-  test "new/2 closes a custom provider's handle into the client function" do
-    client = Cite.new(Echo, score: 0.9)
+  test "client/2 closes a custom provider's handle into the client function" do
+    client = Cite.client(Echo, score: 0.9)
 
-    assert is_function(client, 1)
     assert client.(@request) == {:ok, %{answers: %{"U0:d" => %{"noul" => 0.9}}, usage: nil}}
   end
 
-  test "new/1 takes a provider module with no options" do
-    assert {:ok, %{answers: %{"U0:d" => %{"noul" => 0.5}}}} = Cite.new(Echo).(@request)
+  test "client/1 takes a provider module with no options" do
+    assert Cite.client(Echo).(@request) ==
+             {:ok, %{answers: %{"U0:d" => %{"noul" => 0.5}}, usage: nil}}
   end
 
-  test "a custom provider runs the whole pipeline" do
-    candidates = Cite.Candidate.from_segments([%{text: "four kids at home"}])
-    source = Enum.map_join(candidates, " ", & &1.text)
+  test "a custom provider runs both rounds" do
+    source = Cite.source(["Why is a raven like a writing-desk?"])
 
-    spec = %{
-      atomics: [
-        %{
-          name: "dependents",
-          question: fn _ ->
-            Cite.Question.noul(question: "Kids?", inspect: "`x`", true: "y", false: "n")
-          end
-        }
-      ],
-      compose: fn index, [candidate] ->
-        assert index == %{"C000" => %{"dependents" => 0.9}}
+    report = Cite.judge(Cite.client(Echo, score: 0.9), source, Cite.TestPolicies.Riddles)
 
-        [
-          Cite.Cluster.new(
-            id: "c",
-            class: "k",
-            members: [candidate],
-            state: %{"line" => candidate},
-            questions: %{}
-          )
-        ]
-      end
-    }
-
-    result = Cite.select(Cite.new(Echo, score: 0.9), source, candidates, spec)
-    assert [%Cite.Span{candidate_id: "C000", text: "four kids at home"}] = result.spans
+    assert Enum.map(report.findings, &{&1.concern, &1.verdict}) == [riddle: :holds]
   end
 end

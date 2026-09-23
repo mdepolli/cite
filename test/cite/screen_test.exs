@@ -1,7 +1,7 @@
 defmodule Cite.ScreenTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Policy, Screen, Source}
+  alias Cite.{Error, Policy, Screen, Source}
   alias Cite.TestPolicies.{Household, Riddles}
   alias Cite.Wire.Object
 
@@ -123,7 +123,7 @@ defmodule Cite.ScreenTest do
 
       assert resolved == %{
                screen: %{},
-               errors: [{["L1", "L2"], :timeout}],
+               errors: [%Error{concern: nil, passage_ids: ["L1", "L2"], reason: :timeout}],
                usages: [],
                models: []
              }

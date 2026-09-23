@@ -2,7 +2,7 @@ defmodule Cite.Provider.TypeSafe do
   @moduledoc """
   TypeSafe System One over HTTP (`POST /v1/systemone`).
 
-  Options for `Cite.new/2`: `:api_key` (or `JEV_API_KEY`; missing raises),
+  Options for `Cite.client/2`: `:api_key` (or `JEV_API_KEY`; missing raises),
   `:model` (`"jev-1.13.0"`), `:base_url`, `:max_retry_delay` (ms, 30 000 —
   the cap on any one retry wait, `Retry-After` included), and
   `:req_options`, merged into the Req client last — a test passes

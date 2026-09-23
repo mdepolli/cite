@@ -74,8 +74,6 @@ defmodule Cite.MixProject do
       source_url: @source_url,
       extras: [
         "README.md",
-        "guides/select-and-judge.md",
-        "guides/writing-questions.md",
         "CHANGELOG.md"
       ],
       # Groups mirror the stability tiers (see README "Stability"): Core API
@@ -85,22 +83,32 @@ defmodule Cite.MixProject do
       groups_for_modules: [
         "Core API": [
           Cite,
-          Cite.Candidate,
-          Cite.Question,
-          Cite.Cluster,
-          Cite.Result,
-          Cite.Span,
+          Cite.Policy,
+          Cite.Source,
+          Cite.Passage,
+          Cite.Report,
+          Cite.Finding,
+          Cite.Citation,
           Cite.Error
         ],
         Providers: [Cite.Provider, Cite.Provider.TypeSafe],
         Internal: [
-          Cite.Select,
-          Cite.Scan,
-          Cite.Compare,
-          Cite.Emit,
+          Cite.Run,
+          Cite.Screen,
+          Cite.Gather,
+          Cite.Gather.Finding,
+          Cite.Judge,
+          Cite.Placeholder,
           Cite.Wire,
           Cite.Wire.Object,
-          Cite.Answer
+          Cite.Answer,
+          Cite.Policy.Dsl,
+          Cite.Policy.Checks,
+          Cite.Policy.Build,
+          Cite.Policy.Question,
+          Cite.Policy.Concern,
+          Cite.Policy.Role,
+          Cite.Policy.Check
         ]
       ],
       # Renders ```mermaid``` fences in extras (README + guides) on HexDocs.

@@ -5,7 +5,7 @@ defmodule Cite.Screen do
   Internal.
   """
 
-  alias Cite.{Answer, Passage, Policy, Source, Wire}
+  alias Cite.{Answer, Error, Passage, Policy, Source, Wire}
   alias Cite.Policy.Question
 
   @type outcome :: {[Passage.t()], {:ok, map()} | {:error, term()}}
@@ -40,12 +40,12 @@ defmodule Cite.Screen do
 
   @doc """
   Folds judged windows into scores per passage and indicator, one
-  `{passage_ids, reason}` per failed window, and the usage and model of each
-  reply. A failed window leaves its passages without a row.
+  `Cite.Error` per failed window, and the usage and model of each reply. A
+  failed window leaves its passages without a row.
   """
   @spec resolve([outcome()], Policy.t()) :: %{
           screen: screen(),
-          errors: [{[String.t()], term()}],
+          errors: [Error.t()],
           usages: [Cite.usage() | nil],
           models: [String.t()]
         }
@@ -54,11 +54,14 @@ defmodule Cite.Screen do
 
     %{
       screen: Enum.reduce(outcomes, %{}, &merge(&1, &2, names)),
-      errors:
-        for({window, {:error, reason}} <- outcomes, do: {Enum.map(window, & &1.id), reason}),
+      errors: for({window, {:error, reason}} <- outcomes, do: window_error(window, reason)),
       usages: for({_window, {:ok, verdict}} <- outcomes, do: verdict.usage),
       models: for({_window, {:ok, %{model: model}}} <- outcomes, do: model)
     }
+  end
+
+  defp window_error(window, reason) do
+    %Error{concern: nil, passage_ids: Enum.map(window, & &1.id), reason: reason}
   end
 
   defp merge({_window, {:error, _reason}}, screen, _names), do: screen
