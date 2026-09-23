@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Choice descriptors; `exclusive` keeps a passage with one concern. Questions
   name what they read by placeholder (`{passage}`, `{household}`) and Cite
   writes the path. Every mistake in a policy is a compile error.
+- A DSL reference in `Cite.Policy`'s docs, generated from the DSL by Spark.
 - `Cite.source/2`: the caller's passages, kept byte for byte, with `as:` for
   the word they sit under and `show:` for the meta the model sees.
 - `Cite.judge/4`: two fixed rounds. A screen of every passage for every

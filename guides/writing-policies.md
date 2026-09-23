@@ -4,6 +4,10 @@ A policy is what the source is judged against: the caller's own rules for
 what counts. It is declared once, in a module, and checked when the module
 compiles.
 
+This guide explains the language. Every declaration's arguments, options,
+and defaults are listed in the reference in `Cite.Policy`'s docs, generated
+from the DSL itself.
+
 ```elixir
 defmodule Vuln.Policy do
   use Cite.Policy

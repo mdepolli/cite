@@ -3,7 +3,8 @@ defmodule Cite.Policy.Dsl do
   The Spark extension behind `use Cite.Policy`: its declarations.
   `Cite.Policy.Checks` validates the structs they build (defined in
   `lib/cite/policy/dsl/entities.ex`) and `Cite.Policy.Build` compiles them to
-  a policy's `Cite.Policy.Terms`. Internal.
+  a policy's `Cite.Policy.Terms`. The `describe` and `doc` texts here are the
+  DSL reference in `Cite.Policy`'s docs. Internal.
   """
 
   alias Cite.Policy.Dsl.{Choice, Concern, Criterion, Factor, Filter, Noul, Option, Role, Score}

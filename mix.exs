@@ -116,9 +116,18 @@ defmodule Cite.MixProject do
       ],
       # Renders ```mermaid``` fences in extras (README + guides) on HexDocs.
       # GitHub renders them natively; ExDoc needs the CDN + init hook.
+      before_closing_head_tag: &before_closing_head_tag/1,
       before_closing_body_tag: &before_closing_body_tag/1
     ]
   end
+
+  # Spark marks a required option in the `Cite.Policy` DSL reference with
+  # this class alone; the rule is the one its cheat sheets carry.
+  defp before_closing_head_tag(:html) do
+    ~s(<style>.spark-required::after { content: "*"; color: red !important; }</style>)
+  end
+
+  defp before_closing_head_tag(_), do: ""
 
   # Copied verbatim from ex_doc's README (0.40.x), mermaid pin included.
   # To upgrade, adopt the recipe of whatever ExDoc version we're on —

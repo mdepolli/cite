@@ -1,4 +1,11 @@
 defmodule Cite.Policy do
+  # Spark's reference links its headings as `#policy-...`, but ExDoc gives
+  # moduledoc headings `module-` ids. Links followed by `{: ...}` point at
+  # ids the reference sets itself, so they stay.
+  @reference Cite.Policy.Dsl.sections()
+             |> Enum.map_join("\n\n", &Spark.CheatSheet.section_cheat_sheet/1)
+             |> then(&Regex.replace(~r/\]\(#(policy[\w-]*)\)(?!\{)/, &1, "](#module-\\1)"))
+
   @moduledoc """
   A policy: what the source is judged against, declared once in a module.
 
@@ -16,7 +23,11 @@ defmodule Cite.Policy do
 
   Declarations: `exclusive`, `filter`, `concern` (with `category`,
   `indicator`, `fit`, `role`, `check`), `factor`, `score`, `choice`. Every
-  mistake is a compile error. See the policy guide for the full language.
+  mistake is a compile error. The policy guide explains the language; the
+  reference below, generated from the DSL, lists every declaration's
+  arguments, options, and defaults (required ones starred).
+
+  #{@reference}
   """
 
   use Spark.Dsl, default_extensions: [extensions: [Cite.Policy.Dsl]]
