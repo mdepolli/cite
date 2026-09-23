@@ -4,7 +4,8 @@ defmodule Cite.Provider do
   request at a time.
 
   `Cite.client/2` turns a provider into the client, the 1-arity function
-  `Cite.judge/4` takes, so the rounds never see the provider's own handle. Implementations: `Cite.Provider.TypeSafe`.
+  `Cite.judge/4` takes, so the rounds never see the provider's own handle.
+  Implementations: `Cite.Provider.TypeSafe`.
 
   ## Requests
 

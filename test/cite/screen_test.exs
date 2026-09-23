@@ -66,11 +66,13 @@ defmodule Cite.ScreenTest do
     end
 
     test "asks each of a full policy's indicators once per passage" do
+      # Arrange
       source = Source.new([%{id: "U3", text: "Two kids."}], as: "utterances")
 
       %{"questions" => questions} =
         Screen.request(source.passages, source, TestTerms.household())
 
+      # Act + Assert
       assert Enum.sort(Map.keys(questions)) == [
                "U3:cashflow_stress",
                "U3:client_speaking",
@@ -105,10 +107,13 @@ defmodule Cite.ScreenTest do
     end
 
     test "a failed window leaves no rows and records one error with its passage ids" do
+      # Arrange
       source = Source.new([%{id: "L1", text: "a"}, %{id: "L2", text: "b"}])
 
+      # Act
       resolved = Screen.resolve([{source.passages, {:error, :timeout}}], TestTerms.riddles())
 
+      # Assert
       assert resolved == %{
                screen: %{},
                errors: [%Error{concern: nil, passage_ids: ["L1", "L2"], reason: :timeout}],

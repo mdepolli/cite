@@ -31,14 +31,18 @@ defmodule Cite.WireTest do
     end
 
     test "sends no meta when show is empty" do
+      # Act
       object = Wire.passages([%Passage{id: "P0", text: "a", meta: %{speaker: "B"}}], [])
 
+      # Assert
       assert object == %Object{pairs: [{"P0", %{"id" => "P0", "text" => "a"}}]}
     end
 
     test "matches show keys exactly as given" do
+      # Arrange
       passages = [%Passage{id: "P0", text: "a", meta: %{"speaker" => "B", "role" => "client"}}]
 
+      # Act + Assert
       assert Wire.passages(passages, [:speaker, "role"]) ==
                %Object{pairs: [{"P0", %{"id" => "P0", "text" => "a", "role" => "client"}}]}
     end
@@ -46,8 +50,10 @@ defmodule Cite.WireTest do
 
   describe "passage/2" do
     test "wires one passage with its shown meta" do
+      # Arrange
       passage = %Passage{id: "U003", text: "two kids", meta: %{speaker: "B", start: 9}}
 
+      # Act + Assert
       assert Wire.passage(passage, [:speaker]) ==
                %{"id" => "U003", "speaker" => "B", "text" => "two kids"}
     end
@@ -84,6 +90,7 @@ defmodule Cite.WireTest do
     end
 
     test "encodes a Score with its focus and compare over the fallback paths" do
+      # Arrange
       question = %Question{
         type: :score,
         text: "How bad?",
@@ -91,6 +98,7 @@ defmodule Cite.WireTest do
         criteria: ["a", "b"]
       }
 
+      # Act + Assert
       assert Wire.question(question, %{}, ["household.text", "income.text"]) == %{
                "type" => "score",
                "instructions" => %{
@@ -103,6 +111,7 @@ defmodule Cite.WireTest do
     end
 
     test "encodes a Choice and expands placeholders in its focus" do
+      # Arrange
       question = %Question{
         type: :choice,
         text: "Is {passage} temporary?",
@@ -110,6 +119,7 @@ defmodule Cite.WireTest do
         criteria: %{"transient" => "recovers", "persistent" => "lasting"}
       }
 
+      # Act + Assert
       assert Wire.question(question, %{"passage" => "p.P0.text"}, []) == %{
                "type" => "choice",
                "instructions" => %{
@@ -124,8 +134,10 @@ defmodule Cite.WireTest do
 
   describe "shown meta" do
     test "stringifies nested keys and leaves binary keys alone" do
+      # Arrange
       passage = %Passage{id: "U1", text: "a", meta: %{about: %{"role" => [%{kind: :client}]}}}
 
+      # Act + Assert
       assert Wire.passage(passage, [:about]) == %{
                "id" => "U1",
                "text" => "a",
@@ -134,14 +146,18 @@ defmodule Cite.WireTest do
     end
 
     test "raises on a struct it cannot send" do
+      # Arrange
       passage = %Passage{id: "U1", text: "a", meta: %{at: URI.parse("x")}}
 
+      # Act + Assert
       assert_raise ArgumentError, ~r/got a URI struct/, fn -> Wire.passage(passage, [:at]) end
     end
 
     test "raises on a nested key that is neither atom nor binary" do
+      # Arrange
       passage = %Passage{id: "U1", text: "a", meta: %{about: %{1 => "x"}}}
 
+      # Act + Assert
       assert_raise ArgumentError, ~r/keys must be atoms or binaries, got: 1/, fn ->
         Wire.passage(passage, [:about])
       end

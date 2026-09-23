@@ -1,11 +1,14 @@
 defmodule Cite.Run do
   @moduledoc """
-  The imperative shell behind `Cite.judge/4`.
+  The imperative shell behind `Cite.judge/4`: it calls the client and puts
+  the two rounds' results into a `Cite.Report`.
 
-  Screens the source in windows, halving a window the provider refuses as
-  too large; gathers findings; judges each with one request; assembles the
-  `Cite.Report`. Every decision lives in `Cite.Screen`, `Cite.Gather`, and
-  `Cite.Judge`, which never see the client. Internal; use `Cite.judge/4`.
+  The only choices it makes are about talking to the client: it halves a
+  round-1 window the provider refuses as too large, and it raises when the
+  client returns something outside its contract. What to ask, whether a
+  reply is usable, and what an answer means live in `Cite.Screen`,
+  `Cite.Gather`, `Cite.Judge`, and `Cite.Answer`, which never see the
+  client. Internal; use `Cite.judge/4`.
   """
 
   alias Cite.{Answer, Gather, Judge, Report, Screen, Source}

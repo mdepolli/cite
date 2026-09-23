@@ -25,17 +25,21 @@ defmodule Cite.GatherTest do
     end
   end
 
-  defp client(scores), do: Map.put(scores, :client_speaking, 0.95)
+  # A screen row for a passage the client_speaking filter lets through.
+  defp spoken_by_client(scores), do: Map.put(scores, :client_speaking, 0.95)
 
   describe "filters" do
     test "a passage failing a filter is evidence for nothing" do
+      # Arrange
       screen = %{"U1" => %{client_speaking: 0.2, cashflow_stress: 0.9}}
 
+      # Act + Assert
       assert summary(gather(TestTerms.household(), screen)) == []
     end
 
     test "a passage whose window failed has no row and is evidence for nothing" do
-      screen = %{"U1" => client(%{cashflow_stress: 0.9})}
+      # Arrange
+      screen = %{"U1" => spoken_by_client(%{cashflow_stress: 0.9})}
       source = Source.new([%{id: "U0", text: "lost"}, %{id: "U1", text: "kept"}])
 
       findings =
@@ -44,30 +48,35 @@ defmodule Cite.GatherTest do
           max_evidence: 20
         )
 
+      # Act + Assert
       assert summary(findings) == [{:cashflow_stress, ["U1"], [], %{}}]
     end
   end
 
   describe "directly screened concerns" do
     test "gather every match above threshold, in source order" do
+      # Arrange
       screen = %{
-        "U2" => client(%{cashflow_stress: 0.7}),
-        "U1" => client(%{cashflow_stress: 0.9}),
-        "U3" => client(%{cashflow_stress: 0.5})
+        "U2" => spoken_by_client(%{cashflow_stress: 0.7}),
+        "U1" => spoken_by_client(%{cashflow_stress: 0.9}),
+        "U3" => spoken_by_client(%{cashflow_stress: 0.5})
       }
 
+      # Act + Assert
       assert summary(gather(TestTerms.household(), screen)) == [
                {:cashflow_stress, ["U1", "U2"], [], %{}}
              ]
     end
 
     test "past max_evidence keep the strongest and record the rest as over_cap" do
+      # Arrange
       screen = %{
-        "U1" => client(%{cashflow_stress: 0.6}),
-        "U2" => client(%{cashflow_stress: 0.9}),
-        "U3" => client(%{cashflow_stress: 0.8})
+        "U1" => spoken_by_client(%{cashflow_stress: 0.6}),
+        "U2" => spoken_by_client(%{cashflow_stress: 0.9}),
+        "U3" => spoken_by_client(%{cashflow_stress: 0.8})
       }
 
+      # Act + Assert
       assert summary(gather(TestTerms.household(), screen, max_evidence: 2)) ==
                [{:cashflow_stress, ["U2", "U3"], ["U1"], %{}}]
     end
@@ -75,23 +84,29 @@ defmodule Cite.GatherTest do
 
   describe "exclusive" do
     test "keeps a passage only with its highest-scoring direct concern" do
-      screen = %{"U1" => client(%{health: 0.6, life_event: 0.8})}
+      # Arrange
+      screen = %{"U1" => spoken_by_client(%{health: 0.6, life_event: 0.8})}
 
+      # Act + Assert
       assert summary(gather(TestTerms.two_concerns(), screen)) == [{:life_event, ["U1"], [], %{}}]
     end
 
     test "breaks a tie by concern declaration order" do
-      screen = %{"U1" => client(%{health: 0.8, life_event: 0.8})}
+      # Arrange
+      screen = %{"U1" => spoken_by_client(%{health: 0.8, life_event: 0.8})}
 
+      # Act + Assert
       assert summary(gather(TestTerms.two_concerns(), screen)) == [{:health, ["U1"], [], %{}}]
     end
 
     test "leaves other passages with their own concerns" do
+      # Arrange
       screen = %{
-        "U1" => client(%{health: 0.9, life_event: 0.6}),
-        "U2" => client(%{health: 0.1, life_event: 0.7})
+        "U1" => spoken_by_client(%{health: 0.9, life_event: 0.6}),
+        "U2" => spoken_by_client(%{health: 0.1, life_event: 0.7})
       }
 
+      # Act + Assert
       assert summary(gather(TestTerms.two_concerns(), screen)) ==
                [{:health, ["U1"], [], %{}}, {:life_event, ["U2"], [], %{}}]
     end
@@ -99,23 +114,27 @@ defmodule Cite.GatherTest do
 
   describe "concerns built from factors" do
     test "fill each role with its strongest match, citing the role passages in source order" do
+      # Arrange
       screen = %{
-        "U1" => client(%{dependents: 0.7}),
-        "U2" => client(%{dependents: 0.9}),
-        "U3" => client(%{primary_income: 0.8})
+        "U1" => spoken_by_client(%{dependents: 0.7}),
+        "U2" => spoken_by_client(%{dependents: 0.9}),
+        "U3" => spoken_by_client(%{primary_income: 0.8})
       }
 
+      # Act + Assert
       assert summary(gather(TestTerms.household(), screen)) ==
                [{:household_income, ["U2", "U3"], [], %{household: "U2", income: "U3"}}]
     end
 
     test "a distinct role skips passages that fill another role" do
+      # Arrange
       screen = %{
-        "U1" => client(%{dependents: 0.9}),
-        "U2" => client(%{primary_income: 0.9, other_household_income: 0.95}),
-        "U3" => client(%{other_household_income: 0.6})
+        "U1" => spoken_by_client(%{dependents: 0.9}),
+        "U2" => spoken_by_client(%{primary_income: 0.9, other_household_income: 0.95}),
+        "U3" => spoken_by_client(%{other_household_income: 0.6})
       }
 
+      # Act + Assert
       assert summary(gather(TestTerms.household(), screen)) == [
                {:household_income, ["U1", "U2", "U3"], [],
                 %{household: "U1", income: "U2", other_earner: "U3"}}
@@ -123,25 +142,31 @@ defmodule Cite.GatherTest do
     end
 
     test "one passage may fill two non-distinct roles, and is cited once" do
-      screen = %{"U1" => client(%{dependents: 0.9, primary_income: 0.9})}
+      # Arrange
+      screen = %{"U1" => spoken_by_client(%{dependents: 0.9, primary_income: 0.9})}
 
+      # Act + Assert
       assert summary(gather(TestTerms.household(), screen)) ==
                [{:household_income, ["U1"], [], %{household: "U1", income: "U1"}}]
     end
 
     test "an empty required role means no finding" do
-      screen = %{"U1" => client(%{dependents: 0.9})}
+      # Arrange
+      screen = %{"U1" => spoken_by_client(%{dependents: 0.9})}
 
+      # Act + Assert
       assert summary(gather(TestTerms.household(), screen)) == []
     end
   end
 
   test "findings follow the policy's concern order" do
+    # Arrange
     screen = %{
-      "U1" => client(%{dependents: 0.9, primary_income: 0.9}),
-      "U2" => client(%{cashflow_stress: 0.8})
+      "U1" => spoken_by_client(%{dependents: 0.9, primary_income: 0.9}),
+      "U2" => spoken_by_client(%{cashflow_stress: 0.8})
     }
 
+    # Act + Assert
     assert summary(gather(TestTerms.household(), screen)) == [
              {:cashflow_stress, ["U2"], [], %{}},
              {:household_income, ["U1"], [], %{household: "U1", income: "U1"}}

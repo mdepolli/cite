@@ -100,11 +100,13 @@ defmodule CiteTest do
       test_pid = self()
       answering = client(%{})
 
-      # Every answer is 0.1, so nothing matches and only screening requests are sent.
-      client = fn %{"state" => %{"passages" => window}} = request ->
-        send(test_pid, {:window, Enum.map(window.pairs, &elem(&1, 0))})
+      # Every answer is 0.1, so nothing matches and only screening requests are
+      # sent. A window's passages are read off its question keys, "<id>:riddle".
+      client = fn %{"questions" => questions} = request ->
+        window = questions |> Map.keys() |> Enum.map(&hd(String.split(&1, ":"))) |> Enum.sort()
+        send(test_pid, {:window, window})
 
-        if length(window.pairs) > 2,
+        if length(window) > 2,
           do: {:error, :request_too_large},
           else: answering.(request)
       end

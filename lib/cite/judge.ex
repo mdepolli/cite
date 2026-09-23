@@ -22,7 +22,7 @@ defmodule Cite.Judge do
   def request(
         %Gathered{concern: %Concern{indicator: nil}} = gathered,
         %Source{show: show},
-        terms
+        %Terms{} = terms
       ) do
     state =
       Map.new(gathered.roles, fn {role, passage} ->
@@ -48,7 +48,7 @@ defmodule Cite.Judge do
   def request(
         %Gathered{concern: %Concern{fit: fit}, passages: passages},
         %Source{as: as, show: show},
-        terms
+        %Terms{} = terms
       ) do
     fits =
       for %Passage{id: id} <- passages, into: %{} do

@@ -208,6 +208,7 @@ defmodule Cite.JudgeTest do
     end
 
     test "skips a distinct check when its roles resolve to one passage", ctx do
+      # Arrange
       same = @u3
 
       gathered = %Gathered{
@@ -216,8 +217,10 @@ defmodule Cite.JudgeTest do
         roles: %{household: same, income: same}
       }
 
+      # Act
       %{"questions" => questions} = Judge.request(gathered, ctx.source, ctx.terms)
 
+      # Assert
       assert Enum.sort(Map.keys(questions)) == ["concentrated_income", "severity", "temporal"]
     end
   end
@@ -344,20 +347,24 @@ defmodule Cite.JudgeTest do
     end
 
     test "is review when no citation holds", ctx do
+      # Arrange
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
 
       finding =
         judged(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.5}}), ctx.terms)
 
+      # Act + Assert
       assert finding.verdict == :review
     end
 
     test "fails when every passage is dropped", ctx do
+      # Arrange
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
 
       finding =
         judged(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.1}}), ctx.terms)
 
+      # Act + Assert
       assert {finding.verdict, finding.evidence} == {:fails, []}
     end
   end
@@ -374,14 +381,17 @@ defmodule Cite.JudgeTest do
     end
 
     test "holds when every asked check clears high, citing each role's passage", ctx do
+      # Arrange
       answers =
         descriptors(%{
           "same_household" => %{"noul" => 0.9},
           "concentrated_income" => %{"noul" => 0.8}
         })
 
+      # Act
       finding = judged(ctx.gathered, answers, ctx.terms)
 
+      # Assert
       assert finding == %Finding{
                concern: :household_income,
                category: :resilience,
@@ -404,26 +414,31 @@ defmodule Cite.JudgeTest do
     end
 
     test "fails when a check is at or below low", ctx do
+      # Arrange
       answers =
         descriptors(%{
           "same_household" => %{"noul" => 0.4},
           "concentrated_income" => %{"noul" => 0.9}
         })
 
+      # Act + Assert
       assert judged(ctx.gathered, answers, ctx.terms).verdict == :fails
     end
 
     test "is review when a check sits in the band", ctx do
+      # Arrange
       answers =
         descriptors(%{
           "same_household" => %{"noul" => 0.5},
           "concentrated_income" => %{"noul" => 0.9}
         })
 
+      # Act + Assert
       assert judged(ctx.gathered, answers, ctx.terms).verdict == :review
     end
 
     test "cites a passage filling two roles once, and records only the checks asked", ctx do
+      # Arrange
       same = @u3
 
       gathered = %Gathered{
@@ -434,8 +449,10 @@ defmodule Cite.JudgeTest do
 
       answers = descriptors(%{"concentrated_income" => %{"noul" => 0.9}})
 
+      # Act
       finding = judged(gathered, answers, ctx.terms)
 
+      # Assert
       assert {finding.evidence, finding.checks} ==
                {[%Citation{passage: same, verdict: :holds, answer: nil}],
                 %{concentrated_income: %{"noul" => 0.9}}}
@@ -443,11 +460,13 @@ defmodule Cite.JudgeTest do
   end
 
   test "a finding encodes with Jason, names and verdicts as strings", ctx do
+    # Arrange
     gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
 
     finding =
       judged(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.9}}), ctx.terms)
 
+    # Act + Assert
     assert Jason.decode!(Jason.encode!(finding)) == %{
              "concern" => "cashflow_stress",
              "category" => "resilience",
