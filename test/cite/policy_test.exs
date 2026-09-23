@@ -1,8 +1,7 @@
 defmodule Cite.PolicyTest do
   use ExUnit.Case, async: true
 
-  alias Cite.Policy
-  alias Cite.Policy.{Build, Check, Concern, Question, Role}
+  alias Cite.Policy.{Build, Check, Concern, Question, Role, Terms}
   alias Cite.TestPolicies.{Household, Riddles}
 
   describe "Build.read/1" do
@@ -17,7 +16,7 @@ defmodule Cite.PolicyTest do
         }
       }
 
-      assert Build.read(Riddles) == %Policy{
+      assert Build.read(Riddles) == %Terms{
                exclusive: false,
                filters: [],
                factors: [],
@@ -36,7 +35,7 @@ defmodule Cite.PolicyTest do
     end
 
     test "compiles a full policy: filters, both kinds of concern, factors, descriptors" do
-      assert Build.read(Household) == %Policy{
+      assert Build.read(Household) == %Terms{
                exclusive: true,
                filters: [
                  client_speaking: %Question{
@@ -191,7 +190,7 @@ defmodule Cite.PolicyTest do
 
   describe "Build.read/1 check roles" do
     test "include the roles a check's focus names, not only its question" do
-      %Policy{concerns: [concern]} = Build.read(Cite.TestPolicies.FocusRole)
+      %Terms{concerns: [concern]} = Build.read(Cite.TestPolicies.FocusRole)
 
       assert Enum.map(concern.checks, &{&1.name, &1.roles}) == [
                same_household: [:household, :income],

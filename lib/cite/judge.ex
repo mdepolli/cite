@@ -5,9 +5,9 @@ defmodule Cite.Judge do
   rules. Pure. Internal.
   """
 
-  alias Cite.{Citation, Finding, Passage, Policy, Source, Wire}
+  alias Cite.{Citation, Finding, Passage, Source, Wire}
   alias Cite.Gather.Finding, as: Gathered
-  alias Cite.Policy.{Check, Concern, Role}
+  alias Cite.Policy.{Check, Concern, Role, Terms}
 
   @type band :: {number(), number()}
 
@@ -17,11 +17,11 @@ defmodule Cite.Judge do
   all of them. A concern built from factors: each role at the top level, the
   checks that apply, the descriptors over every role.
   """
-  @spec request(Gathered.t(), Source.t(), Policy.t()) :: map()
+  @spec request(Gathered.t(), Source.t(), Terms.t()) :: map()
   def request(
         %Gathered{concern: %Concern{indicator: nil}} = gathered,
         %Source{show: show},
-        policy
+        terms
       ) do
     state =
       Map.new(gathered.roles, fn {role, passage} ->
@@ -41,13 +41,13 @@ defmodule Cite.Judge do
         {Atom.to_string(check.name), Wire.question(check.question, paths, [])}
       end
 
-    %{"state" => state, "questions" => Map.merge(checks, descriptor_questions(policy, fallback))}
+    %{"state" => state, "questions" => Map.merge(checks, descriptor_questions(terms, fallback))}
   end
 
   def request(
         %Gathered{concern: %Concern{fit: fit}, passages: passages},
         %Source{as: as, show: show},
-        policy
+        terms
       ) do
     fits =
       for %Passage{id: id} <- passages, into: %{} do
@@ -58,7 +58,7 @@ defmodule Cite.Judge do
 
     %{
       "state" => %{as => Wire.passages(passages, show)},
-      "questions" => Map.merge(fits, descriptor_questions(policy, fallback))
+      "questions" => Map.merge(fits, descriptor_questions(terms, fallback))
     }
   end
 
@@ -69,8 +69,8 @@ defmodule Cite.Judge do
   with nothing left to cite, holds when every asked check is at or above
   `high` and a citation holds, and is sent to review otherwise.
   """
-  @spec resolve(Gathered.t(), map(), Policy.t(), band()) :: Finding.t()
-  def resolve(%Gathered{concern: concern} = gathered, answers, %Policy{} = policy, {low, high}) do
+  @spec resolve(Gathered.t(), map(), Terms.t(), band()) :: Finding.t()
+  def resolve(%Gathered{concern: concern} = gathered, answers, %Terms{} = terms, {low, high}) do
     checks =
       for %Check{name: name} <- asked(gathered),
           into: %{},
@@ -84,7 +84,7 @@ defmodule Cite.Judge do
       verdict: verdict(Map.values(checks), evidence, {low, high}),
       checks: checks,
       descriptors:
-        Map.new(policy.descriptors, fn {name, _question} ->
+        Map.new(terms.descriptors, fn {name, _question} ->
           {name, answers[Atom.to_string(name)]}
         end),
       evidence: evidence,
@@ -104,7 +104,7 @@ defmodule Cite.Judge do
     end)
   end
 
-  defp descriptor_questions(%Policy{descriptors: descriptors}, fallback) do
+  defp descriptor_questions(%Terms{descriptors: descriptors}, fallback) do
     Map.new(descriptors, fn {name, question} ->
       {Atom.to_string(name), Wire.question(question, %{}, fallback)}
     end)

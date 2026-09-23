@@ -28,27 +28,27 @@ defmodule Cite.Run do
     max_evidence = opts[:max_evidence]
 
     check_options(threshold, review_band, window, max_evidence)
-    policy = Build.read(policy_module)
+    terms = Build.read(policy_module)
 
     screened =
       source.passages
       |> Enum.chunk_every(window)
-      |> Enum.flat_map(&screen_window(client, &1, source, policy))
-      |> Screen.resolve(policy)
+      |> Enum.flat_map(&screen_window(client, &1, source, terms))
+      |> Screen.resolve(terms)
 
     judged =
-      policy
+      terms
       |> Gather.findings(source, screened.screen,
         threshold: threshold,
         max_evidence: max_evidence
       )
-      |> Enum.map(&{&1, call(client, Judge.request(&1, source, policy))})
+      |> Enum.map(&{&1, call(client, Judge.request(&1, source, terms))})
 
     %Report{
       findings:
         for(
           {gathered, {:ok, verdict}} <- judged,
-          do: Judge.resolve(gathered, verdict.answers, policy, review_band)
+          do: Judge.resolve(gathered, verdict.answers, terms, review_band)
         ),
       screen: screened.screen,
       errors:
@@ -82,16 +82,16 @@ defmodule Cite.Run do
   # only a single passage that still exceeds it is an error. Once one passage
   # alone is too large, its siblings will not fare better, so they are
   # recorded as the same error without a call.
-  defp screen_window(client, window, source, policy) do
-    case call(client, Screen.request(window, source, policy)) do
+  defp screen_window(client, window, source, terms) do
+    case call(client, Screen.request(window, source, terms)) do
       {:error, :request_too_large} when length(window) > 1 ->
         {left, right} = Enum.split(window, div(length(window), 2))
-        left_outcomes = screen_window(client, left, source, policy)
+        left_outcomes = screen_window(client, left, source, terms)
 
         if singleton_too_large?(left_outcomes) do
           left_outcomes ++ [{right, {:error, :request_too_large}}]
         else
-          left_outcomes ++ screen_window(client, right, source, policy)
+          left_outcomes ++ screen_window(client, right, source, terms)
         end
 
       verdict ->

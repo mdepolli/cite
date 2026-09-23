@@ -5,8 +5,8 @@ defmodule Cite.Screen do
   Internal.
   """
 
-  alias Cite.{Answer, Error, Passage, Policy, Source, Wire}
-  alias Cite.Policy.Question
+  alias Cite.{Answer, Error, Passage, Source, Wire}
+  alias Cite.Policy.{Question, Terms}
 
   @type outcome :: {[Passage.t()], {:ok, map()} | {:error, term()}}
   @type screen :: %{String.t() => %{atom() => number()}}
@@ -15,23 +15,23 @@ defmodule Cite.Screen do
   The policy's round-1 questions by name: filters, then directly screened
   concerns (named by concern, asking its indicator), then factors.
   """
-  @spec indicators(Policy.t()) :: [{atom(), Question.t()}]
-  def indicators(%Policy{} = policy) do
+  @spec indicators(Terms.t()) :: [{atom(), Question.t()}]
+  def indicators(%Terms{} = terms) do
     concerns =
-      for %{indicator: %Question{} = indicator} = concern <- policy.concerns,
+      for %{indicator: %Question{} = indicator} = concern <- terms.concerns,
           do: {concern.name, indicator}
 
-    policy.filters ++ concerns ++ policy.factors
+    terms.filters ++ concerns ++ terms.factors
   end
 
   @doc """
   One request: the window under the source's `as`, and every indicator asked
   of every passage in it, keyed `"<passage id>:<indicator>"`.
   """
-  @spec request([Passage.t()], Source.t(), Policy.t()) :: map()
-  def request(window, %Source{as: as, show: show}, %Policy{} = policy) do
+  @spec request([Passage.t()], Source.t(), Terms.t()) :: map()
+  def request(window, %Source{as: as, show: show}, %Terms{} = terms) do
     questions =
-      for %Passage{id: id} <- window, {name, question} <- indicators(policy), into: %{} do
+      for %Passage{id: id} <- window, {name, question} <- indicators(terms), into: %{} do
         {key(id, name), Wire.question(question, %{"passage" => "#{as}.#{id}.text"}, [])}
       end
 
@@ -43,14 +43,14 @@ defmodule Cite.Screen do
   `Cite.Error` per failed window, and the usage and model of each reply. A
   failed window leaves its passages without a row.
   """
-  @spec resolve([outcome()], Policy.t()) :: %{
+  @spec resolve([outcome()], Terms.t()) :: %{
           screen: screen(),
           errors: [Error.t()],
           usages: [Cite.usage() | nil],
           models: [String.t()]
         }
-  def resolve(outcomes, %Policy{} = policy) do
-    names = Keyword.keys(indicators(policy))
+  def resolve(outcomes, %Terms{} = terms) do
+    names = Keyword.keys(indicators(terms))
 
     %{
       screen: Enum.reduce(outcomes, %{}, &merge(&1, &2, names)),

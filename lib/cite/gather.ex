@@ -4,8 +4,8 @@ defmodule Cite.Gather do
   to judge, by fixed rules. Pure. Internal.
   """
 
-  alias Cite.{Passage, Policy, Screen, Source}
-  alias Cite.Policy.{Concern, Role}
+  alias Cite.{Passage, Screen, Source}
+  alias Cite.Policy.{Concern, Role, Terms}
 
   defmodule Finding do
     @moduledoc """
@@ -31,15 +31,15 @@ defmodule Cite.Gather do
   match (the strongest `max_evidence` of them); a concern built from factors
   fills each role with its strongest match, and needs every required role.
   """
-  @spec findings(Policy.t(), Source.t(), Screen.screen(), keyword()) :: [Finding.t()]
-  def findings(%Policy{} = policy, %Source{} = source, screen, opts) do
+  @spec findings(Terms.t(), Source.t(), Screen.screen(), keyword()) :: [Finding.t()]
+  def findings(%Terms{} = terms, %Source{} = source, screen, opts) do
     threshold = Keyword.fetch!(opts, :threshold)
     max_evidence = Keyword.fetch!(opts, :max_evidence)
 
-    eligible = Enum.filter(source.passages, &passes_filters?(screen[&1.id], policy, threshold))
-    direct = direct_matches(policy, eligible, screen, threshold)
+    eligible = Enum.filter(source.passages, &passes_filters?(screen[&1.id], terms, threshold))
+    direct = direct_matches(terms, eligible, screen, threshold)
 
-    Enum.flat_map(policy.concerns, fn
+    Enum.flat_map(terms.concerns, fn
       %Concern{indicator: nil} = concern ->
         built(concern, eligible, screen, threshold)
 
@@ -49,23 +49,23 @@ defmodule Cite.Gather do
   end
 
   # A passage whose window failed has no row, and so passes nothing.
-  defp passes_filters?(nil, _policy, _threshold), do: false
+  defp passes_filters?(nil, _terms, _threshold), do: false
 
-  defp passes_filters?(row, %Policy{filters: filters}, threshold) do
+  defp passes_filters?(row, %Terms{filters: filters}, threshold) do
     Enum.all?(filters, fn {name, _question} -> above?(row, name, threshold) end)
   end
 
   # Each directly screened concern's matching passages. Under `exclusive` a
   # passage stays only with its highest-scoring concern; `Enum.max_by/2`
   # keeps the first of equals, so a tie goes to the concern declared first.
-  defp direct_matches(%Policy{} = policy, eligible, screen, threshold) do
-    names = for %Concern{indicator: indicator, name: name} <- policy.concerns, indicator, do: name
+  defp direct_matches(%Terms{} = terms, eligible, screen, threshold) do
+    names = for %Concern{indicator: indicator, name: name} <- terms.concerns, indicator, do: name
 
     pairs =
       for %Passage{id: id} = passage <- eligible,
           matched = Enum.filter(names, &above?(screen[id], &1, threshold)),
           matched != [],
-          name <- keep(matched, screen[id], policy.exclusive),
+          name <- keep(matched, screen[id], terms.exclusive),
           do: {name, passage}
 
     Enum.group_by(pairs, &elem(&1, 0), &elem(&1, 1))

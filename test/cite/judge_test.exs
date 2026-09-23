@@ -10,11 +10,11 @@ defmodule Cite.JudgeTest do
   @band {0.4, 0.6}
 
   setup do
-    policy = Build.read(Household)
-    [cashflow, household] = policy.concerns
+    terms = Build.read(Household)
+    [cashflow, household] = terms.concerns
 
     %{
-      policy: policy,
+      terms: terms,
       source: Source.new([], as: "utterances", show: [:speaker]),
       cashflow: cashflow,
       household: household
@@ -128,7 +128,7 @@ defmodule Cite.JudgeTest do
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1, @u2]}
 
       # Act
-      request = Judge.request(gathered, ctx.source, ctx.policy)
+      request = Judge.request(gathered, ctx.source, ctx.terms)
 
       # Assert
       assert request == %{
@@ -159,7 +159,7 @@ defmodule Cite.JudgeTest do
       }
 
       # Act
-      request = Judge.request(gathered, ctx.source, ctx.policy)
+      request = Judge.request(gathered, ctx.source, ctx.terms)
 
       # Assert
       assert request == %{
@@ -207,7 +207,7 @@ defmodule Cite.JudgeTest do
         roles: %{household: same, income: same}
       }
 
-      %{"questions" => questions} = Judge.request(gathered, ctx.source, ctx.policy)
+      %{"questions" => questions} = Judge.request(gathered, ctx.source, ctx.terms)
 
       assert Enum.sort(Map.keys(questions)) == ["concentrated_income", "severity", "temporal"]
     end
@@ -217,8 +217,8 @@ defmodule Cite.JudgeTest do
     test "skips that check while the role is empty, instead of failing to expand the focus",
          ctx do
       # Arrange
-      policy = Build.read(Cite.TestPolicies.FocusRole)
-      [household] = policy.concerns
+      terms = Build.read(Cite.TestPolicies.FocusRole)
+      [household] = terms.concerns
 
       gathered = %Gathered{
         concern: household,
@@ -227,7 +227,7 @@ defmodule Cite.JudgeTest do
       }
 
       # Act
-      %{"questions" => questions} = Judge.request(gathered, ctx.source, policy)
+      %{"questions" => questions} = Judge.request(gathered, ctx.source, terms)
 
       # Assert
       assert Map.keys(questions) == ["same_household"]
@@ -251,7 +251,7 @@ defmodule Cite.JudgeTest do
         })
 
       # Act
-      finding = Judge.resolve(gathered, answers, ctx.policy, @band)
+      finding = Judge.resolve(gathered, answers, ctx.terms, @band)
 
       # Assert
       assert finding == %Finding{
@@ -278,7 +278,7 @@ defmodule Cite.JudgeTest do
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
 
       finding =
-        Judge.resolve(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.5}}), ctx.policy, @band)
+        Judge.resolve(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.5}}), ctx.terms, @band)
 
       assert finding.verdict == :review
     end
@@ -287,7 +287,7 @@ defmodule Cite.JudgeTest do
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
 
       finding =
-        Judge.resolve(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.1}}), ctx.policy, @band)
+        Judge.resolve(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.1}}), ctx.terms, @band)
 
       assert {finding.verdict, finding.evidence} == {:fails, []}
     end
@@ -311,7 +311,7 @@ defmodule Cite.JudgeTest do
           "concentrated_income" => %{"noul" => 0.8}
         })
 
-      finding = Judge.resolve(ctx.gathered, answers, ctx.policy, @band)
+      finding = Judge.resolve(ctx.gathered, answers, ctx.terms, @band)
 
       assert finding == %Finding{
                concern: :household_income,
@@ -341,7 +341,7 @@ defmodule Cite.JudgeTest do
           "concentrated_income" => %{"noul" => 0.9}
         })
 
-      assert Judge.resolve(ctx.gathered, answers, ctx.policy, @band).verdict == :fails
+      assert Judge.resolve(ctx.gathered, answers, ctx.terms, @band).verdict == :fails
     end
 
     test "is review when a check sits in the band", ctx do
@@ -351,7 +351,7 @@ defmodule Cite.JudgeTest do
           "concentrated_income" => %{"noul" => 0.9}
         })
 
-      assert Judge.resolve(ctx.gathered, answers, ctx.policy, @band).verdict == :review
+      assert Judge.resolve(ctx.gathered, answers, ctx.terms, @band).verdict == :review
     end
 
     test "cites a passage filling two roles once, and records only the checks asked", ctx do
@@ -365,7 +365,7 @@ defmodule Cite.JudgeTest do
 
       answers = descriptors(%{"concentrated_income" => %{"noul" => 0.9}})
 
-      finding = Judge.resolve(gathered, answers, ctx.policy, @band)
+      finding = Judge.resolve(gathered, answers, ctx.terms, @band)
 
       assert {finding.evidence, finding.checks} ==
                {[%Citation{passage: same, verdict: :holds, answer: nil}],
@@ -377,7 +377,7 @@ defmodule Cite.JudgeTest do
     gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
 
     finding =
-      Judge.resolve(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.9}}), ctx.policy, @band)
+      Judge.resolve(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.9}}), ctx.terms, @band)
 
     assert Jason.decode!(Jason.encode!(finding)) == %{
              "concern" => "cashflow_stress",

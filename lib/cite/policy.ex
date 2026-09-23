@@ -20,16 +20,4 @@ defmodule Cite.Policy do
   """
 
   use Spark.Dsl, default_extensions: [extensions: [Cite.Policy.Dsl]]
-
-  alias Cite.Policy.{Concern, Question}
-
-  @type t :: %__MODULE__{
-          exclusive: boolean(),
-          filters: [{atom(), Question.t()}],
-          concerns: [Concern.t()],
-          factors: [{atom(), Question.t()}],
-          descriptors: [{atom(), Question.t()}]
-        }
-
-  defstruct exclusive: false, filters: [], concerns: [], factors: [], descriptors: []
 end

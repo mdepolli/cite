@@ -1,37 +1,48 @@
 defmodule Cite.Policy.Build do
   @moduledoc """
-  Compiles a policy's declarations to the `%Cite.Policy{}` the rounds read,
-  persists it on the module, and reads it back (`read/1`). A Spark
+  Compiles a policy's declarations to its `Cite.Policy.Terms`, the data the
+  rounds read, persists them on the module, and reads them back (`read/1`). A Spark
   persister: it runs after `Cite.Policy.Checks`, so every declaration it sees
   is valid. Internal.
   """
 
   use Spark.Dsl.Transformer
 
-  alias Cite.{Placeholder, Policy}
-  alias Cite.Policy.{Check, Concern, Dsl, Question, Role}
+  alias Cite.Placeholder
+  alias Cite.Policy.{Check, Concern, Dsl, Question, Role, Terms}
   alias Spark.Dsl.{Extension, Transformer}
 
   @key :cite_policy
 
   @doc """
-  The compiled policy of a module that uses `Cite.Policy`. Raises
+  The terms of a module that uses `Cite.Policy`. Raises
   `ArgumentError` for any other module.
   """
-  @spec read(module()) :: Policy.t()
+  @spec read(module()) :: Terms.t()
   def read(module) when is_atom(module) do
-    if Spark.Dsl.is?(module, Policy) do
-      Extension.get_persisted(module, @key)
-    else
-      raise ArgumentError, "#{inspect(module)} is not a Cite policy; it must `use Cite.Policy`"
+    case persisted_terms(module) do
+      %Terms{} = terms ->
+        terms
+
+      nil ->
+        raise ArgumentError, "#{inspect(module)} is not a Cite policy; it must `use Cite.Policy`"
     end
+  end
+
+  # A module is a policy exactly when it carries the terms this module
+  # persisted. Asking that, rather than naming Cite.Policy, keeps Build free of
+  # a reference back to the module whose compilation runs it.
+  defp persisted_terms(module) do
+    if Code.ensure_loaded?(module) and function_exported?(module, :spark_dsl_config, 0),
+      do: Extension.get_persisted(module, @key),
+      else: nil
   end
 
   @impl true
   def transform(dsl) do
     entities = Transformer.get_entities(dsl, [:policy])
 
-    policy = %Policy{
+    terms = %Terms{
       exclusive: Transformer.get_option(dsl, [:policy], :exclusive, false),
       filters: for(%Dsl.Filter{} = filter <- entities, do: {filter.name, noul(filter)}),
       concerns: for(%Dsl.Concern{} = concern <- entities, do: concern(concern)),
@@ -44,7 +55,7 @@ defmodule Cite.Policy.Build do
         )
     }
 
-    {:ok, Transformer.persist(dsl, @key, policy)}
+    {:ok, Transformer.persist(dsl, @key, terms)}
   end
 
   defp concern(%Dsl.Concern{} = concern) do

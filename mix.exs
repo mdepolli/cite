@@ -107,6 +107,7 @@ defmodule Cite.MixProject do
           Cite.Policy.Dsl,
           Cite.Policy.Checks,
           Cite.Policy.Build,
+          Cite.Policy.Terms,
           Cite.Policy.Question,
           Cite.Policy.Concern,
           Cite.Policy.Role,
