@@ -1,10 +1,8 @@
 defmodule Cite.Source do
   @moduledoc """
-  The document as the caller's list of passages. Built by `Cite.source/2`.
-
-  `as` is the word the passages sit under in every request; `show` names the
-  meta keys the model sees beside `id` and `text`. The rest of `meta` stays
-  with the caller.
+  The document as the caller's list of passages. Built by `Cite.source/2`,
+  which documents `as` and `show`. Only the meta keys `show` names reach the
+  model; the rest of `meta` stays with the caller.
 
   Shown meta goes on the wire, so its values must be JSON: `nil`, booleans,
   atoms, numbers, UTF-8 binaries, and lists and plain maps of these, with
@@ -25,6 +23,31 @@ defmodule Cite.Source do
   # bracket inside one would point the question somewhere else.
   @path_breaking [".", "`", "[", "]"]
 
+  @schema Spark.Options.new!(
+            as: [
+              type: {:custom, __MODULE__, :validate_as, []},
+              default: "passages",
+              doc: """
+              The word the passages sit under in every request, such as \
+              `"utterances"`. It is part of every path the model reads, so it \
+              may not contain `.`, a backtick, `[`, or `]`.\
+              """
+            ],
+            show: [
+              type: {:custom, __MODULE__, :validate_show, []},
+              default: [],
+              doc: """
+              The meta keys the model sees beside `id` and `text`, as given in \
+              `meta` (`:speaker` finds `%{speaker: _}`, not `%{"speaker" => _}`). \
+              It may not name `id` or `text`.\
+              """
+            ]
+          )
+
+  @doc false
+  @spec options_docs() :: String.t()
+  def options_docs, do: Spark.Options.docs(@schema)
+
   @doc """
   Builds a source from units, each a text or `%{text: text}` with optional
   `:id` and `:meta`. Text is kept byte for byte. Missing ids default to
@@ -33,12 +56,9 @@ defmodule Cite.Source do
   """
   @spec new([String.t() | map()], keyword()) :: t()
   def new(units, opts \\ []) when is_list(units) do
-    opts = Keyword.validate!(opts, as: "passages", show: [])
+    opts = options(opts)
     as = opts[:as]
     show = opts[:show]
-
-    check_as(as)
-    check_show(show)
 
     passages =
       units
@@ -49,30 +69,38 @@ defmodule Cite.Source do
     %__MODULE__{passages: passages, as: as, show: show}
   end
 
-  defp check_as(as) when is_binary(as) and as != "" do
-    if String.contains?(as, @path_breaking) do
-      raise ArgumentError,
-            "as #{inspect(as)} must not contain #{Enum.join(@path_breaking, " ")}: it is part of every path"
+  defp options(opts) do
+    case Spark.Options.validate(opts, @schema) do
+      {:ok, options} -> options
+      {:error, error} -> raise ArgumentError, Exception.message(error)
     end
   end
 
-  defp check_as(as) do
-    raise ArgumentError, "as must be a non-empty binary, got: #{inspect(as)}"
+  @doc false
+  def validate_as(as) when is_binary(as) and as != "" do
+    if String.contains?(as, @path_breaking),
+      do: {:error, "must not contain #{Enum.join(@path_breaking, " ")}, got: #{inspect(as)}"},
+      else: {:ok, as}
   end
 
-  defp check_show(show) when is_list(show) do
-    unless Enum.all?(show, &(is_atom(&1) or is_binary(&1))) do
-      raise ArgumentError, "show must be a list of atom or binary keys, got: #{inspect(show)}"
+  def validate_as(as), do: {:error, "expected a non-empty binary, got: #{inspect(as)}"}
+
+  @doc false
+  def validate_show(show) when is_list(show) do
+    cond do
+      not Enum.all?(show, &(is_atom(&1) or is_binary(&1))) ->
+        {:error, "expected a list of atom or binary keys, got: #{inspect(show)}"}
+
+      Enum.any?(show, &(to_string(&1) in ["id", "text"])) ->
+        {:error, "must not name id or text, got: #{inspect(show)}"}
+
+      true ->
+        {:ok, show}
     end
-
-    if Enum.any?(show, &(to_string(&1) in ["id", "text"])) do
-      raise ArgumentError, "show must not name id or text, got: #{inspect(show)}"
-    end
   end
 
-  defp check_show(show) do
-    raise ArgumentError, "show must be a list of atom or binary keys, got: #{inspect(show)}"
-  end
+  def validate_show(show),
+    do: {:error, "expected a list of atom or binary keys, got: #{inspect(show)}"}
 
   defp passage({text, index}, show) when is_binary(text),
     do: passage({%{text: text}, index}, show)

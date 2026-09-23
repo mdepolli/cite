@@ -86,9 +86,11 @@ defmodule Cite.SourceTest do
 
     test "raises on an as that would break a path" do
       for as <- ["utter.ances", "`u`", "u[0]"] do
-        assert_raise ArgumentError, ~r/as .* must not contain/, fn ->
-          Source.new(["a"], as: as)
-        end
+        assert_raise ArgumentError,
+                     ~r/invalid value for :as option: must not contain \. ` \[ \]/,
+                     fn ->
+                       Source.new(["a"], as: as)
+                     end
       end
     end
 
@@ -132,24 +134,30 @@ defmodule Cite.SourceTest do
 
     test "raises when show names id or text" do
       for key <- [:id, :text, "id", "text"] do
-        assert_raise ArgumentError, ~r/show must not name id or text/, fn ->
-          Source.new(["a"], show: [key])
-        end
+        assert_raise ArgumentError,
+                     ~r/invalid value for :show option: must not name id or text/,
+                     fn ->
+                       Source.new(["a"], show: [key])
+                     end
       end
     end
 
     test "raises on a blank as or a show that is not a list of keys" do
-      assert_raise ArgumentError, ~r/as must be a non-empty binary/, fn ->
-        Source.new(["a"], as: "")
-      end
+      assert_raise ArgumentError,
+                   ~s(invalid value for :as option: expected a non-empty binary, got: ""),
+                   fn -> Source.new(["a"], as: "") end
 
-      assert_raise ArgumentError, ~r/show must be a list of atom or binary keys/, fn ->
-        Source.new(["a"], show: :speaker)
-      end
+      assert_raise ArgumentError,
+                   "invalid value for :show option: expected a list of atom or binary keys, got: :speaker",
+                   fn -> Source.new(["a"], show: :speaker) end
     end
 
     test "raises on unknown options" do
-      assert_raise ArgumentError, fn -> Source.new(["a"], window: 3) end
+      assert_raise ArgumentError,
+                   "unknown options [:window], valid options are: [:as, :show]",
+                   fn ->
+                     Source.new(["a"], window: 3)
+                   end
     end
   end
 

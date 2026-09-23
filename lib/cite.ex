@@ -62,9 +62,11 @@ defmodule Cite do
 
   @doc """
   The source: the caller's passages, each a text or `%{text: text}` with
-  optional `:id` and `:meta`. Options: `as` (`"passages"`), the word the
-  passages sit under in every request; `show` (`[]`), the meta keys the
-  model sees. See `Cite.Source`.
+  optional `:id` and `:meta`. See `Cite.Source`.
+
+  ## Options
+
+  #{Source.options_docs()}
   """
   @spec source([String.t() | map()], keyword()) :: Source.t()
   defdelegate source(units, opts \\ []), to: Source, as: :new
