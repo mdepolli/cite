@@ -19,7 +19,7 @@ defmodule Cite.Judge do
   """
   @spec request(Run.t(), Gathered.t()) :: map()
   def request(
-        %Run{source: %Source{show: show}, terms: terms},
+        %Run{source: %Source{show: show}} = run,
         %Gathered{concern: %Concern{indicator: nil}} = gathered
       ) do
     state =
@@ -40,11 +40,14 @@ defmodule Cite.Judge do
         {Atom.to_string(check.name), Wire.question(check.question, paths, [])}
       end
 
-    %{"state" => state, "questions" => Map.merge(checks, descriptor_questions(terms, fallback))}
+    %{
+      "state" => state,
+      "questions" => Map.merge(checks, descriptor_questions(run.terms, fallback))
+    }
   end
 
   def request(
-        %Run{source: %Source{as: as, show: show}, terms: terms},
+        %Run{source: %Source{as: as, show: show}} = run,
         %Gathered{concern: %Concern{fit: fit}, passages: passages}
       ) do
     fits =
@@ -56,7 +59,7 @@ defmodule Cite.Judge do
 
     %{
       "state" => %{as => Wire.passages(passages, show)},
-      "questions" => Map.merge(fits, descriptor_questions(terms, fallback))
+      "questions" => Map.merge(fits, descriptor_questions(run.terms, fallback))
     }
   end
 
@@ -73,10 +76,10 @@ defmodule Cite.Judge do
   holds, and is sent to review otherwise.
   """
   @spec resolve(Run.t(), [outcome()]) :: Run.t()
-  def resolve(%Run{terms: terms, review_band: review_band} = run, outcomes) do
+  def resolve(%Run{} = run, outcomes) do
     findings =
       for {gathered, {:ok, verdict}} <- outcomes,
-          do: finding(gathered, verdict.answers, terms, review_band)
+          do: finding(gathered, verdict.answers, run.terms, run.review_band)
 
     errors = for {gathered, {:error, reason}} <- outcomes, do: error(gathered, reason)
     usages = for {_gathered, {:ok, verdict}} <- outcomes, do: verdict.usage
