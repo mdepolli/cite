@@ -5,7 +5,7 @@ defmodule Cite.Provider.TypeSafeTest do
   alias Cite.Provider.TypeSafe
 
   @request %{
-    "state" => %{"candidates" => %{"U0" => %{"text" => "hi"}}},
+    "state" => %{"passages" => %{"U0" => %{"text" => "hi"}}},
     "questions" => %{"U0:d" => %{"type" => "noul"}}
   }
 
