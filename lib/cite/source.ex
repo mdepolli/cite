@@ -19,9 +19,11 @@ defmodule Cite.Source do
 
   defstruct passages: [], as: "passages", show: []
 
-  # Ids and `as` become paths like `utterances.U014.text`; a dot, backtick, or
-  # bracket inside one would point the question somewhere else.
+  # Ids and `as` become paths like `utterances.U014.text`; whitespace, a dot,
+  # a backtick, or a bracket inside one would point the question somewhere
+  # else, and invalid UTF-8 would fail to encode mid-run.
   @path_breaking [".", "`", "[", "]"]
+  @path_rule "must be UTF-8 with no whitespace or #{Enum.join(@path_breaking, " ")}"
 
   @schema Spark.Options.new!(
             as: [
@@ -30,7 +32,8 @@ defmodule Cite.Source do
               doc: """
               The word the passages sit under in every request, such as \
               `"utterances"`. It is part of every path the model reads, so it \
-              may not contain `.`, a backtick, `[`, or `]`.\
+              must be UTF-8 with no whitespace, `.`, backtick, `[`, or `]`; \
+              passage ids follow the same rule.\
               """
             ],
             show: [
@@ -78,9 +81,9 @@ defmodule Cite.Source do
 
   @doc false
   def validate_as(as) when is_binary(as) and as != "" do
-    if String.contains?(as, @path_breaking),
-      do: {:error, "must not contain #{Enum.join(@path_breaking, " ")}, got: #{inspect(as)}"},
-      else: {:ok, as}
+    if path_part?(as),
+      do: {:ok, as},
+      else: {:error, "#{@path_rule}, got: #{inspect(as)}"}
   end
 
   def validate_as(as), do: {:error, "expected a non-empty binary, got: #{inspect(as)}"}
@@ -118,9 +121,8 @@ defmodule Cite.Source do
   defp default_id(index), do: "P" <> String.pad_leading(Integer.to_string(index), 3, "0")
 
   defp id(id) when is_binary(id) and id != "" do
-    if String.contains?(id, @path_breaking) do
-      raise ArgumentError,
-            "passage id #{inspect(id)} must not contain #{Enum.join(@path_breaking, " ")}: it is part of every path"
+    unless path_part?(id) do
+      raise ArgumentError, "passage id #{inspect(id)} #{@path_rule}: it is part of every path"
     end
 
     id
@@ -128,6 +130,11 @@ defmodule Cite.Source do
 
   defp id(id) do
     raise ArgumentError, "passage id must be a non-empty binary, got: #{inspect(id)}"
+  end
+
+  defp path_part?(part) do
+    String.valid?(part) and not String.contains?(part, @path_breaking) and
+      not String.match?(part, ~r/\s/u)
   end
 
   defp text(id, text) do

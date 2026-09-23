@@ -76,18 +76,20 @@ defmodule Cite.SourceTest do
       end
     end
 
-    test "raises on an id that would break a path: a dot, a backtick, or a bracket" do
-      for id <- ["3.2.1", "U`1", "U[0]", "U]"] do
-        assert_raise ArgumentError, ~r/passage id .* must not contain/, fn ->
-          Source.new([%{id: id, text: "a"}])
-        end
+    test "raises on an id that would break a path: whitespace, invalid UTF-8, a dot, a backtick, or a bracket" do
+      for id <- ["3.2.1", "U`1", "U[0]", "U]", "U 1", "U\t1", <<0xFF>>] do
+        assert_raise ArgumentError,
+                     ~r/passage id .* must be UTF-8 with no whitespace or \. ` \[ \]: it is part of every path/,
+                     fn ->
+                       Source.new([%{id: id, text: "a"}])
+                     end
       end
     end
 
     test "raises on an as that would break a path" do
-      for as <- ["utter.ances", "`u`", "u[0]"] do
+      for as <- ["utter.ances", "`u`", "u[0]", "utter ances", <<0xFF>>] do
         assert_raise ArgumentError,
-                     ~r/invalid value for :as option: must not contain \. ` \[ \]/,
+                     ~r/invalid value for :as option: must be UTF-8 with no whitespace or \. ` \[ \]/,
                      fn ->
                        Source.new(["a"], as: as)
                      end

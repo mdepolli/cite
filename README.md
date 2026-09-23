@@ -76,7 +76,8 @@ or `%{text: text, id: id, meta: meta}`. Text is kept byte for byte; missing
 ids become `P000`, `P001`, and so on. `as:` names the passages in every
 request (`"utterances"` reads better than the default `"passages"`), and
 `show:` names the meta keys the model sees. Ids and `as` are part of every
-path the model reads, so a `.`, a backtick, `[` or `]` in one raises. Shown
+path the model reads, so whitespace, invalid UTF-8, a `.`, a backtick, `[`
+or `]` in one raises. Shown
 meta goes on the wire, so a shown value that is not JSON (a struct, a tuple, a
 pid) raises too. The rest of `meta` — timestamps your UI needs, say — stays
 with you.
