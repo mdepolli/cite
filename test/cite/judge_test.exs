@@ -20,10 +20,13 @@ defmodule Cite.JudgeTest do
     }
   end
 
-  defp source_for(_policy), do: Source.new([], as: "utterances", show: [:speaker])
+  @u1 %Passage{id: "U1", text: "text of U1", meta: %{speaker: "B"}}
+  @u2 %Passage{id: "U2", text: "text of U2", meta: %{speaker: "B"}}
+  @u3 %Passage{id: "U3", text: "text of U3", meta: %{speaker: "B"}}
+  @u4 %Passage{id: "U4", text: "text of U4", meta: %{speaker: "B"}}
+  @u9 %Passage{id: "U9", text: "text of U9", meta: %{speaker: "B"}}
 
-  defp passage(id), do: %Passage{id: id, text: "text of #{id}", meta: %{speaker: "B"}}
-
+  # The model's descriptor answers, with the fits or checks each test adds.
   defp descriptors(extra) do
     Map.merge(
       %{
@@ -34,36 +37,14 @@ defmodule Cite.JudgeTest do
     )
   end
 
-  defp severity(compare) do
-    %{
-      "type" => "score",
-      "instructions" => %{
-        "question" => "How much does this affect the speaker?",
-        "focus" => "Judge the effect, not the topic.",
-        "compare" => compare
-      },
-      "criteria" => ["In passing.", "It worries them.", "They cannot manage."]
-    }
-  end
+  # Expected wire questions, spelled out: each helper is one literal.
 
-  defp temporal(compare) do
-    %{
-      "type" => "choice",
-      "instructions" => %{"question" => "Is it temporary or lasting?", "compare" => compare},
-      "criteria" => %{
-        "transient" => "Expected to recover.",
-        "persistent" => "Lasting.",
-        "unknown" => "Not said."
-      }
-    }
-  end
-
-  defp fit(id) do
+  defp fit_u1 do
     %{
       "type" => "noul",
       "instructions" => %{
-        "question" => "Does `utterances.#{id}.text` evidence that a shock could not be absorbed?",
-        "inspect" => "`utterances.#{id}.text`"
+        "question" => "Does `utterances.U1.text` evidence that a shock could not be absorbed?",
+        "inspect" => "`utterances.U1.text`"
       },
       "criteria" => %{
         "true" => %{"what" => "Costs look unmanageable now."},
@@ -72,17 +53,83 @@ defmodule Cite.JudgeTest do
     }
   end
 
+  defp fit_u2 do
+    %{
+      "type" => "noul",
+      "instructions" => %{
+        "question" => "Does `utterances.U2.text` evidence that a shock could not be absorbed?",
+        "inspect" => "`utterances.U2.text`"
+      },
+      "criteria" => %{
+        "true" => %{"what" => "Costs look unmanageable now."},
+        "false" => %{"what" => "Ordinary budget figures."}
+      }
+    }
+  end
+
+  defp severity_over_u1_u2 do
+    %{
+      "type" => "score",
+      "instructions" => %{
+        "question" => "How much does this affect the speaker?",
+        "focus" => "Judge the effect, not the topic.",
+        "compare" => ["`utterances.U1.text`", "`utterances.U2.text`"]
+      },
+      "criteria" => ["In passing.", "It worries them.", "They cannot manage."]
+    }
+  end
+
+  defp temporal_over_u1_u2 do
+    %{
+      "type" => "choice",
+      "instructions" => %{
+        "question" => "Is it temporary or lasting?",
+        "compare" => ["`utterances.U1.text`", "`utterances.U2.text`"]
+      },
+      "criteria" => %{
+        "transient" => "Expected to recover.",
+        "persistent" => "Lasting.",
+        "unknown" => "Not said."
+      }
+    }
+  end
+
+  defp severity_over_roles do
+    %{
+      "type" => "score",
+      "instructions" => %{
+        "question" => "How much does this affect the speaker?",
+        "focus" => "Judge the effect, not the topic.",
+        "compare" => ["`household.text`", "`income.text`"]
+      },
+      "criteria" => ["In passing.", "It worries them.", "They cannot manage."]
+    }
+  end
+
+  defp temporal_over_roles do
+    %{
+      "type" => "choice",
+      "instructions" => %{
+        "question" => "Is it temporary or lasting?",
+        "compare" => ["`household.text`", "`income.text`"]
+      },
+      "criteria" => %{
+        "transient" => "Expected to recover.",
+        "persistent" => "Lasting.",
+        "unknown" => "Not said."
+      }
+    }
+  end
+
   describe "request/3 for a directly screened concern" do
     test "asks the fit of each passage among its siblings, and the descriptors over all", ctx do
       # Arrange
-      gathered = %Gathered{concern: ctx.cashflow, passages: [passage("U1"), passage("U2")]}
+      gathered = %Gathered{concern: ctx.cashflow, passages: [@u1, @u2]}
 
       # Act
       request = Judge.request(gathered, ctx.source, ctx.policy)
 
       # Assert
-      compare = ["`utterances.U1.text`", "`utterances.U2.text`"]
-
       assert request == %{
                "state" => %{
                  "utterances" =>
@@ -92,10 +139,10 @@ defmodule Cite.JudgeTest do
                    ])
                },
                "questions" => %{
-                 "fit:U1" => fit("U1"),
-                 "fit:U2" => fit("U2"),
-                 "severity" => severity(compare),
-                 "temporal" => temporal(compare)
+                 "fit:U1" => fit_u1(),
+                 "fit:U2" => fit_u2(),
+                 "severity" => severity_over_u1_u2(),
+                 "temporal" => temporal_over_u1_u2()
                }
              }
     end
@@ -106,16 +153,14 @@ defmodule Cite.JudgeTest do
       # Arrange
       gathered = %Gathered{
         concern: ctx.household,
-        passages: [passage("U3"), passage("U9")],
-        roles: %{household: passage("U3"), income: passage("U9")}
+        passages: [@u3, @u9],
+        roles: %{household: @u3, income: @u9}
       }
 
       # Act
       request = Judge.request(gathered, ctx.source, ctx.policy)
 
       # Assert
-      compare = ["`household.text`", "`income.text`"]
-
       assert request == %{
                "state" => %{
                  "household" => %{"id" => "U3", "speaker" => "B", "text" => "text of U3"},
@@ -127,7 +172,7 @@ defmodule Cite.JudgeTest do
                    "instructions" => %{
                      "question" =>
                        "Do `household.text` and `income.text` describe the same household?",
-                     "compare" => compare
+                     "compare" => ["`household.text`", "`income.text`"]
                    },
                    "criteria" => %{
                      "true" => %{"what" => "The same household."},
@@ -139,21 +184,21 @@ defmodule Cite.JudgeTest do
                    "instructions" => %{
                      "question" =>
                        "Given `household.text` and `income.text`, does one person's pay support the household?",
-                     "compare" => compare
+                     "compare" => ["`household.text`", "`income.text`"]
                    },
                    "criteria" => %{
                      "true" => %{"what" => "One main earner."},
                      "false" => %{"what" => "Two comparable earners."}
                    }
                  },
-                 "severity" => severity(compare),
-                 "temporal" => temporal(compare)
+                 "severity" => severity_over_roles(),
+                 "temporal" => temporal_over_roles()
                }
              }
     end
 
     test "skips a distinct check when its roles resolve to one passage", ctx do
-      same = passage("U3")
+      same = @u3
 
       gathered = %Gathered{
         concern: ctx.household,
@@ -168,19 +213,20 @@ defmodule Cite.JudgeTest do
   end
 
   describe "request/3 with a role named only in a check's focus" do
-    test "skips that check while the role is empty, instead of failing to expand the focus" do
+    test "skips that check while the role is empty, instead of failing to expand the focus",
+         ctx do
       # Arrange
       policy = Policy.compiled(Cite.TestPolicies.FocusRole)
       [household] = policy.concerns
 
       gathered = %Gathered{
         concern: household,
-        passages: [passage("U3"), passage("U9")],
-        roles: %{household: passage("U3"), income: passage("U9")}
+        passages: [@u3, @u9],
+        roles: %{household: @u3, income: @u9}
       }
 
       # Act
-      %{"questions" => questions} = Judge.request(gathered, source_for(policy), policy)
+      %{"questions" => questions} = Judge.request(gathered, ctx.source, policy)
 
       # Assert
       assert Map.keys(questions) == ["same_household"]
@@ -192,8 +238,8 @@ defmodule Cite.JudgeTest do
       # Arrange
       gathered = %Gathered{
         concern: ctx.cashflow,
-        passages: [passage("U1"), passage("U2"), passage("U3")],
-        over_cap: [passage("U4")]
+        passages: [@u1, @u2, @u3],
+        over_cap: [@u4]
       }
 
       answers =
@@ -217,18 +263,18 @@ defmodule Cite.JudgeTest do
                  temporal: %{"choice" => "persistent", "confidence" => 0.9}
                },
                evidence: [
-                 %Citation{passage: passage("U2"), verdict: :review, answer: %{"noul" => 0.59}},
-                 %Citation{passage: passage("U3"), verdict: :holds, answer: %{"noul" => 0.6}}
+                 %Citation{passage: @u2, verdict: :review, answer: %{"noul" => 0.59}},
+                 %Citation{passage: @u3, verdict: :holds, answer: %{"noul" => 0.6}}
                ],
                dropped: [
-                 %Citation{passage: passage("U1"), verdict: :dropped, answer: %{"noul" => 0.4}}
+                 %Citation{passage: @u1, verdict: :dropped, answer: %{"noul" => 0.4}}
                ],
-               over_cap: [passage("U4")]
+               over_cap: [@u4]
              }
     end
 
     test "is review when no citation holds", ctx do
-      gathered = %Gathered{concern: ctx.cashflow, passages: [passage("U1")]}
+      gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
 
       finding =
         Judge.resolve(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.5}}), ctx.policy, @band)
@@ -237,7 +283,7 @@ defmodule Cite.JudgeTest do
     end
 
     test "fails when every passage is dropped", ctx do
-      gathered = %Gathered{concern: ctx.cashflow, passages: [passage("U1")]}
+      gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
 
       finding =
         Judge.resolve(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.1}}), ctx.policy, @band)
@@ -251,8 +297,8 @@ defmodule Cite.JudgeTest do
       %{
         gathered: %Gathered{
           concern: ctx.household,
-          passages: [passage("U3"), passage("U9")],
-          roles: %{household: passage("U3"), income: passage("U9")}
+          passages: [@u3, @u9],
+          roles: %{household: @u3, income: @u9}
         }
       }
     end
@@ -279,8 +325,8 @@ defmodule Cite.JudgeTest do
                  temporal: %{"choice" => "persistent", "confidence" => 0.9}
                },
                evidence: [
-                 %Citation{passage: passage("U3"), verdict: :holds, answer: nil},
-                 %Citation{passage: passage("U9"), verdict: :holds, answer: nil}
+                 %Citation{passage: @u3, verdict: :holds, answer: nil},
+                 %Citation{passage: @u9, verdict: :holds, answer: nil}
                ],
                dropped: [],
                over_cap: []
@@ -308,7 +354,7 @@ defmodule Cite.JudgeTest do
     end
 
     test "cites a passage filling two roles once, and records only the checks asked", ctx do
-      same = passage("U3")
+      same = @u3
 
       gathered = %Gathered{
         concern: ctx.household,
@@ -327,7 +373,7 @@ defmodule Cite.JudgeTest do
   end
 
   test "a finding encodes with Jason, names and verdicts as strings", ctx do
-    gathered = %Gathered{concern: ctx.cashflow, passages: [passage("U1")]}
+    gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
 
     finding =
       Judge.resolve(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.9}}), ctx.policy, @band)
