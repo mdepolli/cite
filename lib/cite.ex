@@ -116,8 +116,8 @@ defmodule Cite do
   end
 
   # Round 2: one request per gathered finding.
-  defp judge_findings(%Run{} = run) do
-    outcomes = Enum.map(run.gathered, &{&1, call(run.client, Judge.request(run, &1))})
+  defp judge_findings(%Run{gathered: gathered} = run) when is_list(gathered) do
+    outcomes = Enum.map(gathered, &{&1, call(run.client, Judge.request(run, &1))})
 
     Judge.resolve(run, outcomes)
   end

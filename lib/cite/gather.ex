@@ -15,9 +15,8 @@ defmodule Cite.Gather do
   every required role.
   """
   @spec findings(Run.t()) :: Run.t()
-  def findings(%Run{} = run) do
+  def findings(%Run{screen: screen} = run) when is_map(screen) do
     terms = run.terms
-    screen = run.screen
     threshold = run.threshold
 
     eligible = Enum.filter(run.source.passages, &passes_filters?(screen[&1.id], terms, threshold))

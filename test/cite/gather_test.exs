@@ -196,6 +196,12 @@ defmodule Cite.GatherTest do
     end
   end
 
+  test "refuses a run that has not been screened" do
+    assert_raise FunctionClauseError, fn ->
+      Gather.findings(TestRun.new(TestTerms.household()))
+    end
+  end
+
   test "findings follow the policy's concern order" do
     # Arrange
     screen = %{

@@ -345,8 +345,8 @@ defmodule Cite.JudgeTest do
                 ], [nil, nil], ["jev-1.12.0", "jev-1.13.0"]}
     end
 
-    test "leaves the run as it was when nothing was gathered", ctx do
-      assert Judge.resolve(ctx.run, []) == ctx.run
+    test "judges no findings and adds nothing when nothing was gathered", ctx do
+      assert Judge.resolve(ctx.run, []) == %{ctx.run | findings: []}
     end
   end
 

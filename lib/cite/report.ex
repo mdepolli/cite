@@ -26,7 +26,8 @@ defmodule Cite.Report do
 
   @doc false
   @spec new(Run.t()) :: t()
-  def new(%Run{} = run) do
+  def new(%Run{screen: screen, findings: findings} = run)
+      when is_map(screen) and is_list(findings) do
     %__MODULE__{
       findings: run.findings,
       screen: run.screen,
