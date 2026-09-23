@@ -99,3 +99,32 @@ defmodule Cite.TestPolicies.Household do
     option :unknown, "Not said."
   end
 end
+
+defmodule Cite.TestPolicies.TwoConcerns do
+  @moduledoc false
+  use Cite.Policy
+
+  exclusive true
+
+  filter :client_speaking do
+    question "Is the speaker of {passage} the client?"
+    yes "The client speaks."
+    no "The adviser speaks."
+  end
+
+  concern :health do
+    indicator do
+      question "Does {passage} disclose a health condition?"
+      yes "A condition."
+      no "No condition."
+    end
+  end
+
+  concern :life_event do
+    indicator do
+      question "Does {passage} disclose a life event?"
+      yes "An event."
+      no "No event."
+    end
+  end
+end
