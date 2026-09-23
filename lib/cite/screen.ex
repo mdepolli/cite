@@ -19,7 +19,7 @@ defmodule Cite.Screen do
   def request(%Run{source: %Source{as: as, show: show}} = run, window) do
     questions =
       for %Passage{id: id} <- window, {name, question} <- indicators(run.terms), into: %{} do
-        {key(id, name), Wire.question(question, %{"passage" => "#{as}.#{id}.text"}, [])}
+        {key(id, name), Wire.question(question, %{"passage" => Wire.text_path(as, id)}, [])}
       end
 
     %{"state" => %{as => Wire.passages(window, show)}, "questions" => questions}

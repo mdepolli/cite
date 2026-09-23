@@ -28,12 +28,14 @@ defmodule Cite.Judge do
       end)
 
     paths =
-      Map.new(gathered.roles, fn {role, _passage} -> {Atom.to_string(role), "#{role}.text"} end)
+      Map.new(gathered.roles, fn {role, _passage} ->
+        {Atom.to_string(role), Wire.text_path(role)}
+      end)
 
     fallback =
       for %Role{name: role} <- gathered.concern.roles,
           Map.has_key?(gathered.roles, role),
-          do: "#{role}.text"
+          do: Wire.text_path(role)
 
     checks =
       for %Check{} = check <- asked(gathered), into: %{} do
@@ -52,10 +54,10 @@ defmodule Cite.Judge do
       ) do
     fits =
       for %Passage{id: id} <- passages, into: %{} do
-        {fit_key(id), Wire.question(fit, %{"passage" => "#{as}.#{id}.text"}, [])}
+        {fit_key(id), Wire.question(fit, %{"passage" => Wire.text_path(as, id)}, [])}
       end
 
-    fallback = for %Passage{id: id} <- passages, do: "#{as}.#{id}.text"
+    fallback = for %Passage{id: id} <- passages, do: Wire.text_path(as, id)
 
     %{
       "state" => %{as => Wire.passages(passages, show)},

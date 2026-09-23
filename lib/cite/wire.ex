@@ -3,7 +3,8 @@ defmodule Cite.Wire do
   Values to request maps.
 
   The one place passages and compiled questions become the maps a client
-  receives: atom keys become strings, placeholders become backticked paths.
+  receives: atom keys become strings, and placeholders become backticked
+  paths, built by `text_path/1` and `text_path/2`.
   Past this edge a client sees string-keyed maps, lists, and scalars, and a
   `Cite.Wire.Object` wherever key order matters. Internal.
   """
@@ -31,6 +32,14 @@ defmodule Cite.Wire do
     |> Map.put("id", id)
     |> Map.put("text", text)
   end
+
+  @doc "The path to a passage's text under the source's `as`: `utterances.U014.text`."
+  @spec text_path(String.t(), String.t()) :: String.t()
+  def text_path(as, id), do: "#{as}.#{id}.text"
+
+  @doc "The path to the text of the passage filling a role: `household.text`."
+  @spec text_path(atom()) :: String.t()
+  def text_path(role) when is_atom(role), do: "#{role}.text"
 
   @doc """
   One compiled question on the wire. `paths` maps each placeholder name to
