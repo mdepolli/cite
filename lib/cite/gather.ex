@@ -4,7 +4,7 @@ defmodule Cite.Gather do
   to judge, by fixed rules. Pure. Internal.
   """
 
-  alias Cite.{Gather.Finding, Passage, Run}
+  alias Cite.{Gathered, Passage, Run}
   alias Cite.Policy.{Concern, Role, Terms}
 
   @doc """
@@ -70,7 +70,7 @@ defmodule Cite.Gather do
       |> Enum.split(max_evidence)
 
     [
-      %Finding{
+      %Gathered{
         concern: concern,
         passages: in_order(kept, matches),
         over_cap: in_order(over_cap, matches)
@@ -90,7 +90,7 @@ defmodule Cite.Gather do
         |> Map.values()
         |> Enum.uniq_by(& &1.id)
 
-      [%Finding{concern: concern, passages: in_order(used, eligible), roles: filled}]
+      [%Gathered{concern: concern, passages: in_order(used, eligible), roles: filled}]
     else
       []
     end

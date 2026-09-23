@@ -7,8 +7,7 @@ defmodule Cite.Run do
   Internal; use `Cite.judge/4`.
   """
 
-  alias Cite.{Error, Finding, Screen, Source}
-  alias Cite.Gather.Finding, as: Gathered
+  alias Cite.{Error, Finding, Gathered, Screen, Source}
   alias Cite.Policy.{Build, Terms}
 
   @schema Spark.Options.new!(

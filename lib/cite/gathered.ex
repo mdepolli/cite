@@ -1,6 +1,7 @@
-defmodule Cite.Gather.Finding do
+defmodule Cite.Gathered do
   @moduledoc """
-  A finding gathered for judging: its concern, the passages it would cite
+  A finding gathered for judging, before round 2 makes it a `Cite.Finding`:
+  its concern, the passages it would cite
   in source order, the passage filling each role (concerns built from
   factors), and the matches past `max_evidence`. Internal.
   """

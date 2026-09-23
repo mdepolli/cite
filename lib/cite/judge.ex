@@ -5,8 +5,7 @@ defmodule Cite.Judge do
   rules. Pure. Internal.
   """
 
-  alias Cite.{Citation, Error, Finding, Passage, Run, Source, Wire}
-  alias Cite.Gather.Finding, as: Gathered
+  alias Cite.{Citation, Error, Finding, Gathered, Passage, Run, Source, Wire}
   alias Cite.Policy.{Check, Concern, Role, Terms}
 
   @type outcome :: {Gathered.t(), {:ok, Cite.verdict()} | {:error, term()}}

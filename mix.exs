@@ -98,7 +98,7 @@ defmodule Cite.MixProject do
           Cite.Run,
           Cite.Screen,
           Cite.Gather,
-          Cite.Gather.Finding,
+          Cite.Gathered,
           Cite.Judge,
           Cite.Placeholder,
           Cite.Wire,
