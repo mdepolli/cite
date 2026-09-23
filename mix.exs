@@ -44,9 +44,9 @@ defmodule Cite.MixProject do
 
   defp description do
     """
-    Citations copied from the source, never written by a model. Your code lists
-    the candidates, a decision model judges which ones hold up, and Cite returns
-    those exact bytes.
+    Judgments plus grounding: declare a policy, hand over your document's
+    passages, and a decision model's findings come back citing those passages,
+    unchanged.
     """
   end
 
@@ -74,6 +74,8 @@ defmodule Cite.MixProject do
       source_url: @source_url,
       extras: [
         "README.md",
+        "guides/writing-policies.md",
+        "guides/how-judging-works.md",
         "CHANGELOG.md"
       ],
       # Groups mirror the stability tiers (see README "Stability"): Core API
