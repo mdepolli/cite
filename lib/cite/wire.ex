@@ -6,8 +6,47 @@ defmodule Cite.Wire do
   wire shape; nothing past this edge sees an Elixir value. Internal.
   """
 
-  alias Cite.{Candidate, Question}
+  alias Cite.{Candidate, Passage, Placeholder, Question}
+  alias Cite.Policy.Question, as: PolicyQuestion
   alias Cite.Wire.Object
+
+  @doc """
+  Passages on the wire as one object keyed by id, in source order, each with
+  only the meta keys `show` names.
+  """
+  @spec passages([Passage.t()], [atom() | String.t()]) :: Object.t()
+  def passages(passages, show) when is_list(passages) do
+    Object.new(for passage <- passages, do: {passage.id, passage(passage, show)})
+  end
+
+  @doc "One passage on the wire: `id`, `text`, and the meta keys `show` names."
+  @spec passage(Passage.t(), [atom() | String.t()]) :: map()
+  def passage(%Passage{id: id, text: text, meta: meta}, show) do
+    meta
+    |> Map.take(show)
+    |> map()
+    |> Map.put("id", id)
+    |> Map.put("text", text)
+  end
+
+  @doc """
+  One compiled question on the wire. `paths` maps each placeholder name to
+  its path in the request's state; a question with no placeholders compares
+  the `fallback` paths.
+  """
+  @spec question(PolicyQuestion.t(), %{String.t() => String.t()}, [String.t()]) :: map()
+  def question(%PolicyQuestion{} = question, paths, fallback) do
+    instructions =
+      question.text
+      |> Placeholder.instructions(paths, fallback)
+      |> put_focus(question.focus, paths)
+
+    %{
+      "type" => Atom.to_string(question.type),
+      "instructions" => instructions,
+      "criteria" => criteria(question.type, question.criteria)
+    }
+  end
 
   @doc """
   Stringifies keys recursively. A `%Candidate{}` anywhere in the tree becomes
@@ -78,4 +117,12 @@ defmodule Cite.Wire do
   defp value([%Candidate{} | _] = candidates), do: candidates(candidates)
   defp value(list) when is_list(list), do: Enum.map(list, &value/1)
   defp value(value), do: value
+
+  defp put_focus(instructions, nil, _paths), do: instructions
+
+  defp put_focus(instructions, focus, paths),
+    do: Map.put(instructions, "focus", Placeholder.expand(focus, paths))
+
+  defp criteria(:noul, %{true: yes, false: no}), do: %{"true" => map(yes), "false" => map(no)}
+  defp criteria(_type, criteria), do: criteria
 end

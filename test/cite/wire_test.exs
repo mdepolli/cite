@@ -1,8 +1,126 @@
 defmodule Cite.WireTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Candidate, Question, Wire}
+  alias Cite.{Candidate, Passage, Question, Wire}
+  alias Cite.Policy.Question, as: PolicyQuestion
   alias Cite.Wire.Object
+
+  describe "passages/2" do
+    test "keys passages by id in source order, with only the shown meta" do
+      # Arrange
+      passages = [
+        %Passage{
+          id: "U014",
+          text: "behind on the mortgage",
+          meta: %{speaker: "B", start: 81_230}
+        },
+        %Passage{id: "U015", text: "the cashflow chart", meta: %{speaker: "A"}}
+      ]
+
+      # Act
+      object = Wire.passages(passages, [:speaker])
+
+      # Assert
+      assert object == %Object{
+               pairs: [
+                 {"U014",
+                  %{"id" => "U014", "speaker" => "B", "text" => "behind on the mortgage"}},
+                 {"U015", %{"id" => "U015", "speaker" => "A", "text" => "the cashflow chart"}}
+               ]
+             }
+    end
+
+    test "sends no meta when show is empty" do
+      object = Wire.passages([%Passage{id: "P0", text: "a", meta: %{speaker: "B"}}], [])
+
+      assert object == %Object{pairs: [{"P0", %{"id" => "P0", "text" => "a"}}]}
+    end
+
+    test "matches show keys exactly as given" do
+      passages = [%Passage{id: "P0", text: "a", meta: %{"speaker" => "B", "role" => "client"}}]
+
+      assert Wire.passages(passages, [:speaker, "role"]) ==
+               %Object{pairs: [{"P0", %{"id" => "P0", "text" => "a", "role" => "client"}}]}
+    end
+  end
+
+  describe "passage/2" do
+    test "wires one passage with its shown meta" do
+      passage = %Passage{id: "U003", text: "two kids", meta: %{speaker: "B", start: 9}}
+
+      assert Wire.passage(passage, [:speaker]) ==
+               %{"id" => "U003", "speaker" => "B", "text" => "two kids"}
+    end
+  end
+
+  describe "question/3" do
+    test "encodes a Noul with its placeholder path and structured criteria" do
+      # Arrange
+      question = %PolicyQuestion{
+        type: :noul,
+        text: "Does {passage} say money is short?",
+        focus: nil,
+        criteria: %{
+          true: %{what: "Short now.", examples: ["behind"]},
+          false: %{what: "No strain.", not_for: "Bills as facts."}
+        }
+      }
+
+      # Act
+      wired = Wire.question(question, %{"passage" => "utterances.U014.text"}, [])
+
+      # Assert
+      assert wired == %{
+               "type" => "noul",
+               "instructions" => %{
+                 "question" => "Does `utterances.U014.text` say money is short?",
+                 "inspect" => "`utterances.U014.text`"
+               },
+               "criteria" => %{
+                 "true" => %{"what" => "Short now.", "examples" => ["behind"]},
+                 "false" => %{"what" => "No strain.", "not_for" => "Bills as facts."}
+               }
+             }
+    end
+
+    test "encodes a Score with its focus and compare over the fallback paths" do
+      question = %PolicyQuestion{
+        type: :score,
+        text: "How bad?",
+        focus: "Judge impact.",
+        criteria: ["a", "b"]
+      }
+
+      assert Wire.question(question, %{}, ["household.text", "income.text"]) == %{
+               "type" => "score",
+               "instructions" => %{
+                 "question" => "How bad?",
+                 "focus" => "Judge impact.",
+                 "compare" => ["`household.text`", "`income.text`"]
+               },
+               "criteria" => ["a", "b"]
+             }
+    end
+
+    test "encodes a Choice and expands placeholders in its focus" do
+      question = %PolicyQuestion{
+        type: :choice,
+        text: "Is {passage} temporary?",
+        focus: "Read {passage} only.",
+        criteria: %{"transient" => "recovers", "persistent" => "lasting"}
+      }
+
+      assert Wire.question(question, %{"passage" => "p.P0.text"}, []) == %{
+               "type" => "choice",
+               "instructions" => %{
+                 "question" => "Is `p.P0.text` temporary?",
+                 "focus" => "Read `p.P0.text` only.",
+                 "inspect" => "`p.P0.text`"
+               },
+               "criteria" => %{"transient" => "recovers", "persistent" => "lasting"}
+             }
+    end
+  end
 
   describe "map/1" do
     test "stringifies atom keys recursively and leaves binary keys alone" do
