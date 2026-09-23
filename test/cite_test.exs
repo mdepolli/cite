@@ -62,6 +62,7 @@ defmodule CiteTest do
     end
 
     test "builds the household finding from factors" do
+      # Arrange
       source =
         Cite.source(
           [
@@ -82,8 +83,10 @@ defmodule CiteTest do
           "concentrated_income" => 0.9
         })
 
+      # Act
       %Report{findings: findings} = Cite.judge(client, source, Household)
 
+      # Assert
       assert Enum.map(
                findings,
                &{&1.concern, &1.verdict, Enum.map(&1.evidence, fn c -> c.passage.id end)}
@@ -117,11 +120,14 @@ defmodule CiteTest do
     end
 
     test "records a lone passage over the cap as an error, and its siblings without a call" do
+      # Arrange
       source = Cite.source(["a", "b", "c", "d"])
       client = fn _request -> {:error, :request_too_large} end
 
+      # Act
       report = Cite.judge(client, source, Riddles, window: 4)
 
+      # Assert
       assert report.errors == [
                %Error{concern: nil, passage_ids: ["P000"], reason: :request_too_large},
                %Error{concern: nil, passage_ids: ["P001"], reason: :request_too_large},
@@ -129,27 +135,48 @@ defmodule CiteTest do
              ]
     end
 
-    test "a failed round-2 request is an error, never a finding" do
-      source = Cite.source(["Why is a raven like a writing-desk?"])
-      screening = client(%{"P000:riddle" => 0.9})
+    test "a round-2 request refused as too large is that finding's error, sent once and not split" do
+      # Arrange
+      source = Cite.source(["Why is a raven like a writing-desk?", "Riddle me this?"])
+      screening = client(%{"P000:riddle" => 0.9, "P001:riddle" => 0.9})
+      test_pid = self()
 
       client = fn
-        %{"questions" => %{"fit:P000" => _}} -> {:error, :timeout}
-        request -> screening.(request)
+        %{"questions" => %{"fit:P000" => _} = questions} ->
+          send(test_pid, {:round_2, Enum.sort(Map.keys(questions))})
+          {:error, :request_too_large}
+
+        request ->
+          screening.(request)
       end
 
+      # Act
       report = Cite.judge(client, source, Riddles)
 
+      # Assert
+      assert_received {:round_2, ["fit:P000", "fit:P001"]}
+      refute_received {:round_2, _}
+
       assert {report.findings, report.errors} ==
-               {[], [%Error{concern: :riddle, passage_ids: ["P000"], reason: :timeout}]}
+               {[],
+                [
+                  %Error{
+                    concern: :riddle,
+                    passage_ids: ["P000", "P001"],
+                    reason: :request_too_large
+                  }
+                ]}
     end
 
     test "a reply missing an answer fails its whole request" do
+      # Arrange
       source = Cite.source(["Why is a raven like a writing-desk?"])
       client = fn _request -> {:ok, %{answers: %{}, usage: nil}} end
 
+      # Act
       report = Cite.judge(client, source, Riddles)
 
+      # Assert
       assert {report.screen, report.errors} ==
                {%{},
                 [
@@ -162,14 +189,17 @@ defmodule CiteTest do
     end
 
     test "a reply answering in the wrong shape fails its whole request" do
+      # Arrange
       source = Cite.source(["a"])
 
       client = fn _request ->
         {:ok, %{answers: %{"P000:riddle" => %{"noul" => "high"}}, usage: nil}}
       end
 
+      # Act
       report = Cite.judge(client, source, Riddles)
 
+      # Assert
       assert report.errors == [
                %Error{
                  concern: nil,

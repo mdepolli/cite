@@ -78,6 +78,34 @@ defmodule Cite.Policy.ChecksTest do
   end
 
   describe "concerns" do
+    test "a policy without a concern" do
+      assert_policy_error ~r/a policy needs at least one concern/ do
+        filter :f do
+          question "Is {passage} x?"
+          yes "y"
+          no "n"
+        end
+      end
+    end
+
+    test "a check on a concern screened directly" do
+      assert_policy_error ~r/concern :k: checks apply only to a concern built from roles/ do
+        concern :k do
+          indicator do
+            question "Does {passage} x?"
+            yes "y"
+            no "n"
+          end
+
+          check :c do
+            question "Is {passage} fine?"
+            yes "y"
+            no "n"
+          end
+        end
+      end
+    end
+
     test "a fit on a concern built from roles" do
       assert_policy_error ~r/concern :k: a fit applies only to a concern with an indicator/ do
         factor :f do

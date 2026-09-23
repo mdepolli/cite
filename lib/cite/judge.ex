@@ -7,7 +7,7 @@ defmodule Cite.Judge do
 
   alias Cite.{Citation, Finding, Passage, Policy, Source, Wire}
   alias Cite.Gather.Finding, as: Gathered
-  alias Cite.Policy.{Check, Concern}
+  alias Cite.Policy.{Check, Concern, Role}
 
   @type band :: {number(), number()}
 
@@ -32,7 +32,7 @@ defmodule Cite.Judge do
       Map.new(gathered.roles, fn {role, _passage} -> {Atom.to_string(role), "#{role}.text"} end)
 
     fallback =
-      for %{name: role} <- gathered.concern.roles,
+      for %Role{name: role} <- gathered.concern.roles,
           Map.has_key?(gathered.roles, role),
           do: "#{role}.text"
 

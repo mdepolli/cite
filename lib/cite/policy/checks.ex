@@ -22,18 +22,25 @@ defmodule Cite.Policy.Checks do
          :ok <- check_criteria(entities),
          :ok <- check_indicator_placeholders(entities),
          :ok <- check_concern_shapes(entities),
-         :ok <- check_fit_placement(entities),
+         :ok <- check_member_placement(entities),
          :ok <- check_roles(entities),
          :ok <- check_check_placeholders(entities),
          :ok <- check_always_asked(entities),
          :ok <- check_distinct_arity(entities),
-         :ok <- check_descriptors(entities) do
+         :ok <- check_descriptors(entities),
+         :ok <- check_has_concern(entities) do
       {:ok, dsl}
     else
       {:error, message, path} ->
         module = Transformer.get_persisted(dsl, :module)
         {:error, DslError.exception(module: module, message: message, path: [:policy | path])}
     end
+  end
+
+  defp check_has_concern(entities) do
+    if concerns(entities) == [],
+      do: {:error, "a policy needs at least one concern: without one nothing can be found", []},
+      else: :ok
   end
 
   defp check_names(entities) do
@@ -113,13 +120,19 @@ defmodule Cite.Policy.Checks do
     end)
   end
 
-  # A roles-based concern is judged by its checks; a fit there would compile
-  # and never be asked.
-  defp check_fit_placement(entities) do
-    first_error(concerns(entities), fn %Dsl.Concern{name: name, fit: fit, roles: roles} ->
-      if fit && roles != [],
-        do:
-          {"concern #{inspect(name)}: a fit applies only to a concern with an indicator", [name]}
+  # A fit is asked only of a concern screened directly, and checks only of a
+  # concern built from roles; anywhere else either would compile and never be
+  # asked.
+  defp check_member_placement(entities) do
+    first_error(concerns(entities), fn
+      %Dsl.Concern{name: name, fit: fit, roles: [_ | _]} when not is_nil(fit) ->
+        {"concern #{inspect(name)}: a fit applies only to a concern with an indicator", [name]}
+
+      %Dsl.Concern{name: name, checks: [_ | _], roles: []} ->
+        {"concern #{inspect(name)}: checks apply only to a concern built from roles", [name]}
+
+      _concern ->
+        nil
     end)
   end
 
