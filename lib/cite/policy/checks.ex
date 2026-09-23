@@ -148,15 +148,23 @@ defmodule Cite.Policy.Checks do
     factors = for %Dsl.Factor{name: name} <- entities, do: name
 
     first_error(for(concern <- concerns(entities), role <- concern.roles, do: {concern, role}), fn
-      {concern, %Dsl.Role{name: :passage} = role} ->
-        {"concern #{inspect(concern.name)}: a role cannot be named :passage", [concern.name],
-         role}
-
       {concern, %Dsl.Role{name: name, factor: factor} = role} ->
-        unless factor in factors,
-          do:
+        cond do
+          not Placeholder.name?(Atom.to_string(name)) ->
+            {"role #{inspect(name)} must be a word of letters, digits, and _: it is a placeholder and part of a path",
+             [concern.name, name], role}
+
+          name == :passage ->
+            {"concern #{inspect(concern.name)}: a role cannot be named :passage", [concern.name],
+             role}
+
+          factor not in factors ->
             {"role #{inspect(name)} names factor #{inspect(factor)}, which the policy does not declare",
              [concern.name, name], role}
+
+          true ->
+            nil
+        end
     end)
   end
 

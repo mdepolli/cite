@@ -5,10 +5,18 @@ defmodule Cite.Placeholder do
 
   A policy's questions name what they look at by role (`{passage}`,
   `{household}`); Cite writes the path. The policy's compile-time checks use
-  `names/1`; `Cite.Wire` uses `instructions/3`. Internal.
+  `names/1` and `name?/1`; `Cite.Wire` uses `instructions/3`. Internal.
   """
 
   @placeholder ~r/\{(\w+)\}/
+  @name ~r/\A\w+\z/
+
+  @doc """
+  Whether `name` can be a placeholder: a word of letters, digits, and `_`.
+  Such a name is also safe in a path.
+  """
+  @spec name?(String.t()) :: boolean()
+  def name?(name) when is_binary(name), do: Regex.match?(@name, name)
 
   @doc """
   Each placeholder name in `text`, once, in order of first use. Given a list

@@ -203,7 +203,9 @@ A policy fails to compile, pointing at the declaration, on:
 - a concern with both an indicator and roles, or neither;
 - a fit on a concern built from roles, or checks on a concern screened
   directly: either would compile and never be asked;
-- a role naming an undeclared factor, or a role named `:passage`;
+- a role naming an undeclared factor, a role named `:passage`, or a role
+  name that is not a word of letters, digits, and `_` (it is a placeholder
+  and part of a path);
 - a concern built from factors with no always-asked check, or a distinct
   check naming fewer than two roles;
 - a Score outside 2 to 10 unique levels, or a Choice without unique options;

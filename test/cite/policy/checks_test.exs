@@ -261,6 +261,28 @@ defmodule Cite.Policy.ChecksTest do
       end
     end
 
+    test "a role name that is not a word" do
+      for name <- [:"a.b", :"a`b", :"a[0]", :"a-b"] do
+        assert_policy_error ~r/role #{Regex.escape(inspect(name))} must be a word/ do
+          factor :f do
+            question "Does {passage} x?"
+            yes "y"
+            no "n"
+          end
+
+          concern :k do
+            role name, factor: :f
+
+            check :c do
+              question "Is it fine?"
+              yes "y"
+              no "n"
+            end
+          end
+        end
+      end
+    end
+
     test "a role named passage" do
       assert_policy_error ~r/concern :k: a role cannot be named :passage/ do
         factor :f do
