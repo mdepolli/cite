@@ -27,8 +27,8 @@ defmodule Cite.Placeholder do
   def names(texts) when is_list(texts) do
     texts
     |> Enum.reject(&is_nil/1)
-    |> Enum.join(" ")
-    |> names()
+    |> Enum.flat_map(&names/1)
+    |> Enum.uniq()
   end
 
   def names(text) when is_binary(text) do
