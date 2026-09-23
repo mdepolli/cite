@@ -288,6 +288,32 @@ defmodule Cite.Policy.ChecksTest do
       end
     end
 
+    test "a factor no role names" do
+      assert_policy_error ~r/factor :unused fills no role: it would be asked of every passage and never used/ do
+        factor :f do
+          question "Does {passage} x?"
+          yes "y"
+          no "n"
+        end
+
+        factor :unused do
+          question "Does {passage} y?"
+          yes "y"
+          no "n"
+        end
+
+        concern :k do
+          role :a, factor: :f
+
+          check :c do
+            question "Is {a} fine?"
+            yes "y"
+            no "n"
+          end
+        end
+      end
+    end
+
     test "a role named passage" do
       assert_policy_error ~r/concern :k: a role cannot be named :passage/ do
         factor :f do

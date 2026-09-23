@@ -209,6 +209,7 @@ A policy fails to compile, pointing at the declaration, on:
 - a concern with both an indicator and roles, or neither;
 - a fit on a concern built from roles, or checks on a concern screened
   directly: either would compile and never be asked;
+- a factor no role names: it would be asked of every passage and never used;
 - a role naming an undeclared factor, a role named `:passage`, or a role
   name that is not a word of letters, digits, and `_` (it is a placeholder
   and part of a path);

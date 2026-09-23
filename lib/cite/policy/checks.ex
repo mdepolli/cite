@@ -28,6 +28,7 @@ defmodule Cite.Policy.Checks do
          :ok <- check_always_asked(entities),
          :ok <- check_distinct_arity(entities),
          :ok <- check_descriptors(entities),
+         :ok <- check_factors_used(entities),
          :ok <- check_has_concern(entities) do
       {:ok, dsl}
     else
@@ -246,6 +247,24 @@ defmodule Cite.Policy.Checks do
           true ->
             nil
         end
+
+      _entity ->
+        nil
+    end)
+  end
+
+  # A factor is screened on every passage; one no role names costs a question
+  # per passage and can never reach a finding.
+  defp check_factors_used(entities) do
+    used = for concern <- concerns(entities), role <- concern.roles, do: role.factor
+
+    first_error(entities, fn
+      %Dsl.Factor{name: name} = factor ->
+        unless name in used,
+          do:
+            {:error,
+             "factor #{inspect(name)} fills no role: it would be asked of every passage and never used",
+             [name], factor}
 
       _entity ->
         nil
