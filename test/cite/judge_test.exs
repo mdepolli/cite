@@ -3,14 +3,13 @@ defmodule Cite.JudgeTest do
 
   alias Cite.{Citation, Error, Finding, Judge, Passage, Source}
   alias Cite.Gather.Finding, as: Gathered
-  alias Cite.Policy.Build
-  alias Cite.TestPolicies.Household
+  alias Cite.TestTerms
   alias Cite.Wire.Object
 
   @band {0.4, 0.6}
 
   setup do
-    terms = Build.read(Household)
+    terms = TestTerms.household()
     [cashflow, household] = terms.concerns
 
     %{
@@ -227,7 +226,7 @@ defmodule Cite.JudgeTest do
     test "skips that check while the role is empty, instead of failing to expand the focus",
          ctx do
       # Arrange
-      terms = Build.read(Cite.TestPolicies.FocusRole)
+      terms = TestTerms.focus_role()
       [household] = terms.concerns
 
       gathered = %Gathered{
