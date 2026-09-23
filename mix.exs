@@ -12,6 +12,7 @@ defmodule Cite.MixProject do
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
       test_elixirc_options: [debug_info: true],
+      test_coverage: [ignore_modules: [~r/^Cite\.Policy\.Dsl\.Policy(\.|$)/, ~r/^Cite\.Test/]],
       deps: deps(),
       name: "Cite",
       description: description(),
