@@ -198,20 +198,17 @@ defmodule Cite.Provider.TypeSafe do
 
   defp retry_after_ms_from(value) do
     case Integer.parse(value) do
-      {seconds, ""} when seconds >= 0 ->
-        seconds * 1000
+      {seconds, ""} when seconds >= 0 -> seconds * 1000
+      {_negative, ""} -> nil
+      :error -> http_date_ms(value)
+      _ -> nil
+    end
+  end
 
-      {_negative, ""} ->
-        nil
-
-      :error ->
-        case Req.Utils.parse_http_date(value) do
-          {:ok, date} -> max(DateTime.diff(date, DateTime.utc_now(), :millisecond), 0)
-          _ -> nil
-        end
-
-      _ ->
-        nil
+  defp http_date_ms(value) do
+    case Req.Utils.parse_http_date(value) do
+      {:ok, date} -> max(DateTime.diff(date, DateTime.utc_now(), :millisecond), 0)
+      _ -> nil
     end
   end
 
