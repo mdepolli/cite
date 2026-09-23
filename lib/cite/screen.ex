@@ -12,19 +12,6 @@ defmodule Cite.Screen do
   @type screen :: %{String.t() => %{atom() => number()}}
 
   @doc """
-  The policy's round-1 questions by name: filters, then directly screened
-  concerns (named by concern, asking its indicator), then factors.
-  """
-  @spec indicators(Terms.t()) :: [{atom(), Question.t()}]
-  def indicators(%Terms{} = terms) do
-    concerns =
-      for %{indicator: %Question{} = indicator} = concern <- terms.concerns,
-          do: {concern.name, indicator}
-
-    terms.filters ++ concerns ++ terms.factors
-  end
-
-  @doc """
   One request: the window under the source's `as`, and every indicator asked
   of every passage in it, keyed `"<passage id>:<indicator>"`.
   """
@@ -58,6 +45,16 @@ defmodule Cite.Screen do
       usages: for({_window, {:ok, verdict}} <- outcomes, do: verdict.usage),
       models: for({_window, {:ok, %{model: model}}} <- outcomes, do: model)
     }
+  end
+
+  # The terms' round-1 questions by name: filters, then directly screened
+  # concerns (named by concern, asking its indicator), then factors.
+  defp indicators(%Terms{} = terms) do
+    concerns =
+      for %{indicator: %Question{} = indicator} = concern <- terms.concerns,
+          do: {concern.name, indicator}
+
+    terms.filters ++ concerns ++ terms.factors
   end
 
   defp window_error(window, reason) do

@@ -5,18 +5,6 @@ defmodule Cite.ScreenTest do
   alias Cite.TestTerms
   alias Cite.Wire.Object
 
-  describe "indicators/1" do
-    test "lists filters, then directly screened concerns, then factors" do
-      assert Keyword.keys(Screen.indicators(TestTerms.household())) == [
-               :client_speaking,
-               :cashflow_stress,
-               :dependents,
-               :primary_income,
-               :other_household_income
-             ]
-    end
-  end
-
   describe "request/3" do
     test "asks every indicator of every passage in the window, under the source's word" do
       # Arrange
