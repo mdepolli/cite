@@ -10,8 +10,19 @@ defmodule Cite.Placeholder do
 
   @placeholder ~r/\{(\w+)\}/
 
-  @doc "Each placeholder name in `text`, once, in order of first use."
-  @spec names(String.t()) :: [String.t()]
+  @doc """
+  Each placeholder name in `text`, once, in order of first use. Given a list
+  (a question and its focus, where the focus may be `nil`), the names across
+  all of them.
+  """
+  @spec names(String.t() | [String.t() | nil]) :: [String.t()]
+  def names(texts) when is_list(texts) do
+    texts
+    |> Enum.reject(&is_nil/1)
+    |> Enum.join(" ")
+    |> names()
+  end
+
   def names(text) when is_binary(text) do
     @placeholder
     |> Regex.scan(text, capture: :all_but_first)

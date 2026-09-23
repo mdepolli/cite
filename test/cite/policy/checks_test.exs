@@ -78,6 +78,32 @@ defmodule Cite.Policy.ChecksTest do
   end
 
   describe "concerns" do
+    test "a fit on a concern built from roles" do
+      assert_policy_error ~r/concern :k: a fit applies only to a concern with an indicator/ do
+        factor :f do
+          question "Does {passage} x?"
+          yes "y"
+          no "n"
+        end
+
+        concern :k do
+          role :a, factor: :f
+
+          fit do
+            question "Does {passage} really x?"
+            yes "y"
+            no "n"
+          end
+
+          check :c do
+            question "Is {a} fine?"
+            yes "y"
+            no "n"
+          end
+        end
+      end
+    end
+
     test "a concern with neither an indicator nor roles" do
       assert_policy_error ~r/concern :k needs an indicator or roles, not both/ do
         concern :k do
@@ -157,6 +183,27 @@ defmodule Cite.Policy.ChecksTest do
   end
 
   describe "roles" do
+    test "two roles with one name in a concern" do
+      assert_policy_error ~r/concern :k declares role :a twice/ do
+        factor :f do
+          question "Does {passage} x?"
+          yes "y"
+          no "n"
+        end
+
+        concern :k do
+          role :a, factor: :f
+          role :a, factor: :f
+
+          check :c do
+            question "Is {a} fine?"
+            yes "y"
+            no "n"
+          end
+        end
+      end
+    end
+
     test "a role naming an undeclared factor" do
       assert_policy_error ~r/role :a names factor :missing, which the policy does not declare/ do
         concern :k do
@@ -193,6 +240,32 @@ defmodule Cite.Policy.ChecksTest do
   end
 
   describe "checks" do
+    test "two checks with one name in a concern" do
+      assert_policy_error ~r/concern :k declares check :c twice/ do
+        factor :f do
+          question "Does {passage} x?"
+          yes "y"
+          no "n"
+        end
+
+        concern :k do
+          role :a, factor: :f
+
+          check :c do
+            question "Is {a} fine?"
+            yes "y"
+            no "n"
+          end
+
+          check :c do
+            question "Is {a} really fine?"
+            yes "y"
+            no "n"
+          end
+        end
+      end
+    end
+
     test "a check naming no role" do
       assert_policy_error ~r/check :c must use at least one of its concern's roles/ do
         factor :f do

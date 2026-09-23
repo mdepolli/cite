@@ -188,4 +188,15 @@ defmodule Cite.PolicyTest do
       end
     end
   end
+
+  describe "compiled/1 check roles" do
+    test "include the roles a check's focus names, not only its question" do
+      %Policy{concerns: [concern]} = Policy.compiled(Cite.TestPolicies.FocusRole)
+
+      assert Enum.map(concern.checks, &{&1.name, &1.roles}) == [
+               same_household: [:household, :income],
+               concentrated_income: [:income, :household, :other_earner]
+             ]
+    end
+  end
 end

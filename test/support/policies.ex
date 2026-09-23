@@ -128,3 +128,45 @@ defmodule Cite.TestPolicies.TwoConcerns do
     end
   end
 end
+
+defmodule Cite.TestPolicies.FocusRole do
+  @moduledoc false
+  use Cite.Policy
+
+  concern :household_income do
+    role :household, factor: :dependents
+    role :income, factor: :primary_income
+    role :other_earner, factor: :other_household_income, optional: true, distinct: true
+
+    check :same_household do
+      question "Do {household} and {income} describe the same household?"
+      yes "The same household."
+      no "Different people."
+    end
+
+    check :concentrated_income do
+      question "Does one person's pay in {income} support {household}?"
+      focus "Weigh {other_earner} against it."
+      yes "One main earner."
+      no "Two comparable earners."
+    end
+  end
+
+  factor :dependents do
+    question "Does {passage} mention dependents?"
+    yes "Mentions dependents."
+    no "No dependents."
+  end
+
+  factor :primary_income do
+    question "Does {passage} state a main salary?"
+    yes "Gives a salary."
+    no "No salary."
+  end
+
+  factor :other_household_income do
+    question "Does {passage} state a partner's income?"
+    yes "Gives a partner's income."
+    no "No other earner."
+  end
+end

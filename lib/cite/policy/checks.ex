@@ -18,9 +18,11 @@ defmodule Cite.Policy.Checks do
     entities = Transformer.get_entities(dsl, [:policy])
 
     with :ok <- check_names(entities),
+         :ok <- check_member_names(entities),
          :ok <- check_criteria(entities),
          :ok <- check_indicator_placeholders(entities),
          :ok <- check_concern_shapes(entities),
+         :ok <- check_fit_placement(entities),
          :ok <- check_roles(entities),
          :ok <- check_check_placeholders(entities),
          :ok <- check_always_asked(entities),
@@ -60,6 +62,26 @@ defmodule Cite.Policy.Checks do
     end
   end
 
+  # Role and check names key the gathered roles, the request, and the
+  # answers, so each must be unique within its concern.
+  defp check_member_names(entities) do
+    members =
+      for %Dsl.Concern{name: concern} = entity <- concerns(entities),
+          {kind, field} <- [role: :roles, check: :checks],
+          do: {concern, kind, Enum.map(Map.fetch!(entity, field), & &1.name)}
+
+    first_error(members, fn {concern, kind, names} ->
+      case names -- Enum.uniq(names) do
+        [] ->
+          nil
+
+        [twice | _] ->
+          {"concern #{inspect(concern)} declares #{kind} #{inspect(twice)} twice",
+           [concern, twice]}
+      end
+    end)
+  end
+
   defp check_criteria(entities) do
     entities
     |> nouls()
@@ -83,6 +105,16 @@ defmodule Cite.Policy.Checks do
                                        } ->
       if is_nil(indicator) == (roles == []),
         do: {"concern #{inspect(name)} needs an indicator or roles, not both", [name]}
+    end)
+  end
+
+  # A roles-based concern is judged by its checks; a fit there would compile
+  # and never be asked.
+  defp check_fit_placement(entities) do
+    first_error(concerns(entities), fn %Dsl.Concern{name: name, fit: fit, roles: roles} ->
+      if fit && roles != [],
+        do:
+          {"concern #{inspect(name)}: a fit applies only to a concern with an indicator", [name]}
     end)
   end
 
@@ -226,9 +258,7 @@ defmodule Cite.Policy.Checks do
     do: for(concern <- concerns(entities), check <- concern.checks, do: {concern, check})
 
   # Placeholders expand in the question and the focus, so both are read.
-  defp placeholders(%{question: question, focus: focus}) do
-    Placeholder.names(question <> " " <> (focus || ""))
-  end
+  defp placeholders(%{question: question, focus: focus}), do: Placeholder.names([question, focus])
 
   defp colon?(name), do: String.contains?(Atom.to_string(name), ":")
 

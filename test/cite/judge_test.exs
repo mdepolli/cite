@@ -20,6 +20,8 @@ defmodule Cite.JudgeTest do
     }
   end
 
+  defp source_for(_policy), do: Source.new([], as: "utterances", show: [:speaker])
+
   defp passage(id), do: %Passage{id: id, text: "text of #{id}", meta: %{speaker: "B"}}
 
   defp descriptors(extra) do
@@ -162,6 +164,26 @@ defmodule Cite.JudgeTest do
       %{"questions" => questions} = Judge.request(gathered, ctx.source, ctx.policy)
 
       assert Enum.sort(Map.keys(questions)) == ["concentrated_income", "severity", "temporal"]
+    end
+  end
+
+  describe "request/3 with a role named only in a check's focus" do
+    test "skips that check while the role is empty, instead of failing to expand the focus" do
+      # Arrange
+      policy = Policy.compiled(Cite.TestPolicies.FocusRole)
+      [household] = policy.concerns
+
+      gathered = %Gathered{
+        concern: household,
+        passages: [passage("U3"), passage("U9")],
+        roles: %{household: passage("U3"), income: passage("U9")}
+      }
+
+      # Act
+      %{"questions" => questions} = Judge.request(gathered, source_for(policy), policy)
+
+      # Assert
+      assert Map.keys(questions) == ["same_household"]
     end
   end
 

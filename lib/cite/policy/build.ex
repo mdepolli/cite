@@ -51,8 +51,10 @@ defmodule Cite.Policy.Build do
   end
 
   defp check(%Dsl.Noul{} = check, role_names) do
+    # The focus expands too, so a role it names must be filled for the check
+    # to be asked.
     roles =
-      check.question
+      [check.question, check.focus]
       |> Placeholder.names()
       |> Enum.filter(&(&1 in role_names))
       |> Enum.map(&String.to_existing_atom/1)
