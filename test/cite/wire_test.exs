@@ -206,4 +206,43 @@ defmodule Cite.WireTest do
     |> Regex.scan(json)
     |> Enum.map(fn [_, key] -> key end)
   end
+
+  describe "Object" do
+    setup do
+      %{object: Object.new([{"U1", %{"text" => "a"}}, {"U2", %{"text" => "b"}}])}
+    end
+
+    test "reads a key like a map, and nil for a missing one", %{object: object} do
+      assert object["U2"] == %{"text" => "b"}
+      assert object["U9"] == nil
+    end
+
+    test "updates a value in place, keeping the order", %{object: object} do
+      assert update_in(object["U1"]["text"], &String.upcase/1) ==
+               %Object{pairs: [{"U1", %{"text" => "A"}}, {"U2", %{"text" => "b"}}]}
+    end
+
+    test "puts a new key last", %{object: object} do
+      assert put_in(object["U3"], %{"text" => "c"}) ==
+               %Object{
+                 pairs: [
+                   {"U1", %{"text" => "a"}},
+                   {"U2", %{"text" => "b"}},
+                   {"U3", %{"text" => "c"}}
+                 ]
+               }
+    end
+
+    test "pops a key, and nothing for a missing one", %{object: object} do
+      assert pop_in(object["U1"]) ==
+               {%{"text" => "a"}, %Object{pairs: [{"U2", %{"text" => "b"}}]}}
+
+      assert pop_in(object["U9"]) == {nil, object}
+    end
+
+    test "pops from inside an update", %{object: object} do
+      assert get_and_update_in(object["U2"], fn _ -> :pop end) ==
+               {%{"text" => "b"}, %Object{pairs: [{"U1", %{"text" => "a"}}]}}
+    end
+  end
 end
