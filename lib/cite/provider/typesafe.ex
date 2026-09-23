@@ -1,16 +1,4 @@
 defmodule Cite.Provider.TypeSafe do
-  @moduledoc """
-  TypeSafe System One over HTTP (`POST /v1/systemone`).
-
-  Options for `Cite.client/2`: `:api_key` (or `JEV_API_KEY`; missing raises),
-  `:model` (`"jev-1.13.0"`), `:base_url`, `:max_retry_delay` (ms, 30 000 —
-  the cap on any one retry wait, `Retry-After` included), and
-  `:req_options`, merged into the Req client last — a test passes
-  `plug: {Req.Test, name}`.
-  """
-
-  @behaviour Cite.Provider
-
   # The model the vulnerability benchmark's questions and criteria were tuned
   # against; a newer Jev may read the same wording differently.
   @default_model "jev-1.13.0"
@@ -18,6 +6,49 @@ defmodule Cite.Provider.TypeSafe do
   @max_error_body_bytes 2_000
   @max_retries 3
   @max_retry_delay_ms :timer.seconds(30)
+
+  @schema Spark.Options.new!(
+            api_key: [
+              type: :string,
+              doc: "The TypeSafe API key. Without it, `JEV_API_KEY`; with neither, it raises."
+            ],
+            model: [
+              type: :string,
+              default: @default_model,
+              doc: "The Jev model that answers."
+            ],
+            base_url: [
+              type: :string,
+              default: @default_base_url,
+              doc: "The API's base URL."
+            ],
+            max_retry_delay: [
+              type: :non_neg_integer,
+              default: @max_retry_delay_ms,
+              doc: "Milliseconds: the cap on any one retry wait, `Retry-After` included."
+            ],
+            req_options: [
+              type: {:custom, __MODULE__, :validate_req_options, []},
+              default: [],
+              doc: """
+              Merged into the Req client last; a test passes \
+              `plug: {Req.Test, name}`. A `:retry_delay` needs its own `:retry`, \
+              because the adapter's retry sets delays itself.\
+              """
+            ]
+          )
+
+  @moduledoc """
+  TypeSafe System One over HTTP (`POST /v1/systemone`).
+
+  ## Options
+
+  For `Cite.client/2`:
+
+  #{Spark.Options.docs(@schema)}
+  """
+
+  @behaviour Cite.Provider
 
   @type t :: %__MODULE__{http_client: Req.Request.t(), model: String.t()}
 
@@ -38,37 +69,12 @@ defmodule Cite.Provider.TypeSafe do
   @impl Cite.Provider
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
-    opts =
-      Keyword.validate!(opts, [
-        :api_key,
-        :req_options,
-        model: @default_model,
-        base_url: @default_base_url,
-        max_retry_delay: @max_retry_delay_ms
-      ])
-
-    api_key = opts[:api_key] || System.get_env("JEV_API_KEY")
+    opts = options(opts)
+    api_key = api_key(opts[:api_key])
     model = opts[:model]
     base_url = opts[:base_url]
     max_retry_delay = opts[:max_retry_delay]
-    req_overrides = opts[:req_options] || []
-
-    if api_key in [nil, ""] do
-      raise ArgumentError, "missing API key: pass :api_key or set JEV_API_KEY"
-    end
-
-    unless is_integer(max_retry_delay) and max_retry_delay >= 0 do
-      raise ArgumentError,
-            "max_retry_delay must be a non-negative integer (ms), got: #{inspect(max_retry_delay)}"
-    end
-
-    # Req forbids :retry_delay next to a retry function that returns its own
-    # delays; better to say so here than inside the first call.
-    if Keyword.has_key?(req_overrides, :retry_delay) and
-         not Keyword.has_key?(req_overrides, :retry) do
-      raise ArgumentError,
-            "req_options :retry_delay needs its own :retry; the adapter's retry sets delays itself"
-    end
+    req_overrides = opts[:req_options]
 
     req_options =
       [
@@ -87,6 +93,40 @@ defmodule Cite.Provider.TypeSafe do
       |> Req.Request.put_private(:cite_max_retry_delay, max_retry_delay)
 
     %__MODULE__{http_client: http_client, model: model}
+  end
+
+  defp options(opts) do
+    case Spark.Options.validate(opts, @schema) do
+      {:ok, options} -> options
+      {:error, error} -> raise ArgumentError, Exception.message(error)
+    end
+  end
+
+  # An explicit key wins; without one, the environment's.
+  defp api_key(given) do
+    case given || System.get_env("JEV_API_KEY") do
+      key when key in [nil, ""] ->
+        raise ArgumentError, "missing API key: pass :api_key or set JEV_API_KEY"
+
+      key ->
+        key
+    end
+  end
+
+  # Req forbids :retry_delay next to a retry function that returns its own
+  # delays; better to say so here than inside the first call.
+  @doc false
+  def validate_req_options(req_options) do
+    cond do
+      not Keyword.keyword?(req_options) ->
+        {:error, "expected a keyword list, got: #{inspect(req_options)}"}
+
+      Keyword.has_key?(req_options, :retry_delay) and not Keyword.has_key?(req_options, :retry) ->
+        {:error, ":retry_delay needs its own :retry; the adapter's retry sets delays itself"}
+
+      true ->
+        {:ok, req_options}
+    end
   end
 
   @impl Cite.Provider

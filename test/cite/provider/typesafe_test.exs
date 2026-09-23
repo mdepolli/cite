@@ -33,17 +33,26 @@ defmodule Cite.Provider.TypeSafeTest do
     end
 
     test "refuses a max_retry_delay that would not cap anything" do
-      for bad <- [nil, "30000", -1] do
-        assert_raise ArgumentError, ~r/max_retry_delay must be a non-negative integer/, fn ->
+      for {bad, message} <- [
+            {nil,
+             "invalid value for :max_retry_delay option: expected non negative integer, got: nil"},
+            {"30000",
+             ~s(invalid value for :max_retry_delay option: expected non negative integer, got: "30000")},
+            {-1,
+             "invalid value for :max_retry_delay option: expected non negative integer, got: -1"}
+          ] do
+        assert_raise ArgumentError, message, fn ->
           TypeSafe.new(api_key: "k", max_retry_delay: bad)
         end
       end
     end
 
     test "refuses retry_delay without a retry of its own" do
-      assert_raise ArgumentError, ~r/retry_delay needs its own :retry/, fn ->
-        TypeSafe.new(api_key: "k", req_options: [retry_delay: fn _ -> 0 end])
-      end
+      assert_raise ArgumentError,
+                   "invalid value for :req_options option: :retry_delay needs its own :retry; the adapter's retry sets delays itself",
+                   fn ->
+                     TypeSafe.new(api_key: "k", req_options: [retry_delay: fn _ -> 0 end])
+                   end
     end
 
     test "hides the http client from inspect" do
@@ -51,7 +60,7 @@ defmodule Cite.Provider.TypeSafeTest do
     end
 
     test "rejects unknown options" do
-      assert_raise ArgumentError, ~r/unknown keys \[:modle\]/, fn ->
+      assert_raise ArgumentError, ~r/unknown options \[:modle\]/, fn ->
         TypeSafe.new(api_key: "k", modle: "x")
       end
     end
