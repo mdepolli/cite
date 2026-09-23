@@ -32,7 +32,8 @@ defmodule Cite do
 
       request -> {:ok, verdict} | {:error, reason}
 
-  where `request` is `%{"state" => map(), "questions" => map()}` and
+  where `request` is `%{"state" => map(), "questions" => map()}`, a value in
+  `"state"` may be a `Cite.Wire.Object` (a JSON object in key order), and
   `verdict` is `%{answers: map(), usage: usage | nil}` plus `model`, the
   versioned id that answered, when the provider reports it.
   """

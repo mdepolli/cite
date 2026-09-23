@@ -166,7 +166,8 @@ client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API
 
 The client is a function, `request -> {:ok, verdict} | {:error, reason}`.
 Build it once, where your credentials live, and pass it in. The request is
-`%{"state" => map, "questions" => map}`; the verdict is
+`%{"state" => map, "questions" => map}`, where a value in `"state"` may be a
+`Cite.Wire.Object`, a JSON object that keeps its keys in order; the verdict is
 `%{answers: map, usage: usage | nil}`, plus `model` when the provider reports
 the versioned id that answered. Both shapes are part of the API.
 
@@ -218,6 +219,8 @@ declarations); the structs you read — `Report`, `Finding`, `Citation`,
 **Providers**: `Cite.Provider` is implementable; with one implementation in
 the wild it may be reshaped in minor releases, changelog-noticed.
 `Cite.Provider.TypeSafe` is stable through the options above.
+`Cite.Wire.Object`, which a request's `"state"` may hold, is stable as what
+it implements: `Access` and `Jason.Encoder`.
 
 **Internal**, no guarantees: the compiled policy structs, the Spark
 extension, `Run`, `Screen`, `Gather`, `Judge`, `Placeholder`, `Wire`,

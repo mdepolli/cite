@@ -4,7 +4,8 @@ defmodule Cite.Wire do
 
   The one place passages and compiled questions become the maps a client
   receives: atom keys become strings, placeholders become backticked paths.
-  Nothing past this edge sees an Elixir struct. Internal.
+  Past this edge a client sees string-keyed maps, lists, and scalars, and a
+  `Cite.Wire.Object` wherever key order matters. Internal.
   """
 
   alias Cite.{Passage, Placeholder}

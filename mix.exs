@@ -93,7 +93,7 @@ defmodule Cite.MixProject do
           Cite.Citation,
           Cite.Error
         ],
-        Providers: [Cite.Provider, Cite.Provider.TypeSafe],
+        Providers: [Cite.Provider, Cite.Provider.TypeSafe, Cite.Wire.Object],
         Internal: [
           Cite.Run,
           Cite.Screen,
@@ -102,7 +102,6 @@ defmodule Cite.MixProject do
           Cite.Judge,
           Cite.Placeholder,
           Cite.Wire,
-          Cite.Wire.Object,
           Cite.Answer,
           Cite.Policy.Dsl,
           Cite.Policy.Checks,

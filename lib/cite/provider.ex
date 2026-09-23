@@ -11,7 +11,8 @@ defmodule Cite.Provider do
 
   The request is the question schema TypeSafe's System One API defined and
   Laya adopted: `"state"` plus
-  `"questions"`, each question a map with `"type"` (`noul`, `score`,
+  `"questions"`. A value in `"state"` may be a `Cite.Wire.Object`, a JSON
+  object whose keys keep their order; each question is a map with `"type"` (`noul`, `score`,
   `choice`), `"instructions"` (`question`, then `inspect` or `compare`, and
   an optional `focus`) and `"criteria"`.
   TypeSafe Jev and Laya share it, so a provider for either sends it as is; a
@@ -37,7 +38,8 @@ defmodule Cite.Provider do
   @callback new(keyword()) :: handle :: term()
 
   @doc """
-  Answers a request of `%{"state" => map(), "questions" => map()}`.
+  Answers a request of `%{"state" => map(), "questions" => map()}`, where a
+  value in `"state"` may be a `Cite.Wire.Object`.
   """
   @callback judge(handle :: term(), request :: map()) ::
               {:ok, Cite.verdict()} | {:error, reason()}
