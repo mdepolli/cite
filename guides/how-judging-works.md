@@ -16,9 +16,10 @@ flowchart LR
 | Gather | `Cite.Gather` | fixed rules turn matches into findings; no model call |
 | Judge | `Cite.Judge` | one request per finding, on its own evidence |
 
-`Cite.Run` is the shell: it calls the client, halves an oversized window,
-and assembles the `Cite.Report`. Every decision lives in the three pure
-modules, which never see the client.
+`Cite.judge/4` is the shell: it validates the options into a `Cite.Run`,
+calls the client, halves an oversized window, and assembles the
+`Cite.Report`. Every decision lives in the three pure modules, which never
+see the client.
 
 ## Round 1: screen
 

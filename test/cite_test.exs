@@ -274,15 +274,19 @@ defmodule CiteTest do
       end
     end
 
-    test "raises on unknown or invalid options, before any request" do
-      for opts <- [
-            [review_band: {0.6, 0.4}],
-            [max_evidence: 0],
-            [window: 0],
-            [threshold: "high"],
-            [colour: :red]
+    test "raises on unknown or invalid options, naming the option, before any request" do
+      for {opts, message} <- [
+            {[review_band: {0.6, 0.4}],
+             "invalid value for :review_band option: expected {low, high} with low < high, got: {0.6, 0.4}"},
+            {[max_evidence: 0],
+             "invalid value for :max_evidence option: expected positive integer, got: 0"},
+            {[window: 0], "invalid value for :window option: expected positive integer, got: 0"},
+            {[threshold: "high"],
+             ~s(invalid value for :threshold option: expected integer or float, got: "high")},
+            {[colour: :red],
+             "unknown options [:colour], valid options are: [:threshold, :review_band, :window, :max_evidence]"}
           ] do
-        assert_raise ArgumentError, fn ->
+        assert_raise ArgumentError, message, fn ->
           Cite.judge(refusing_client(), Cite.source(["a"]), Riddles, opts)
         end
       end

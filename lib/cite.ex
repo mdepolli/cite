@@ -37,7 +37,7 @@ defmodule Cite do
   versioned id that answered, when the provider reports it.
   """
 
-  alias Cite.{Report, Run, Source}
+  alias Cite.{Answer, Gather, Judge, Report, Run, Screen, Source}
 
   @type usage :: Report.usage()
   @type verdict :: %{
@@ -70,11 +70,102 @@ defmodule Cite do
   defdelegate source(units, opts \\ []), to: Source, as: :new
 
   @doc """
-  Judges `source` against `policy`, a module that uses `Cite.Policy`.
-  Options: `threshold` (0.5), the round-1 score a match must exceed;
-  `review_band` (`{0.4, 0.6}`); `window` (40), passages per round-1 request;
-  `max_evidence` (20), passages a finding may cite.
+  Judges `source` against `policy_module`, a module that uses `Cite.Policy`.
+  Raises `ArgumentError`, before any request, on an option it cannot use or
+  a module that is not a policy, and when the client returns something
+  outside its contract.
+
+  ## Options
+
+  #{Run.options_docs()}
   """
   @spec judge(client(), Source.t(), module(), keyword()) :: Report.t()
-  defdelegate judge(client, source, policy, opts \\ []), to: Run
+  def judge(client, source, policy_module, opts \\ []) do
+    run = Run.new(client, source, policy_module, opts)
+
+    screened =
+      source.passages
+      |> Enum.chunk_every(run.window)
+      |> Enum.flat_map(&screen_window(run, &1))
+      |> Screen.resolve(run.terms)
+
+    judged =
+      run.terms
+      |> Gather.findings(source, screened.screen,
+        threshold: run.threshold,
+        max_evidence: run.max_evidence
+      )
+      |> Enum.map(&{&1, call(run.client, Judge.request(&1, source, run.terms))})
+      |> Judge.resolve(run.terms, review_band: run.review_band)
+
+    %Report{
+      findings: judged.findings,
+      screen: screened.screen,
+      errors: screened.errors ++ judged.errors,
+      usage: Report.total_usage(screened.usages ++ judged.usages),
+      models: Enum.uniq(screened.models ++ judged.models)
+    }
+  end
+
+  # A window over the request cap is split in half and both halves screened;
+  # only a single passage that still exceeds it is an error.
+  defp screen_window(%Run{} = run, window) do
+    case call(run.client, Screen.request(window, run.source, run.terms)) do
+      {:error, :request_too_large} when length(window) > 1 ->
+        {left, right} = Enum.split(window, div(length(window), 2))
+        screen_window(run, left) ++ screen_window(run, right)
+
+      verdict ->
+        [{window, verdict}]
+    end
+  end
+
+  # A reply must answer every question with a value it can have; a reply that
+  # skips one or answers it out of range is not a verdict on it, so the whole
+  # request becomes an error rather than a "no".
+  defp call(client, request) do
+    with {:ok, verdict} <- reply(client, request),
+         :ok <- Answer.check(request["questions"], verdict.answers) do
+      {:ok, verdict}
+    end
+  end
+
+  # The client is the caller's function; its return is checked here, once,
+  # and trusted everywhere after.
+  defp reply(client, request) do
+    case client.(request) do
+      {:ok, %{answers: answers, usage: usage} = verdict} when is_map(answers) ->
+        check_usage(usage)
+        check_model(Map.get(verdict, :model))
+        {:ok, verdict}
+
+      {:error, _reason} = error ->
+        error
+
+      other ->
+        raise ArgumentError, """
+        client must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, \
+        got: #{inspect(other)}
+        """
+    end
+  end
+
+  defp check_usage(nil), do: :ok
+
+  defp check_usage(%{input_tokens: input, output_tokens: output})
+       when is_integer(input) and input >= 0 and is_integer(output) and output >= 0,
+       do: :ok
+
+  defp check_usage(other) do
+    raise ArgumentError,
+          "client usage must be nil or %{input_tokens: n, output_tokens: n}, got: #{inspect(other)}"
+  end
+
+  defp check_model(nil), do: :ok
+  defp check_model(model) when is_binary(model) and model != "", do: :ok
+
+  defp check_model(other) do
+    raise ArgumentError,
+          "client model must be a non-empty binary when given, got: #{inspect(other)}"
+  end
 end

@@ -1,134 +1,78 @@
 defmodule Cite.Run do
   @moduledoc """
-  The imperative shell behind `Cite.judge/4`: it calls the client and puts
-  the two rounds' results into a `Cite.Report`.
-
-  The only choices it makes are about talking to the client: it halves a
-  round-1 window the provider refuses as too large, and it raises when the
-  client returns something outside its contract. What to ask, whether a
-  reply is usable, and what an answer means live in `Cite.Screen`,
-  `Cite.Gather`, `Cite.Judge`, and `Cite.Answer`, which never see the
-  client. Internal; use `Cite.judge/4`.
+  One judging run: what `Cite.judge/4` was given, validated once. Internal;
+  use `Cite.judge/4`.
   """
 
-  alias Cite.{Answer, Gather, Judge, Report, Screen, Source}
-  alias Cite.Policy.Build
+  alias Cite.Policy.{Build, Terms}
+  alias Cite.Source
 
-  @spec judge(Cite.client(), Source.t(), module(), keyword()) :: Report.t()
-  def judge(client, %Source{} = source, policy_module, opts \\ [])
-      when is_function(client, 1) and is_atom(policy_module) do
-    opts =
-      Keyword.validate!(opts,
-        threshold: 0.5,
-        review_band: {0.4, 0.6},
-        window: 40,
-        max_evidence: 20
-      )
+  @schema Spark.Options.new!(
+            threshold: [
+              type: :number,
+              default: 0.5,
+              doc: "The round-1 score a match must exceed. Sets recall only."
+            ],
+            review_band: [
+              type: {:custom, __MODULE__, :review_band, []},
+              default: {0.4, 0.6},
+              doc: """
+              `{low, high}`, `low < high`. At or below `low` a passage is \
+              dropped and a check fails; at or above `high` either holds.\
+              """
+            ],
+            window: [
+              type: :pos_integer,
+              default: 40,
+              doc: "Passages per round-1 request."
+            ],
+            max_evidence: [
+              type: :pos_integer,
+              default: 20,
+              doc: "Passages a finding may cite; the rest are `over_cap`."
+            ]
+          )
 
-    threshold = opts[:threshold]
-    review_band = opts[:review_band]
-    window = opts[:window]
-    max_evidence = opts[:max_evidence]
+  @type t :: %__MODULE__{
+          client: Cite.client(),
+          source: Source.t(),
+          terms: Terms.t(),
+          threshold: number(),
+          review_band: {number(), number()},
+          window: pos_integer(),
+          max_evidence: pos_integer()
+        }
 
-    check_options(threshold, review_band, window, max_evidence)
-    terms = Build.read(policy_module)
+  @enforce_keys [:client, :source, :terms, :threshold, :review_band, :window, :max_evidence]
+  defstruct @enforce_keys
 
-    screened =
-      source.passages
-      |> Enum.chunk_every(window)
-      |> Enum.flat_map(&screen_window(client, &1, source, terms))
-      |> Screen.resolve(terms)
+  @doc false
+  @spec options_docs() :: String.t()
+  def options_docs, do: Spark.Options.docs(@schema)
 
-    judged =
-      terms
-      |> Gather.findings(source, screened.screen,
-        threshold: threshold,
-        max_evidence: max_evidence
-      )
-      |> Enum.map(&{&1, call(client, Judge.request(&1, source, terms))})
-      |> Judge.resolve(terms, review_band: review_band)
+  @doc """
+  A run of `source` against `policy_module`. Raises `ArgumentError` on an
+  option it cannot use, or a module that is not a policy.
+  """
+  @spec new(Cite.client(), Source.t(), module(), keyword()) :: t()
+  def new(client, %Source{} = source, policy_module, opts)
+      when is_function(client, 1) and is_atom(policy_module) and is_list(opts) do
+    case Spark.Options.validate(opts, @schema) do
+      {:ok, options} ->
+        struct!(
+          __MODULE__,
+          [client: client, source: source, terms: Build.read(policy_module)] ++ options
+        )
 
-    %Report{
-      findings: judged.findings,
-      screen: screened.screen,
-      errors: screened.errors ++ judged.errors,
-      usage: Report.total_usage(screened.usages ++ judged.usages),
-      models: Enum.uniq(screened.models ++ judged.models)
-    }
-  end
-
-  defp check_options(threshold, {low, high}, window, max_evidence)
-       when is_number(threshold) and is_number(low) and is_number(high) and low < high and
-              is_integer(window) and window > 0 and is_integer(max_evidence) and max_evidence > 0,
-       do: :ok
-
-  defp check_options(threshold, review_band, window, max_evidence) do
-    raise ArgumentError, """
-    invalid options: threshold must be a number, review_band {low, high} with low < high, \
-    window and max_evidence positive integers; got \
-    #{inspect(threshold: threshold, review_band: review_band, window: window, max_evidence: max_evidence)}
-    """
-  end
-
-  # A window over the request cap is split in half and both halves screened;
-  # only a single passage that still exceeds it is an error.
-  defp screen_window(client, window, source, terms) do
-    case call(client, Screen.request(window, source, terms)) do
-      {:error, :request_too_large} when length(window) > 1 ->
-        {left, right} = Enum.split(window, div(length(window), 2))
-        screen_window(client, left, source, terms) ++ screen_window(client, right, source, terms)
-
-      verdict ->
-        [{window, verdict}]
+      {:error, error} ->
+        raise ArgumentError, Exception.message(error)
     end
   end
 
-  # A reply must answer every question with a value it can have; a reply that
-  # skips one or answers it out of range is not a verdict on it, so the whole
-  # request becomes an error rather than a "no".
-  defp call(client, request) do
-    with {:ok, verdict} <- reply(client, request),
-         :ok <- Answer.check(request["questions"], verdict.answers) do
-      {:ok, verdict}
-    end
-  end
+  @doc false
+  def review_band({low, high} = band) when is_number(low) and is_number(high) and low < high,
+    do: {:ok, band}
 
-  # The client is the caller's function; its return is checked here, once,
-  # and trusted everywhere after.
-  defp reply(client, request) do
-    case client.(request) do
-      {:ok, %{answers: answers, usage: usage} = verdict} when is_map(answers) ->
-        check_usage(usage)
-        check_model(Map.get(verdict, :model))
-        {:ok, verdict}
-
-      {:error, _reason} = error ->
-        error
-
-      other ->
-        raise ArgumentError, """
-        client must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, \
-        got: #{inspect(other)}
-        """
-    end
-  end
-
-  defp check_usage(nil), do: :ok
-
-  defp check_usage(%{input_tokens: input, output_tokens: output})
-       when is_integer(input) and input >= 0 and is_integer(output) and output >= 0,
-       do: :ok
-
-  defp check_usage(other) do
-    raise ArgumentError,
-          "client usage must be nil or %{input_tokens: n, output_tokens: n}, got: #{inspect(other)}"
-  end
-
-  defp check_model(nil), do: :ok
-  defp check_model(model) when is_binary(model) and model != "", do: :ok
-
-  defp check_model(other) do
-    raise ArgumentError,
-          "client model must be a non-empty binary when given, got: #{inspect(other)}"
-  end
+  def review_band(other),
+    do: {:error, "expected {low, high} with low < high, got: #{inspect(other)}"}
 end

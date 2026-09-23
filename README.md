@@ -136,12 +136,9 @@ so a run is diagnosable without another request.
 
 ## Options
 
-| Option | Default | Meaning |
-| ------ | ------- | ------- |
-| `threshold` | `0.5` | round-1 score a match must exceed; sets recall only |
-| `review_band` | `{0.4, 0.6}` | at or below `low` drops or fails; at or above `high` holds |
-| `window` | `40` | passages per round-1 request |
-| `max_evidence` | `20` | passages a finding may cite; the rest are `over_cap` |
+`threshold`, `review_band`, `window`, and `max_evidence` tune a run. Their
+defaults and meaning are in the docs of `Cite.judge/4`, generated from the
+schema that validates them.
 
 ## Errors
 
