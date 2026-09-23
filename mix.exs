@@ -10,6 +10,8 @@ defmodule Cite.MixProject do
       version: @version,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
+      elixirc_paths: elixirc_paths(Mix.env()),
+      test_elixirc_options: [debug_info: true],
       deps: deps(),
       name: "Cite",
       description: description(),
@@ -24,10 +26,15 @@ defmodule Cite.MixProject do
     []
   end
 
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_env), do: ["lib"]
+
   defp deps do
     [
       {:jason, "~> 1.4"},
       {:req, "~> 0.6"},
+      {:spark, "~> 2.7"},
+      {:sourceror, "~> 1.2", only: [:dev, :test], runtime: false},
       {:plug, "~> 1.0", only: :test},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
