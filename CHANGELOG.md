@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Elixir requirement is `~> 1.18`.
+
 ### Added
 
 - `Cite.select/5`: atomic scan over candidates in windows, code-composed

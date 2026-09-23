@@ -8,7 +8,7 @@ defmodule Cite.MixProject do
     [
       app: :cite,
       version: @version,
-      elixir: "~> 1.20",
+      elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       name: "Cite",

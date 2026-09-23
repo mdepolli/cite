@@ -17,9 +17,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        elixir: ['1.20']
-        # Elixir 1.20 supports OTP 27–29.
-        otp: ['27', '28', '29']
+        include:
+          - elixir: "1.18"
+            otp: "25"
+          - elixir: "1.18"
+            otp: "26"
+          - elixir: "1.18"
+            otp: "27"
+          - elixir: "1.19"
+            otp: "26"
+          - elixir: "1.19"
+            otp: "27"
+          - elixir: "1.19"
+            otp: "28"
+          - elixir: "1.20"
+            otp: "27"
+          - elixir: "1.20"
+            otp: "28"
+          - elixir: "1.20"
+            otp: "29"
 
     steps:
       - name: Checkout code
@@ -55,7 +71,7 @@ jobs:
 
       - name: Run tests with coverage
         run: mix test --cover
-        if: matrix.otp == '28'
+        if: matrix.elixir == '1.20' && matrix.otp == '28'
 
   format:
     name: Code Format Check
