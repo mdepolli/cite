@@ -4,6 +4,9 @@ defmodule Cite.Passage do
 
   A citation is a passage, unchanged. Built by `Cite.source/2`; read it,
   don't build it.
+
+  `meta` is kept as given. Encoding a passage, or a report, with Jason needs
+  every value in it to be encodable; a tuple or a pid is not.
   """
 
   @derive {Jason.Encoder, only: [:id, :text, :meta]}
