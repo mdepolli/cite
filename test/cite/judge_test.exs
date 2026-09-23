@@ -370,7 +370,11 @@ defmodule Cite.JudgeTest do
     end
 
     test "judges no findings and adds nothing when nothing was gathered", ctx do
-      assert Judge.resolve(ctx.run, []) == %{ctx.run | findings: []}
+      # Act
+      run = Judge.resolve(ctx.run, [])
+
+      # Assert
+      assert {run.findings, run.errors, run.usages, run.models} == {[], [], [], []}
     end
   end
 
