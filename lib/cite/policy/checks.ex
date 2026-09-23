@@ -52,6 +52,11 @@ defmodule Cite.Policy.Checks do
            ),
          :ok <-
            first_error(
+             descriptors -- Enum.uniq(descriptors),
+             &{"descriptor name #{inspect(&1)} is declared twice", [&1]}
+           ),
+         :ok <-
+           first_error(
              Enum.filter(indicators ++ checks ++ descriptors, &colon?/1),
              &{~s(names must not contain ":", got #{inspect(&1)}), [&1]}
            ) do

@@ -17,6 +17,10 @@ defmodule Cite.Source do
 
   defstruct passages: [], as: "passages", show: []
 
+  # Ids and `as` become paths like `utterances.U014.text`; a dot, backtick, or
+  # bracket inside one would point the question somewhere else.
+  @path_breaking [".", "`", "[", "]"]
+
   @doc """
   Builds a source from units, each a text or `%{text: text}` with optional
   `:id` and `:meta`. Text is kept byte for byte. Missing ids default to
@@ -41,7 +45,12 @@ defmodule Cite.Source do
     %__MODULE__{passages: passages, as: as, show: show}
   end
 
-  defp check_as(as) when is_binary(as) and as != "", do: :ok
+  defp check_as(as) when is_binary(as) and as != "" do
+    if String.contains?(as, @path_breaking) do
+      raise ArgumentError,
+            "as #{inspect(as)} must not contain #{Enum.join(@path_breaking, " ")}: it is part of every path"
+    end
+  end
 
   defp check_as(as) do
     raise ArgumentError, "as must be a non-empty binary, got: #{inspect(as)}"
@@ -75,7 +84,14 @@ defmodule Cite.Source do
 
   defp default_id(index), do: "P" <> String.pad_leading(Integer.to_string(index), 3, "0")
 
-  defp id(id) when is_binary(id) and id != "", do: id
+  defp id(id) when is_binary(id) and id != "" do
+    if String.contains?(id, @path_breaking) do
+      raise ArgumentError,
+            "passage id #{inspect(id)} must not contain #{Enum.join(@path_breaking, " ")}: it is part of every path"
+    end
+
+    id
+  end
 
   defp id(id) do
     raise ArgumentError, "passage id must be a non-empty binary, got: #{inspect(id)}"

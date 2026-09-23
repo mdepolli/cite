@@ -388,6 +388,20 @@ defmodule Cite.Policy.ChecksTest do
   end
 
   describe "descriptors" do
+    test "two descriptors with one name" do
+      assert_policy_error ~r/descriptor name :severity is declared twice/ do
+        score :severity do
+          question "How bad?"
+          levels ["a", "b"]
+        end
+
+        choice :severity do
+          question "Which?"
+          option :a, "first"
+        end
+      end
+    end
+
     test "a descriptor with a placeholder" do
       assert_policy_error ~r/descriptor :severity must not use placeholders/ do
         score :severity do

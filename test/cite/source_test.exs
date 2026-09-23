@@ -76,6 +76,22 @@ defmodule Cite.SourceTest do
       end
     end
 
+    test "raises on an id that would break a path: a dot, a backtick, or a bracket" do
+      for id <- ["3.2.1", "U`1", "U[0]", "U]"] do
+        assert_raise ArgumentError, ~r/passage id .* must not contain/, fn ->
+          Source.new([%{id: id, text: "a"}])
+        end
+      end
+    end
+
+    test "raises on an as that would break a path" do
+      for as <- ["utter.ances", "`u`", "u[0]"] do
+        assert_raise ArgumentError, ~r/as .* must not contain/, fn ->
+          Source.new(["a"], as: as)
+        end
+      end
+    end
+
     test "raises when show names id or text" do
       for key <- [:id, :text, "id", "text"] do
         assert_raise ArgumentError, ~r/show must not name id or text/, fn ->
