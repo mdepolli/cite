@@ -218,5 +218,10 @@ defmodule Cite.Provider.TypeSafe do
   # One bounded string per error body, so a huge reply never outlives the
   # Error that records it.
   defp preview(body) when is_binary(body), do: String.slice(body, 0, @max_error_body_bytes)
-  defp preview(body), do: body |> inspect() |> String.slice(0, @max_error_body_bytes)
+
+  defp preview(body) do
+    body
+    |> inspect()
+    |> String.slice(0, @max_error_body_bytes)
+  end
 end

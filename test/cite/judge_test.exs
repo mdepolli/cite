@@ -368,22 +368,21 @@ defmodule Cite.JudgeTest do
     test "is review when no citation holds", ctx do
       # Arrange
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
-
-      finding =
-        judged(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.5}}), ctx.terms)
+      answers = descriptors(%{"fit:U1" => %{"noul" => 0.5}})
 
       # Act + Assert
-      assert finding.verdict == :review
+      assert judged(gathered, answers, ctx.terms).verdict == :review
     end
 
     test "fails when every passage is dropped", ctx do
       # Arrange
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
+      answers = descriptors(%{"fit:U1" => %{"noul" => 0.1}})
 
-      finding =
-        judged(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.1}}), ctx.terms)
+      # Act
+      finding = judged(gathered, answers, ctx.terms)
 
-      # Act + Assert
+      # Assert
       assert {finding.verdict, finding.evidence} == {:fails, []}
     end
   end
@@ -493,9 +492,7 @@ defmodule Cite.JudgeTest do
   test "a finding encodes with Jason, names and verdicts as strings", ctx do
     # Arrange
     gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
-
-    finding =
-      judged(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.9}}), ctx.terms)
+    finding = judged(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.9}}), ctx.terms)
 
     # Act + Assert
     assert Jason.decode!(Jason.encode!(finding)) == %{

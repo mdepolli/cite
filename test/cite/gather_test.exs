@@ -5,7 +5,11 @@ defmodule Cite.GatherTest do
   alias Cite.TestTerms
 
   defp gather(terms, screen, opts \\ []) do
-    ids = screen |> Map.keys() |> Enum.sort()
+    ids =
+      screen
+      |> Map.keys()
+      |> Enum.sort()
+
     source = Source.new(Enum.map(ids, &%{id: &1, text: "text of #{&1}"}), as: "utterances")
 
     Gather.findings(
@@ -42,13 +46,14 @@ defmodule Cite.GatherTest do
       screen = %{"U1" => spoken_by_client(%{cashflow_stress: 0.9})}
       source = Source.new([%{id: "U0", text: "lost"}, %{id: "U1", text: "kept"}])
 
+      # Act
       findings =
         Gather.findings(TestTerms.household(), source, screen,
           threshold: 0.5,
           max_evidence: 20
         )
 
-      # Act + Assert
+      # Assert
       assert summary(findings) == [{:cashflow_stress, ["U1"], [], %{}}]
     end
   end

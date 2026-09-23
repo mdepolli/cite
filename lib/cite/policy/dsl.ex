@@ -7,6 +7,7 @@ defmodule Cite.Policy.Dsl do
   """
 
   alias Cite.Policy.Dsl.{Choice, Concern, Criterion, Factor, Filter, Noul, Option, Role, Score}
+  alias Spark.Dsl.{Entity, Section}
 
   @criterion_schema [
     what: [type: :string, required: true, doc: "What qualifies for this side."],
@@ -14,7 +15,7 @@ defmodule Cite.Policy.Dsl do
     examples: [type: {:list, :string}, doc: "Short phrasings that qualify."]
   ]
 
-  @yes %Spark.Dsl.Entity{
+  @yes %Entity{
     name: :yes,
     describe:
       "What makes the answer yes: a string, or a block with `what`, `not_for`, `examples`.",
@@ -23,7 +24,7 @@ defmodule Cite.Policy.Dsl do
     schema: @criterion_schema
   }
 
-  @no %Spark.Dsl.Entity{
+  @no %Entity{
     name: :no,
     describe:
       "What makes the answer no: a string, or a block with `what`, `not_for`, `examples`.",
@@ -43,72 +44,67 @@ defmodule Cite.Policy.Dsl do
 
   @name_schema [name: [type: :atom, required: true, doc: "The name."]]
 
-  @criteria [entities: [yes: [@yes], no: [@no]], singleton_entity_keys: [:yes, :no]]
+  # Every yes/no question takes one `yes` and one `no`.
+  @criteria [yes: [@yes], no: [@no]]
 
-  @filter struct!(
-            Spark.Dsl.Entity,
-            [
-              name: :filter,
-              describe: "A yes/no question every evidence passage must pass.",
-              target: Filter,
-              args: [:name],
-              schema: @name_schema ++ @question_schema
-            ] ++ @criteria
-          )
+  @filter %Entity{
+    name: :filter,
+    describe: "A yes/no question every evidence passage must pass.",
+    target: Filter,
+    args: [:name],
+    schema: @name_schema ++ @question_schema,
+    entities: @criteria,
+    singleton_entity_keys: [:yes, :no]
+  }
 
-  @factor struct!(
-            Spark.Dsl.Entity,
-            [
-              name: :factor,
-              describe: "A yes/no question that fills a role in a concern built from factors.",
-              target: Factor,
-              args: [:name],
-              schema: @name_schema ++ @question_schema
-            ] ++ @criteria
-          )
+  @factor %Entity{
+    name: :factor,
+    describe: "A yes/no question that fills a role in a concern built from factors.",
+    target: Factor,
+    args: [:name],
+    schema: @name_schema ++ @question_schema,
+    entities: @criteria,
+    singleton_entity_keys: [:yes, :no]
+  }
 
-  @indicator struct!(
-               Spark.Dsl.Entity,
-               [
-                 name: :indicator,
-                 describe: "The concern's round-1 question, asked of every passage.",
-                 target: Noul,
-                 schema: @question_schema
-               ] ++ @criteria
-             )
+  @indicator %Entity{
+    name: :indicator,
+    describe: "The concern's round-1 question, asked of every passage.",
+    target: Noul,
+    schema: @question_schema,
+    entities: @criteria,
+    singleton_entity_keys: [:yes, :no]
+  }
 
-  @fit struct!(
-         Spark.Dsl.Entity,
-         [
-           name: :fit,
-           describe: "The concern's round-2 question, deciding which matched passages are cited.",
-           target: Noul,
-           schema: @question_schema
-         ] ++ @criteria
-       )
+  @fit %Entity{
+    name: :fit,
+    describe: "The concern's round-2 question, deciding which matched passages are cited.",
+    target: Noul,
+    schema: @question_schema,
+    entities: @criteria,
+    singleton_entity_keys: [:yes, :no]
+  }
 
-  @check struct!(
-           Spark.Dsl.Entity,
-           [
-             name: :check,
-             describe:
-               "A yes/no question across a concern's roles that decides whether it holds.",
-             target: Noul,
-             args: [:name],
-             schema:
-               @name_schema ++
-                 @question_schema ++
-                 [
-                   distinct: [
-                     type: :boolean,
-                     default: false,
-                     doc: "Ask only when the named roles are different passages."
-                   ]
-                 ]
-           ] ++ @criteria
-         )
+  @check %Entity{
+    name: :check,
+    describe: "A yes/no question across a concern's roles that decides whether it holds.",
+    target: Noul,
+    args: [:name],
+    schema:
+      @name_schema ++
+        @question_schema ++
+        [
+          distinct: [
+            type: :boolean,
+            default: false,
+            doc: "Ask only when the named roles are different passages."
+          ]
+        ],
+    entities: @criteria,
+    singleton_entity_keys: [:yes, :no]
+  }
 
-  @role %Spark.Dsl.Entity{
+  @role %Entity{
     name: :role,
     describe: "A role in a concern built from factors, filled by a factor's strongest match.",
     target: Role,
@@ -126,7 +122,7 @@ defmodule Cite.Policy.Dsl do
         ]
   }
 
-  @concern %Spark.Dsl.Entity{
+  @concern %Entity{
     name: :concern,
     describe: "Something a finding can be: screened directly, or built from factors.",
     target: Concern,
@@ -136,7 +132,7 @@ defmodule Cite.Policy.Dsl do
     singleton_entity_keys: [:indicator, :fit]
   }
 
-  @option %Spark.Dsl.Entity{
+  @option %Entity{
     name: :option,
     describe: "One option of a Choice.",
     target: Option,
@@ -147,7 +143,7 @@ defmodule Cite.Policy.Dsl do
     ]
   }
 
-  @score %Spark.Dsl.Entity{
+  @score %Entity{
     name: :score,
     describe: "A descriptor that places each finding on ordered levels.",
     target: Score,
@@ -158,7 +154,7 @@ defmodule Cite.Policy.Dsl do
         [levels: [type: {:list, :string}, required: true, doc: "The levels, lowest first."]]
   }
 
-  @choice %Spark.Dsl.Entity{
+  @choice %Entity{
     name: :choice,
     describe: "A descriptor that picks one option for each finding.",
     target: Choice,
@@ -167,7 +163,7 @@ defmodule Cite.Policy.Dsl do
     entities: [options: [@option]]
   }
 
-  @policy %Spark.Dsl.Section{
+  @policy %Section{
     name: :policy,
     describe: "What the source is judged against.",
     top_level?: true,

@@ -154,7 +154,48 @@ defmodule Cite.WireTest do
     json = Jason.encode!(Wire.passages(passages, []))
 
     # Assert
-    assert wire_keys(json) == Enum.map(0..39, &id/1)
+    assert wire_keys(json) == [
+             "U000",
+             "U001",
+             "U002",
+             "U003",
+             "U004",
+             "U005",
+             "U006",
+             "U007",
+             "U008",
+             "U009",
+             "U010",
+             "U011",
+             "U012",
+             "U013",
+             "U014",
+             "U015",
+             "U016",
+             "U017",
+             "U018",
+             "U019",
+             "U020",
+             "U021",
+             "U022",
+             "U023",
+             "U024",
+             "U025",
+             "U026",
+             "U027",
+             "U028",
+             "U029",
+             "U030",
+             "U031",
+             "U032",
+             "U033",
+             "U034",
+             "U035",
+             "U036",
+             "U037",
+             "U038",
+             "U039"
+           ]
   end
 
   defp id(i), do: "U" <> String.pad_leading(Integer.to_string(i), 3, "0")

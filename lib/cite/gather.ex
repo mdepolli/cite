@@ -80,7 +80,11 @@ defmodule Cite.Gather do
     filled = Enum.reduce(shared ++ distinct, %{}, &fill(&1, &2, eligible, screen, threshold))
 
     if Enum.all?(roles, &(&1.optional or Map.has_key?(filled, &1.name))) do
-      used = filled |> Map.values() |> Enum.uniq_by(& &1.id)
+      used =
+        filled
+        |> Map.values()
+        |> Enum.uniq_by(& &1.id)
+
       [%Finding{concern: concern, passages: in_order(used, eligible), roles: filled}]
     else
       []

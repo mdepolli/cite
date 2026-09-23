@@ -160,13 +160,17 @@ defmodule Cite.Provider.TypeSafeTest do
       assert judge().(@request) == {:error, :unauthorized}
 
       Req.Test.stub(__MODULE__, fn conn ->
-        conn |> Plug.Conn.put_resp_header("retry-after", "7") |> Plug.Conn.send_resp(429, "")
+        conn
+        |> Plug.Conn.put_resp_header("retry-after", "7")
+        |> Plug.Conn.send_resp(429, "")
       end)
 
       assert judge().(@request) == {:error, {:rate_limited, 7000}}
 
       Req.Test.stub(__MODULE__, fn conn ->
-        conn |> Plug.Conn.put_resp_header("retry-after", "soon") |> Plug.Conn.send_resp(429, "")
+        conn
+        |> Plug.Conn.put_resp_header("retry-after", "soon")
+        |> Plug.Conn.send_resp(429, "")
       end)
 
       assert judge().(@request) == {:error, {:rate_limited, nil}}
@@ -199,7 +203,10 @@ defmodule Cite.Provider.TypeSafeTest do
 
       Req.Test.stub(__MODULE__, fn conn ->
         Agent.update(calls, &(&1 + 1))
-        conn |> Plug.Conn.put_resp_header("retry-after", "0") |> Plug.Conn.send_resp(429, "")
+
+        conn
+        |> Plug.Conn.put_resp_header("retry-after", "0")
+        |> Plug.Conn.send_resp(429, "")
       end)
 
       assert retrying_judge().(@request) == {:error, {:rate_limited, 0}}
@@ -211,7 +218,9 @@ defmodule Cite.Provider.TypeSafeTest do
 
       Req.Test.stub(__MODULE__, fn conn ->
         if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0 do
-          conn |> Plug.Conn.put_resp_header("retry-after", "soon") |> Plug.Conn.send_resp(429, "")
+          conn
+          |> Plug.Conn.put_resp_header("retry-after", "soon")
+          |> Plug.Conn.send_resp(429, "")
         else
           Req.Test.json(conn, %{"answers" => %{}})
         end

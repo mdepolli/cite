@@ -69,10 +69,11 @@ defmodule Cite.ScreenTest do
       # Arrange
       source = Source.new([%{id: "U3", text: "Two kids."}], as: "utterances")
 
+      # Act
       %{"questions" => questions} =
         Screen.request(source.passages, source, TestTerms.household())
 
-      # Act + Assert
+      # Assert
       assert Enum.sort(Map.keys(questions)) == [
                "U3:cashflow_stress",
                "U3:client_speaking",
