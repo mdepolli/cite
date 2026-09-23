@@ -218,7 +218,7 @@ declarations); the structs you read — `Report`, `Finding`, `Citation`,
 
 **Providers**: `Cite.Provider` is implementable; with one implementation in
 the wild it may be reshaped in minor releases, changelog-noticed.
-`Cite.Provider.TypeSafe` is stable through the options above.
+`Cite.Provider.TypeSafe` is stable through its documented options.
 `Cite.Wire.Object`, which a request's `"state"` may hold, is stable as what
 it implements: `Access` and `Jason.Encoder`.
 
