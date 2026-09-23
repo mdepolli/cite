@@ -29,17 +29,26 @@ defmodule Cite.Error do
     }
   end
 
-  defp reason_json(reason) when is_atom(reason) or is_binary(reason) or is_number(reason) do
-    reason
+  defp reason_json(reason) when is_atom(reason) or is_number(reason), do: reason
+  defp reason_json(reason) when is_binary(reason), do: utf8_or_inspect(reason)
+
+  defp reason_json(reason) when is_list(reason) do
+    if List.improper?(reason), do: inspect(reason), else: Enum.map(reason, &reason_json/1)
   end
 
-  defp reason_json(reason) when is_list(reason), do: Enum.map(reason, &reason_json/1)
-
   defp reason_json(%{} = reason) when not is_struct(reason) do
-    Map.new(reason, fn {key, value} -> {key, reason_json(value)} end)
+    Map.new(reason, fn {key, value} -> {key_json(key), reason_json(value)} end)
   end
 
   defp reason_json(reason), do: inspect(reason)
+
+  defp key_json(key) when is_atom(key), do: key
+  defp key_json(key) when is_binary(key), do: utf8_or_inspect(key)
+  defp key_json(key), do: inspect(key)
+
+  defp utf8_or_inspect(binary) do
+    if String.valid?(binary), do: binary, else: inspect(binary)
+  end
 end
 
 defimpl Jason.Encoder, for: Cite.Error do

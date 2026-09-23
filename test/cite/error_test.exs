@@ -56,5 +56,17 @@ defmodule Cite.ErrorTest do
       assert Jason.decode!(Jason.encode!(error))["reason"] ==
                %{"causes" => ["{:a, 1}", "ok"], "meta" => %{"k" => "{:b, 2}"}}
     end
+
+    test "inspects what JSON cannot hold: non-string keys, invalid UTF-8, improper lists" do
+      for {reason, encoded} <- [
+            {%{{:a, 1} => "x", 2 => "y"}, %{"{:a, 1}" => "x", "2" => "y"}},
+            {<<0xFF>>, "<<255>>"},
+            {%{<<0xFE>> => <<0xFF>>}, %{"<<254>>" => "<<255>>"}},
+            {[1 | 2], "[1 | 2]"}
+          ] do
+        error = %Error{concern: nil, passage_ids: [], reason: reason}
+        assert Jason.decode!(Jason.encode!(error))["reason"] == encoded
+      end
+    end
   end
 end
