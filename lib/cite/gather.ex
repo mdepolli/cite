@@ -4,26 +4,8 @@ defmodule Cite.Gather do
   to judge, by fixed rules. Pure. Internal.
   """
 
-  alias Cite.{Passage, Screen, Source}
+  alias Cite.{Gather.Finding, Passage, Screen, Source}
   alias Cite.Policy.{Concern, Role, Terms}
-
-  defmodule Finding do
-    @moduledoc """
-    A finding gathered for judging: its concern, the passages it would cite
-    in source order, the passage filling each role (concerns built from
-    factors), and the matches past `max_evidence`. Internal.
-    """
-
-    @type t :: %__MODULE__{
-            concern: Concern.t(),
-            passages: [Passage.t()],
-            roles: %{atom() => Passage.t()},
-            over_cap: [Passage.t()]
-          }
-
-    @enforce_keys [:concern, :passages]
-    defstruct [:concern, :passages, roles: %{}, over_cap: []]
-  end
 
   @doc """
   The findings to judge, in the policy's concern order. A passage counts

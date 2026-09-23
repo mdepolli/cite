@@ -8,7 +8,7 @@ defmodule Cite.Run do
   `Cite.Judge`, which never see the client. Internal; use `Cite.judge/4`.
   """
 
-  alias Cite.{Answer, Error, Gather, Judge, Passage, Report, Screen, Source}
+  alias Cite.{Answer, Gather, Judge, Report, Screen, Source}
   alias Cite.Policy.Build
 
   @spec judge(Cite.client(), Source.t(), module(), keyword()) :: Report.t()
@@ -43,25 +43,14 @@ defmodule Cite.Run do
         max_evidence: max_evidence
       )
       |> Enum.map(&{&1, call(client, Judge.request(&1, source, terms))})
+      |> Judge.resolve(terms, review_band: review_band)
 
     %Report{
-      findings:
-        for(
-          {gathered, {:ok, verdict}} <- judged,
-          do: Judge.resolve(gathered, verdict.answers, terms, review_band)
-        ),
+      findings: judged.findings,
       screen: screened.screen,
-      errors:
-        screened.errors ++
-          for({gathered, {:error, reason}} <- judged, do: finding_error(gathered, reason)),
-      usage:
-        Report.total_usage(
-          screened.usages ++ for({_gathered, {:ok, verdict}} <- judged, do: verdict.usage)
-        ),
-      models:
-        Enum.uniq(
-          screened.models ++ for({_gathered, {:ok, %{model: model}}} <- judged, do: model)
-        )
+      errors: screened.errors ++ judged.errors,
+      usage: Report.total_usage(screened.usages ++ judged.usages),
+      models: Enum.uniq(screened.models ++ judged.models)
     }
   end
 
@@ -101,14 +90,6 @@ defmodule Cite.Run do
 
   defp singleton_too_large?(outcomes) do
     Enum.any?(outcomes, &match?({[_one], {:error, :request_too_large}}, &1))
-  end
-
-  defp finding_error(%Gather.Finding{concern: concern, passages: passages}, reason) do
-    %Error{
-      concern: concern.name,
-      passage_ids: Enum.map(passages, fn %Passage{id: id} -> id end),
-      reason: reason
-    }
   end
 
   # A reply must be well-shaped and answer every question well; a reply that

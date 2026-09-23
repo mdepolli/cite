@@ -5,11 +5,12 @@ defmodule Cite.Judge do
   rules. Pure. Internal.
   """
 
-  alias Cite.{Citation, Finding, Passage, Source, Wire}
+  alias Cite.{Citation, Error, Finding, Passage, Source, Wire}
   alias Cite.Gather.Finding, as: Gathered
   alias Cite.Policy.{Check, Concern, Role, Terms}
 
   @type band :: {number(), number()}
+  @type outcome :: {Gathered.t(), {:ok, Cite.verdict()} | {:error, term()}}
 
   @doc """
   The round-2 request. A directly screened concern: its passages under the
@@ -63,14 +64,38 @@ defmodule Cite.Judge do
   end
 
   @doc """
-  The judged finding. Each fit drops its passage at or below `low`, cites it
-  for review below `high`, and holds it at or above. A passage filling a
-  role holds, once. The finding fails on an asked check at or below `low` or
-  with nothing left to cite, holds when every asked check is at or above
-  `high` and a citation holds, and is sent to review otherwise.
+  Folds judged findings into `Cite.Finding`s, one `Cite.Error` per failed
+  request, and the usage and model of each reply, as `Cite.Screen.resolve/2`
+  does for round 1. Options: `review_band` (`{low, high}`, required).
+
+  Each fit drops its passage at or below `low`, cites it for review below
+  `high`, and holds it at or above. A passage filling a role holds, once. A
+  finding fails on an asked check at or below `low` or with nothing left to
+  cite, holds when every asked check is at or above `high` and a citation
+  holds, and is sent to review otherwise.
   """
-  @spec resolve(Gathered.t(), map(), Terms.t(), band()) :: Finding.t()
-  def resolve(%Gathered{concern: concern} = gathered, answers, %Terms{} = terms, {low, high}) do
+  @spec resolve([outcome()], Terms.t(), keyword()) :: %{
+          findings: [Finding.t()],
+          errors: [Error.t()],
+          usages: [Cite.usage() | nil],
+          models: [String.t()]
+        }
+  def resolve(outcomes, %Terms{} = terms, opts) do
+    review_band = Keyword.fetch!(opts, :review_band)
+
+    %{
+      findings:
+        for(
+          {gathered, {:ok, verdict}} <- outcomes,
+          do: finding(gathered, verdict.answers, terms, review_band)
+        ),
+      errors: for({gathered, {:error, reason}} <- outcomes, do: error(gathered, reason)),
+      usages: for({_gathered, {:ok, verdict}} <- outcomes, do: verdict.usage),
+      models: for({_gathered, {:ok, %{model: model}}} <- outcomes, do: model)
+    }
+  end
+
+  defp finding(%Gathered{concern: concern} = gathered, answers, terms, {low, high}) do
     checks =
       for %Check{name: name} <- asked(gathered),
           into: %{},
@@ -139,6 +164,10 @@ defmodule Cite.Judge do
       Enum.all?(nouls, &(&1 >= high)) and Enum.any?(evidence, &(&1.verdict == :holds)) -> :holds
       true -> :review
     end
+  end
+
+  defp error(%Gathered{concern: concern, passages: passages}, reason) do
+    %Error{concern: concern.name, passage_ids: Enum.map(passages, & &1.id), reason: reason}
   end
 
   defp fit_key(id), do: "fit:" <> id

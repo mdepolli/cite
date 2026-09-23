@@ -1,7 +1,7 @@
 defmodule Cite.JudgeTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Citation, Finding, Judge, Passage, Source}
+  alias Cite.{Citation, Error, Finding, Judge, Passage, Source}
   alias Cite.Gather.Finding, as: Gathered
   alias Cite.Policy.Build
   alias Cite.TestPolicies.Household
@@ -26,6 +26,16 @@ defmodule Cite.JudgeTest do
   @u3 %Passage{id: "U3", text: "text of U3", meta: %{speaker: "B"}}
   @u4 %Passage{id: "U4", text: "text of U4", meta: %{speaker: "B"}}
   @u9 %Passage{id: "U9", text: "text of U9", meta: %{speaker: "B"}}
+
+  # Judges one gathered finding from one successful reply.
+  defp judged(gathered, answers, terms) do
+    %{findings: [finding]} =
+      Judge.resolve([{gathered, {:ok, %{answers: answers, usage: nil}}}], terms,
+        review_band: @band
+      )
+
+    finding
+  end
 
   # The model's descriptor answers, with the fits or checks each test adds.
   defp descriptors(extra) do
@@ -234,7 +244,67 @@ defmodule Cite.JudgeTest do
     end
   end
 
-  describe "resolve/4 for a directly screened concern" do
+  describe "resolve/3 over round 2" do
+    test "folds findings, an error per failed request, and each reply's usage and model", ctx do
+      # Arrange
+      held = %Gathered{concern: ctx.cashflow, passages: [@u1]}
+
+      failed = %Gathered{
+        concern: ctx.household,
+        passages: [@u3, @u9],
+        roles: %{household: @u3, income: @u9}
+      }
+
+      outcomes = [
+        {held,
+         {:ok,
+          %{
+            answers: descriptors(%{"fit:U1" => %{"noul" => 0.9}}),
+            usage: %{input_tokens: 40, output_tokens: 0},
+            model: "jev-1.13.0"
+          }}},
+        {failed, {:error, :request_too_large}}
+      ]
+
+      # Act
+      resolved = Judge.resolve(outcomes, ctx.terms, review_band: @band)
+
+      # Assert
+      assert resolved == %{
+               findings: [
+                 %Finding{
+                   concern: :cashflow_stress,
+                   category: :resilience,
+                   verdict: :holds,
+                   checks: %{},
+                   descriptors: %{
+                     severity: %{"score" => 1.2, "confidence" => 0.8},
+                     temporal: %{"choice" => "persistent", "confidence" => 0.9}
+                   },
+                   evidence: [%Citation{passage: @u1, verdict: :holds, answer: %{"noul" => 0.9}}],
+                   dropped: [],
+                   over_cap: []
+                 }
+               ],
+               errors: [
+                 %Error{
+                   concern: :household_income,
+                   passage_ids: ["U3", "U9"],
+                   reason: :request_too_large
+                 }
+               ],
+               usages: [%{input_tokens: 40, output_tokens: 0}],
+               models: ["jev-1.13.0"]
+             }
+    end
+
+    test "is empty when nothing was gathered", ctx do
+      assert Judge.resolve([], ctx.terms, review_band: @band) ==
+               %{findings: [], errors: [], usages: [], models: []}
+    end
+  end
+
+  describe "resolve/3 for a directly screened concern" do
     test "drops, reviews, and holds each passage by its fit", ctx do
       # Arrange
       gathered = %Gathered{
@@ -251,7 +321,7 @@ defmodule Cite.JudgeTest do
         })
 
       # Act
-      finding = Judge.resolve(gathered, answers, ctx.terms, @band)
+      finding = judged(gathered, answers, ctx.terms)
 
       # Assert
       assert finding == %Finding{
@@ -278,7 +348,7 @@ defmodule Cite.JudgeTest do
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
 
       finding =
-        Judge.resolve(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.5}}), ctx.terms, @band)
+        judged(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.5}}), ctx.terms)
 
       assert finding.verdict == :review
     end
@@ -287,13 +357,13 @@ defmodule Cite.JudgeTest do
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
 
       finding =
-        Judge.resolve(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.1}}), ctx.terms, @band)
+        judged(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.1}}), ctx.terms)
 
       assert {finding.verdict, finding.evidence} == {:fails, []}
     end
   end
 
-  describe "resolve/4 for a concern built from factors" do
+  describe "resolve/3 for a concern built from factors" do
     setup ctx do
       %{
         gathered: %Gathered{
@@ -311,7 +381,7 @@ defmodule Cite.JudgeTest do
           "concentrated_income" => %{"noul" => 0.8}
         })
 
-      finding = Judge.resolve(ctx.gathered, answers, ctx.terms, @band)
+      finding = judged(ctx.gathered, answers, ctx.terms)
 
       assert finding == %Finding{
                concern: :household_income,
@@ -341,7 +411,7 @@ defmodule Cite.JudgeTest do
           "concentrated_income" => %{"noul" => 0.9}
         })
 
-      assert Judge.resolve(ctx.gathered, answers, ctx.terms, @band).verdict == :fails
+      assert judged(ctx.gathered, answers, ctx.terms).verdict == :fails
     end
 
     test "is review when a check sits in the band", ctx do
@@ -351,7 +421,7 @@ defmodule Cite.JudgeTest do
           "concentrated_income" => %{"noul" => 0.9}
         })
 
-      assert Judge.resolve(ctx.gathered, answers, ctx.terms, @band).verdict == :review
+      assert judged(ctx.gathered, answers, ctx.terms).verdict == :review
     end
 
     test "cites a passage filling two roles once, and records only the checks asked", ctx do
@@ -365,7 +435,7 @@ defmodule Cite.JudgeTest do
 
       answers = descriptors(%{"concentrated_income" => %{"noul" => 0.9}})
 
-      finding = Judge.resolve(gathered, answers, ctx.terms, @band)
+      finding = judged(gathered, answers, ctx.terms)
 
       assert {finding.evidence, finding.checks} ==
                {[%Citation{passage: same, verdict: :holds, answer: nil}],
@@ -377,7 +447,7 @@ defmodule Cite.JudgeTest do
     gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
 
     finding =
-      Judge.resolve(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.9}}), ctx.terms, @band)
+      judged(gathered, descriptors(%{"fit:U1" => %{"noul" => 0.9}}), ctx.terms)
 
     assert Jason.decode!(Jason.encode!(finding)) == %{
              "concern" => "cashflow_stress",
