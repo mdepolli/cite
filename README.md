@@ -37,7 +37,7 @@ defmodule Riddles do
   use Cite.Policy
 
   concern :riddle do
-    indicator do
+    detect do
       question "Does {passage} pose a riddle?"
       yes "A question asked to be puzzled over, whether or not it has an answer."
       no "A plain question, a statement, or a remark."
@@ -83,7 +83,7 @@ pid) raises too. The rest of `meta` — timestamps your UI needs, say — stays
 with you.
 
 **Judge.** `Cite.judge(client, source, policy, opts)` runs two fixed rounds.
-Round 1 screens every passage for every indicator, a window of passages per
+Round 1 screens every passage for every detect, a window of passages per
 request. Between the rounds, fixed rules gather the matches into findings.
 Round 2 judges each finding with one request on its own evidence.
 [How judging works](guides/how-judging-works.md) has the requests and the
@@ -132,7 +132,7 @@ They are part of the product:
 A finding's `verdict` is `:holds`, `:review` (a person decides), or `:fails`,
 and each citation carries its own. Answers are the model's raw maps: rounding
 a Score, reading a Choice, and flooring on confidence are yours. `screen` is
-every round-1 score and `dropped` every passage a finding's fit turned away,
+every round-1 score and `dropped` every passage a finding's confirm turned away,
 so a run is diagnosable without another request.
 
 ## Options

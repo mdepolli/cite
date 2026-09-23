@@ -58,7 +58,7 @@ defmodule CiteTest do
     test "screens, gathers, and judges a riddle end to end" do
       # Arrange
       source = Cite.source(["Why is a raven like a writing-desk?", "Take some more tea."])
-      client = client(%{"P000:riddle" => 0.94, "fit:P000" => 0.9})
+      client = client(%{"P000:riddle" => 0.94, "confirm:P000" => 0.9})
 
       # Act
       report = Cite.judge(client, source, Riddles)
@@ -191,7 +191,7 @@ defmodule CiteTest do
       test_pid = self()
 
       client = fn
-        %{"questions" => %{"fit:P000" => _} = questions} ->
+        %{"questions" => %{"confirm:P000" => _} = questions} ->
           send(test_pid, {:round_2, Enum.sort(Map.keys(questions))})
           {:error, :request_too_large}
 
@@ -203,7 +203,7 @@ defmodule CiteTest do
       report = Cite.judge(client, source, Riddles)
 
       # Assert
-      assert_received {:round_2, ["fit:P000", "fit:P001"]}
+      assert_received {:round_2, ["confirm:P000", "confirm:P001"]}
       refute_received {:round_2, _}
 
       assert {report.findings, report.errors} ==
@@ -223,7 +223,7 @@ defmodule CiteTest do
       screening = client(%{"P000:riddle" => 0.94})
 
       client = fn
-        %{"questions" => %{"fit:P000" => _}} = request ->
+        %{"questions" => %{"confirm:P000" => _}} = request ->
           {:ok, verdict} = screening.(request)
           {:ok, %{verdict | model: "jev-1.14.0"}}
 

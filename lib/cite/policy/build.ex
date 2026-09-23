@@ -62,13 +62,13 @@ defmodule Cite.Policy.Build do
 
   defp concern(%Dsl.Concern{} = concern) do
     roles = Enum.map(concern.roles, &role/1)
-    indicator = concern.indicator && noul(concern.indicator)
+    detect = concern.detect && noul(concern.detect)
 
     %Concern{
       name: concern.name,
       category: concern.category || concern.name,
-      indicator: indicator,
-      fit: (concern.fit && noul(concern.fit)) || indicator,
+      detect: detect,
+      confirm: (concern.confirm && noul(concern.confirm)) || detect,
       roles: roles,
       checks: Enum.map(concern.checks, &check/1)
     }

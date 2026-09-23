@@ -1,7 +1,7 @@
 defmodule Cite.Citation do
   @moduledoc """
   One passage a finding cites, or dropped: the caller's passage, unchanged,
-  its verdict, and the fit answer that decided it (`nil` for a concern built
+  its verdict, and the confirm answer that decided it (`nil` for a concern built
   from factors, whose passages are not judged one by one). Read it, don't
   build it.
   """

@@ -20,7 +20,7 @@ defmodule Cite.Policy.Checks do
     with :ok <- check_names(entities),
          :ok <- check_member_names(entities),
          :ok <- check_criteria(entities),
-         :ok <- check_indicator_placeholders(entities),
+         :ok <- check_detect_placeholders(entities),
          :ok <- check_concern_shapes(entities),
          :ok <- check_member_placement(entities),
          :ok <- check_roles(entities),
@@ -51,7 +51,7 @@ defmodule Cite.Policy.Checks do
   end
 
   defp check_names(entities) do
-    indicators =
+    detects =
       for %struct{} = entity <- entities,
           struct in [Dsl.Filter, Dsl.Concern, Dsl.Factor],
           do: entity
@@ -65,8 +65,8 @@ defmodule Cite.Policy.Checks do
 
     with :ok <-
            first_error(
-             repeats(indicators),
-             &{:error, "indicator name #{inspect(&1.name)} is declared twice", [&1.name], &1}
+             repeats(detects),
+             &{:error, "detect name #{inspect(&1.name)} is declared twice", [&1.name], &1}
            ),
          :ok <-
            first_error(
@@ -75,7 +75,7 @@ defmodule Cite.Policy.Checks do
            ),
          :ok <-
            first_error(
-             Enum.filter(indicators ++ checks ++ descriptors, &colon?(&1.name)),
+             Enum.filter(detects ++ checks ++ descriptors, &colon?(&1.name)),
              &{:error, ~s(names must not contain ":", got #{inspect(&1.name)}), [&1.name], &1}
            ) do
       first_error(
@@ -113,7 +113,7 @@ defmodule Cite.Policy.Checks do
     end)
   end
 
-  defp check_indicator_placeholders(entities) do
+  defp check_detect_placeholders(entities) do
     entities
     |> nouls()
     |> Enum.reject(fn {kind, _label, _noul, _path} -> kind == :check end)
@@ -122,21 +122,20 @@ defmodule Cite.Policy.Checks do
 
   defp check_concern_shapes(entities) do
     first_error(concerns(entities), fn %Dsl.Concern{name: name} = concern ->
-      if is_nil(concern.indicator) == (concern.roles == []),
+      if is_nil(concern.detect) == (concern.roles == []),
         do:
-          {:error, "concern #{inspect(name)} needs an indicator or roles, not both", [name],
-           concern}
+          {:error, "concern #{inspect(name)} needs a detect or roles, not both", [name], concern}
     end)
   end
 
-  # A fit is asked only of a concern screened directly, and checks only of a
+  # A confirm is asked only of a concern screened directly, and checks only of a
   # concern built from roles; anywhere else either would compile and never be
   # asked.
   defp check_member_placement(entities) do
     first_error(concerns(entities), fn
-      %Dsl.Concern{name: name, fit: fit, roles: [_ | _]} when not is_nil(fit) ->
-        {:error, "concern #{inspect(name)}: a fit applies only to a concern with an indicator",
-         [name], fit}
+      %Dsl.Concern{name: name, confirm: confirm, roles: [_ | _]} when not is_nil(confirm) ->
+        {:error, "concern #{inspect(name)}: a confirm applies only to a concern with a detect",
+         [name], confirm}
 
       %Dsl.Concern{name: name, checks: [check | _], roles: []} ->
         {:error, "concern #{inspect(name)}: checks apply only to a concern built from roles",
@@ -286,9 +285,9 @@ defmodule Cite.Policy.Checks do
 
     Enum.reject(
       [
-        concern.indicator &&
-          {:indicator, "#{label} indicator", concern.indicator, [name, :indicator]},
-        concern.fit && {:fit, "#{label} fit", concern.fit, [name, :fit]}
+        concern.detect &&
+          {:detect, "#{label} detect", concern.detect, [name, :detect]},
+        concern.confirm && {:confirm, "#{label} confirm", concern.confirm, [name, :confirm]}
       ],
       &is_nil/1
     ) ++

@@ -32,7 +32,7 @@ defmodule Cite.Policy.ChecksTest do
     error
   end
 
-  describe "indicators and fits" do
+  describe "detects and confirms" do
     test "a filter without {passage}" do
       assert_policy_error ~r/filter :f must use \{passage\}/ do
         filter :f do
@@ -53,16 +53,16 @@ defmodule Cite.Policy.ChecksTest do
       end
     end
 
-    test "a fit naming anything but {passage}" do
-      assert_policy_error ~r/concern :k fit may only use \{passage\}, got \{line\}/ do
+    test "a confirm naming anything but {passage}" do
+      assert_policy_error ~r/concern :k confirm may only use \{passage\}, got \{line\}/ do
         concern :k do
-          indicator do
+          detect do
             question "Does {passage} x?"
             yes "y"
             no "n"
           end
 
-          fit do
+          confirm do
             question "Does {line} really x?"
             yes "y"
             no "n"
@@ -80,10 +80,10 @@ defmodule Cite.Policy.ChecksTest do
       end
     end
 
-    test "an indicator missing no" do
-      assert_policy_error ~r/concern :k indicator needs yes and no/ do
+    test "a detect missing no" do
+      assert_policy_error ~r/concern :k detect needs yes and no/ do
         concern :k do
-          indicator do
+          detect do
             question "Does {passage} x?"
             yes "y"
           end
@@ -106,7 +106,7 @@ defmodule Cite.Policy.ChecksTest do
     test "a check on a concern screened directly" do
       assert_policy_error ~r/concern :k: checks apply only to a concern built from roles/ do
         concern :k do
-          indicator do
+          detect do
             question "Does {passage} x?"
             yes "y"
             no "n"
@@ -121,8 +121,8 @@ defmodule Cite.Policy.ChecksTest do
       end
     end
 
-    test "a fit on a concern built from roles" do
-      assert_policy_error ~r/concern :k: a fit applies only to a concern with an indicator/ do
+    test "a confirm on a concern built from roles" do
+      assert_policy_error ~r/concern :k: a confirm applies only to a concern with a detect/ do
         factor :f do
           question "Does {passage} x?"
           yes "y"
@@ -132,7 +132,7 @@ defmodule Cite.Policy.ChecksTest do
         concern :k do
           role :a, factor: :f
 
-          fit do
+          confirm do
             question "Does {passage} really x?"
             yes "y"
             no "n"
@@ -147,16 +147,16 @@ defmodule Cite.Policy.ChecksTest do
       end
     end
 
-    test "a concern with neither an indicator nor roles" do
-      assert_policy_error ~r/concern :k needs an indicator or roles, not both/ do
+    test "a concern with neither a detect nor roles" do
+      assert_policy_error ~r/concern :k needs a detect or roles, not both/ do
         concern :k do
           category :c
         end
       end
     end
 
-    test "a concern with both an indicator and roles" do
-      assert_policy_error ~r/concern :k needs an indicator or roles, not both/ do
+    test "a concern with both a detect and roles" do
+      assert_policy_error ~r/concern :k needs a detect or roles, not both/ do
         factor :f do
           question "Does {passage} x?"
           yes "y"
@@ -164,7 +164,7 @@ defmodule Cite.Policy.ChecksTest do
         end
 
         concern :k do
-          indicator do
+          detect do
             question "Does {passage} y?"
             yes "y"
             no "n"
@@ -452,8 +452,8 @@ defmodule Cite.Policy.ChecksTest do
   end
 
   describe "names" do
-    test "two indicators with one name" do
-      assert_policy_error ~r/indicator name :x is declared twice/ do
+    test "two detects with one name" do
+      assert_policy_error ~r/detect name :x is declared twice/ do
         filter :x do
           question "Is {passage} x?"
           yes "y"
@@ -604,8 +604,8 @@ defmodule Cite.Policy.ChecksTest do
           category :c
           role :household, factor: :kids
 
-          check :fits do
-            question "Does {household} fit?"
+          check :counts do
+            question "Does {household} count?"
             yes "y"
             no "n"
           end

@@ -3,7 +3,7 @@ defmodule Cite.TestPolicies.Riddles do
   use Cite.Policy
 
   concern :riddle do
-    indicator do
+    detect do
       question "Does {passage} pose a riddle?"
       yes "A question asked to be puzzled over."
       no "A plain question, a statement, or a remark."
@@ -26,7 +26,7 @@ defmodule Cite.TestPolicies.Household do
   concern :cashflow_stress do
     category :resilience
 
-    indicator do
+    detect do
       question "Does {passage} say money is short now?"
 
       yes do
@@ -40,7 +40,7 @@ defmodule Cite.TestPolicies.Household do
       end
     end
 
-    fit do
+    confirm do
       question "Does {passage} evidence that a shock could not be absorbed?"
       yes "Costs look unmanageable now."
       no "Ordinary budget figures."
@@ -113,7 +113,7 @@ defmodule Cite.TestPolicies.TwoConcerns do
   end
 
   concern :health do
-    indicator do
+    detect do
       question "Does {passage} disclose a health condition?"
       yes "A condition."
       no "No condition."
@@ -121,7 +121,7 @@ defmodule Cite.TestPolicies.TwoConcerns do
   end
 
   concern :life_event do
-    indicator do
+    detect do
       question "Does {passage} disclose a life event?"
       yes "An event."
       no "No event."

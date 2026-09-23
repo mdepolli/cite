@@ -98,7 +98,7 @@ defmodule Cite.Run do
     raise ArgumentError, "options must be a keyword list, got: #{inspect(other)}"
   end
 
-  # Round-1 scores, fits, and checks are all probabilities, so the options
+  # Round-1 scores, confirms, and checks are all probabilities, so the options
   # compared against them are too.
   @doc false
   def threshold(threshold) when is_number(threshold) and threshold >= 0 and threshold <= 1,

@@ -6,7 +6,7 @@ defmodule Cite.PolicyTest do
   alias Cite.TestTerms
 
   describe "Build.read/1" do
-    test "defaults category to the concern's name, the fit to its indicator, and exclusive to false" do
+    test "defaults category to the concern's name, the confirm to its detect, and exclusive to false" do
       assert Build.read(Riddles) == TestTerms.riddles()
     end
 

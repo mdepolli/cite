@@ -34,7 +34,7 @@ defmodule Cite.JudgeTest do
     finding
   end
 
-  # The model's descriptor answers, with the fits or checks each test adds.
+  # The model's descriptor answers, with the confirms or checks each test adds.
   defp descriptors(extra) do
     Map.merge(
       %{
@@ -47,7 +47,7 @@ defmodule Cite.JudgeTest do
 
   # Expected wire questions, spelled out: each helper is one literal.
 
-  defp fit_u1 do
+  defp confirm_u1 do
     %{
       "type" => "noul",
       "instructions" => %{
@@ -61,7 +61,7 @@ defmodule Cite.JudgeTest do
     }
   end
 
-  defp fit_u2 do
+  defp confirm_u2 do
     %{
       "type" => "noul",
       "instructions" => %{
@@ -130,7 +130,8 @@ defmodule Cite.JudgeTest do
   end
 
   describe "request/2 for a directly screened concern" do
-    test "asks the fit of each passage among its siblings, and the descriptors over all", ctx do
+    test "asks the confirm of each passage among its siblings, and the descriptors over all",
+         ctx do
       # Arrange
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1, @u2]}
 
@@ -147,8 +148,8 @@ defmodule Cite.JudgeTest do
                    ])
                },
                "questions" => %{
-                 "fit:U1" => fit_u1(),
-                 "fit:U2" => fit_u2(),
+                 "confirm:U1" => confirm_u1(),
+                 "confirm:U2" => confirm_u2(),
                  "severity" => severity_over_u1_u2(),
                  "temporal" => temporal_over_u1_u2()
                }
@@ -302,7 +303,7 @@ defmodule Cite.JudgeTest do
         {held,
          {:ok,
           %{
-            answers: descriptors(%{"fit:U1" => %{"noul" => 0.9}}),
+            answers: descriptors(%{"confirm:U1" => %{"noul" => 0.9}}),
             usage: %{input_tokens: 40, output_tokens: 0},
             model: "jev-1.13.0"
           }}},
@@ -352,7 +353,7 @@ defmodule Cite.JudgeTest do
       failed = %Gathered{concern: ctx.cashflow, passages: [@u2]}
 
       reply = %{
-        answers: descriptors(%{"fit:U1" => %{"noul" => 0.9}}),
+        answers: descriptors(%{"confirm:U1" => %{"noul" => 0.9}}),
         usage: nil,
         model: "jev-1.13.0"
       }
@@ -374,7 +375,7 @@ defmodule Cite.JudgeTest do
   end
 
   describe "resolve/2 for a directly screened concern" do
-    test "drops, reviews, and holds each passage by its fit", ctx do
+    test "drops, reviews, and holds each passage by its confirm", ctx do
       # Arrange
       gathered = %Gathered{
         concern: ctx.cashflow,
@@ -384,9 +385,9 @@ defmodule Cite.JudgeTest do
 
       answers =
         descriptors(%{
-          "fit:U1" => %{"noul" => 0.4},
-          "fit:U2" => %{"noul" => 0.59},
-          "fit:U3" => %{"noul" => 0.6}
+          "confirm:U1" => %{"noul" => 0.4},
+          "confirm:U2" => %{"noul" => 0.59},
+          "confirm:U3" => %{"noul" => 0.6}
         })
 
       # Act
@@ -416,7 +417,7 @@ defmodule Cite.JudgeTest do
     test "is review when no citation holds", ctx do
       # Arrange
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
-      answers = descriptors(%{"fit:U1" => %{"noul" => 0.5}})
+      answers = descriptors(%{"confirm:U1" => %{"noul" => 0.5}})
 
       # Act + Assert
       assert judged(ctx.run, gathered, answers).verdict == :review
@@ -425,7 +426,7 @@ defmodule Cite.JudgeTest do
     test "fails when every passage is dropped", ctx do
       # Arrange
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
-      answers = descriptors(%{"fit:U1" => %{"noul" => 0.1}})
+      answers = descriptors(%{"confirm:U1" => %{"noul" => 0.1}})
 
       # Act
       finding = judged(ctx.run, gathered, answers)
@@ -540,7 +541,7 @@ defmodule Cite.JudgeTest do
   test "a finding encodes with Jason, names and verdicts as strings", ctx do
     # Arrange
     gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}
-    finding = judged(ctx.run, gathered, descriptors(%{"fit:U1" => %{"noul" => 0.9}}))
+    finding = judged(ctx.run, gathered, descriptors(%{"confirm:U1" => %{"noul" => 0.9}}))
 
     # Act + Assert
     assert Jason.decode!(Jason.encode!(finding)) == %{

@@ -16,7 +16,7 @@ defmodule Cite.TestTerms do
         %Concern{
           name: :riddle,
           category: :riddle,
-          indicator: %Question{
+          detect: %Question{
             type: :noul,
             text: "Does {passage} pose a riddle?",
             focus: nil,
@@ -25,7 +25,7 @@ defmodule Cite.TestTerms do
               false: %{what: "A plain question, a statement, or a remark."}
             }
           },
-          fit: %Question{
+          confirm: %Question{
             type: :noul,
             text: "Does {passage} pose a riddle?",
             focus: nil,
@@ -59,7 +59,7 @@ defmodule Cite.TestTerms do
         %Concern{
           name: :cashflow_stress,
           category: :resilience,
-          indicator: %Question{
+          detect: %Question{
             type: :noul,
             text: "Does {passage} say money is short now?",
             focus: nil,
@@ -71,7 +71,7 @@ defmodule Cite.TestTerms do
               false: %{what: "No strain.", not_for: "Bills listed as facts."}
             }
           },
-          fit: %Question{
+          confirm: %Question{
             type: :noul,
             text: "Does {passage} evidence that a shock could not be absorbed?",
             focus: nil,
@@ -86,8 +86,8 @@ defmodule Cite.TestTerms do
         %Concern{
           name: :household_income,
           category: :resilience,
-          indicator: nil,
-          fit: nil,
+          detect: nil,
+          confirm: nil,
           roles: [
             %Role{
               name: :household,
@@ -203,13 +203,13 @@ defmodule Cite.TestTerms do
         %Concern{
           name: :health,
           category: :health,
-          indicator: %Question{
+          detect: %Question{
             type: :noul,
             text: "Does {passage} disclose a health condition?",
             focus: nil,
             criteria: %{true: %{what: "A condition."}, false: %{what: "No condition."}}
           },
-          fit: %Question{
+          confirm: %Question{
             type: :noul,
             text: "Does {passage} disclose a health condition?",
             focus: nil,
@@ -221,13 +221,13 @@ defmodule Cite.TestTerms do
         %Concern{
           name: :life_event,
           category: :life_event,
-          indicator: %Question{
+          detect: %Question{
             type: :noul,
             text: "Does {passage} disclose a life event?",
             focus: nil,
             criteria: %{true: %{what: "An event."}, false: %{what: "No event."}}
           },
-          fit: %Question{
+          confirm: %Question{
             type: :noul,
             text: "Does {passage} disclose a life event?",
             focus: nil,
@@ -250,8 +250,8 @@ defmodule Cite.TestTerms do
         %Concern{
           name: :household_income,
           category: :household_income,
-          indicator: nil,
-          fit: nil,
+          detect: nil,
+          confirm: nil,
           roles: [
             %Role{name: :household, factor: :dependents, optional: false, distinct: false},
             %Role{name: :income, factor: :primary_income, optional: false, distinct: false},

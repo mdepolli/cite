@@ -25,14 +25,14 @@ end
 
 ## Vocabulary
 
-- **Indicator**: a yes/no question asked of every passage in round 1. It
+- **Detect**: a yes/no question asked of every passage in round 1. It
   comes in three kinds:
   - **Filter**: never a finding; decides which passages count at all.
   - **Concern**: something a finding can be. Screened directly with its own
-    indicator, or built from factors.
+    detect, or built from factors.
   - **Factor**: never a finding alone; fills a role in a concern built from
     factors.
-- **Fit**: a directly screened concern's second question, asked in round 2
+- **Confirm**: a directly screened concern's second question, asked in round 2
   of each passage it matched, with its siblings. It decides which passages
   are cited.
 - **Check**: a question across a concern's roles, asked in round 2. It
@@ -44,7 +44,7 @@ end
 
 ## Questions
 
-Every yes/no question — a filter, factor, indicator, fit, or check — has the
+Every yes/no question — a filter, factor, detect, confirm, or check — has the
 same body:
 
 ```elixir
@@ -87,13 +87,13 @@ filter. A policy may have none.
 concern :cashflow_stress do
   category :resilience
 
-  indicator do
+  detect do
     question "Does {passage} say the speaker's household is currently struggling with money?"
     yes "..."
     no "..."
   end
 
-  fit do
+  confirm do
     question "Does {passage} evidence that the speaker's household cannot absorb a financial shock now?"
     yes "..."
     no "..."
@@ -101,8 +101,8 @@ concern :cashflow_stress do
 end
 ```
 
-The indicator casts the net in round 1; the fit decides, in round 2, which
-matched passages are cited. `fit` is optional: without it the indicator is
+The detect casts the net in round 1; the confirm decides, in round 2, which
+matched passages are cited. `confirm` is optional: without it the detect is
 asked again, over the concern's gathered passages instead of a screening
 window. `category` defaults to the concern's name.
 
@@ -176,8 +176,8 @@ evidence. A Score has 2 to 10 unique levels; a Choice at least one option.
 ## Exclusive
 
 `exclusive true` makes a passage evidence for at most one directly screened
-concern: the one whose indicator scored it highest, the concern declared
-first winning a tie. The choice is final; a passage its winning concern's fit
+concern: the one whose detect scored it highest, the concern declared
+first winning a tie. The choice is final; a passage its winning concern's confirm
 drops is not reconsidered elsewhere. Without it, a passage is evidence for
 every concern it matches. Concerns built from factors are unaffected.
 
@@ -185,10 +185,10 @@ every concern it matches. Concerns built from factors are unaffected.
 
 Questions name what they read, and Cite writes the backticked path.
 
-- `{passage}` is the passage an indicator or fit is asked about; `{household}`
+- `{passage}` is the passage a detect or confirm is asked about; `{household}`
   names a role. A placeholder means the passage's text.
 - Placeholders expand in `question` and `focus`, not in criteria.
-- Filters, factors, indicators, and fits use `{passage}` and nothing else,
+- Filters, factors, detects, and confirms use `{passage}` and nothing else,
   and name it in the question. A check uses its concern's roles and nothing
   else, and names at least one in the question; its focus may name more.
   Descriptors use none: they read all of the finding's evidence.
@@ -203,11 +203,11 @@ Questions name what they read, and Cite writes the backticked path.
 A policy fails to compile, pointing at the declaration, on:
 
 - a policy with no concern;
-- two indicators, or two descriptors, with one name, or a name containing `:`;
+- two detects, or two descriptors, with one name, or a name containing `:`;
 - a check and a descriptor with one name;
 - two roles, or two checks, with one name in the same concern;
-- a concern with both an indicator and roles, or neither;
-- a fit on a concern built from roles, or checks on a concern screened
+- a concern with both a detect and roles, or neither;
+- a confirm on a concern built from roles, or checks on a concern screened
   directly: either would compile and never be asked;
 - a factor no role names: it would be asked of every passage and never used;
 - a role naming an undeclared factor, a role named `:passage`, or a role
@@ -225,7 +225,7 @@ The model reads literally. These are the rules that held up in practice.
 
 **One proposition per question.** "Does it pose a riddle *and* is it
 unanswered" is two questions, and the model answers whichever it weighs
-more. Ask the first as an indicator and the second as the fit.
+more. Ask the first as a detect and the second as the confirm.
 
 **Boundary cases go in `not_for`.** The first wording of a question is the
 half of the instruction you thought of; the wrong answers you meet afterwards

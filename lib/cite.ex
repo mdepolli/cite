@@ -9,7 +9,7 @@ defmodule Cite do
         use Cite.Policy
 
         concern :riddle do
-          indicator do
+          detect do
             question "Does {passage} pose a riddle?"
             yes "A question asked to be puzzled over."
             no "A plain question, a statement, or a remark."
@@ -21,7 +21,7 @@ defmodule Cite do
       report = Cite.judge(client, source, MyApp.Riddles) # judge the source against it
 
   `judge/4` runs two fixed rounds: a screen of every passage for every
-  indicator, then one judgment per finding. A decision model answers typed
+  detect, then one judgment per finding. A decision model answers typed
   questions about the passages; it never writes text and never sees a
   passage the caller did not list.
 

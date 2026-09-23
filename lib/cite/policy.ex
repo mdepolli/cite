@@ -13,7 +13,7 @@ defmodule Cite.Policy do
         use Cite.Policy
 
         concern :riddle do
-          indicator do
+          detect do
             question "Does {passage} pose a riddle?"
             yes "A question asked to be puzzled over."
             no "A plain question, a statement, or a remark."
@@ -22,7 +22,7 @@ defmodule Cite.Policy do
       end
 
   Declarations: `exclusive`, `filter`, `concern` (with `category`,
-  `indicator`, `fit`, `role`, `check`), `factor`, `score`, `choice`. Every
+  `detect`, `confirm`, `role`, `check`), `factor`, `score`, `choice`. Every
   mistake is a compile error. The policy guide explains the language; the
   reference below, generated from the DSL, lists every declaration's
   arguments, options, and defaults (required ones starred).

@@ -6,7 +6,7 @@ defmodule Cite.ScreenTest do
   alias Cite.Wire.Object
 
   describe "request/2" do
-    test "asks every indicator of every passage in the window, under the source's word" do
+    test "asks every detect of every passage in the window, under the source's word" do
       # Arrange
       source =
         Source.new(
@@ -65,7 +65,7 @@ defmodule Cite.ScreenTest do
              }
     end
 
-    test "asks each of a full policy's indicators once per passage" do
+    test "asks each of a full policy's detects once per passage" do
       # Arrange
       source = Source.new([%{id: "U3", text: "Two kids."}], as: "utterances")
 
@@ -85,7 +85,7 @@ defmodule Cite.ScreenTest do
   end
 
   describe "resolve/2" do
-    test "folds answers into scores per passage and indicator" do
+    test "folds answers into scores per passage and detect" do
       # Arrange
       source = Source.new([%{id: "L1", text: "a"}, %{id: "L2", text: "b"}])
 

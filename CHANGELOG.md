@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `use Cite.Policy`: a policy declared once in a module, built on Spark.
-  Filters, concerns (screened directly with an indicator and an optional
-  fit, or built from factors with roles and checks), factors, and Score or
+  Filters, concerns (screened directly with a detect and an optional
+  confirm, or built from factors with roles and checks), factors, and Score or
   Choice descriptors; `exclusive` keeps a passage with one concern. Questions
   name what they read by placeholder (`{passage}`, `{household}`) and Cite
   writes the path. Every mistake in a policy is a compile error.
@@ -19,13 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Cite.source/2`: the caller's passages, kept byte for byte, with `as:` for
   the word they sit under and `show:` for the meta the model sees.
 - `Cite.judge/4`: two fixed rounds. A screen of every passage for every
-  indicator in windows, fixed rules that gather matches into findings, and
+  detect in windows, fixed rules that gather matches into findings, and
   one judgment per finding on its own evidence, gated by a review band.
   Options: `threshold`, `review_band`, `window`, `max_evidence`.
 - `Cite.Report`, `Cite.Finding`, `Cite.Citation`, `Cite.Passage`, and
   `Cite.Error` as the outputs, encodable with Jason. A finding carries its
   verdict, the raw answers to its checks and descriptors, the passages it
-  cites, those its fit dropped, and those past `max_evidence`; the report
+  cites, those its confirm dropped, and those past `max_evidence`; the report
   keeps every round-1 score, token usage, and the model ids that answered.
 - `Cite.Provider` behaviour and `Cite.Provider.TypeSafe`, a Req client for
   TypeSafe System One; `Cite.client/2` builds the client function

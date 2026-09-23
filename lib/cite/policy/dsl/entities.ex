@@ -30,7 +30,7 @@ end
 
 defmodule Cite.Policy.Dsl.Concern do
   @moduledoc false
-  defstruct [:name, :category, :indicator, :fit, :__spark_metadata__, roles: [], checks: []]
+  defstruct [:name, :category, :detect, :confirm, :__spark_metadata__, roles: [], checks: []]
 end
 
 defmodule Cite.Policy.Dsl.Score do

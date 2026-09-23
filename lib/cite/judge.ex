@@ -12,14 +12,14 @@ defmodule Cite.Judge do
 
   @doc """
   The round-2 request. A directly screened concern: its passages under the
-  source's `as`, a fit per passage keyed `"fit:<id>"`, the descriptors over
+  source's `as`, a confirm per passage keyed `"confirm:<id>"`, the descriptors over
   all of them. A concern built from factors: each role at the top level, the
   checks that apply, the descriptors over every role.
   """
   @spec request(Run.t(), Gathered.t()) :: map()
   def request(
         %Run{source: %Source{show: show}} = run,
-        %Gathered{concern: %Concern{indicator: nil}} = gathered
+        %Gathered{concern: %Concern{detect: nil}} = gathered
       ) do
     state =
       Map.new(gathered.roles, fn {role, passage} ->
@@ -49,18 +49,18 @@ defmodule Cite.Judge do
 
   def request(
         %Run{source: %Source{as: as, show: show}} = run,
-        %Gathered{concern: %Concern{fit: fit}, passages: passages}
+        %Gathered{concern: %Concern{confirm: confirm}, passages: passages}
       ) do
-    fits =
+    confirms =
       for %Passage{id: id} <- passages, into: %{} do
-        {fit_key(id), Wire.question(fit, %{"passage" => Wire.text_path(as, id)}, [])}
+        {confirm_key(id), Wire.question(confirm, %{"passage" => Wire.text_path(as, id)}, [])}
       end
 
     fallback = for %Passage{id: id} <- passages, do: Wire.text_path(as, id)
 
     %{
       "state" => %{as => Wire.passages(passages, show)},
-      "questions" => Map.merge(fits, descriptor_questions(run.terms, fallback))
+      "questions" => Map.merge(confirms, descriptor_questions(run.terms, fallback))
     }
   end
 
@@ -70,7 +70,7 @@ defmodule Cite.Judge do
   as `Cite.Screen.resolve/2` does for round 1. The run's `review_band`,
   `{low, high}`, sets the verdicts.
 
-  Each fit drops its passage at or below `low`, cites it for review below
+  Each confirm drops its passage at or below `low`, cites it for review below
   `high`, and holds it at or above. A passage filling a role holds, once. A
   finding fails on an asked check at or below `low` or with nothing left to
   cite, holds when every asked check is at or above `high` and a citation
@@ -136,7 +136,7 @@ defmodule Cite.Judge do
   end
 
   defp citations(
-         %Gathered{concern: %Concern{indicator: nil}, passages: passages},
+         %Gathered{concern: %Concern{detect: nil}, passages: passages},
          _answers,
          _band
        ) do
@@ -146,15 +146,15 @@ defmodule Cite.Judge do
   defp citations(%Gathered{passages: passages}, answers, band) do
     passages
     |> Enum.map(fn %Passage{id: id} = passage ->
-      answer = answers[fit_key(id)]
-      %Citation{passage: passage, verdict: fit_verdict(answer["noul"], band), answer: answer}
+      answer = answers[confirm_key(id)]
+      %Citation{passage: passage, verdict: confirm_verdict(answer["noul"], band), answer: answer}
     end)
     |> Enum.split_with(&(&1.verdict != :dropped))
   end
 
-  defp fit_verdict(noul, {low, _high}) when noul <= low, do: :dropped
-  defp fit_verdict(noul, {_low, high}) when noul < high, do: :review
-  defp fit_verdict(_noul, _band), do: :holds
+  defp confirm_verdict(noul, {low, _high}) when noul <= low, do: :dropped
+  defp confirm_verdict(noul, {_low, high}) when noul < high, do: :review
+  defp confirm_verdict(_noul, _band), do: :holds
 
   defp verdict(check_answers, evidence, {low, high}) do
     nouls = Enum.map(check_answers, & &1["noul"])
@@ -170,5 +170,5 @@ defmodule Cite.Judge do
     %Error{concern: concern.name, passage_ids: Enum.map(passages, & &1.id), reason: reason}
   end
 
-  defp fit_key(id), do: "fit:" <> id
+  defp confirm_key(id), do: "confirm:" <> id
 end

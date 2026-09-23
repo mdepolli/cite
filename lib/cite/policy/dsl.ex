@@ -68,8 +68,8 @@ defmodule Cite.Policy.Dsl do
     singleton_entity_keys: [:yes, :no]
   }
 
-  @indicator %Entity{
-    name: :indicator,
+  @detect %Entity{
+    name: :detect,
     describe: "The concern's round-1 question, asked of every passage.",
     target: Noul,
     schema: @question_schema,
@@ -77,8 +77,8 @@ defmodule Cite.Policy.Dsl do
     singleton_entity_keys: [:yes, :no]
   }
 
-  @fit %Entity{
-    name: :fit,
+  @confirm %Entity{
+    name: :confirm,
     describe: "The concern's round-2 question, deciding which matched passages are cited.",
     target: Noul,
     schema: @question_schema,
@@ -129,8 +129,8 @@ defmodule Cite.Policy.Dsl do
     target: Concern,
     args: [:name],
     schema: @name_schema ++ [category: [type: :atom, doc: "What the finding is reported as."]],
-    entities: [indicator: [@indicator], fit: [@fit], roles: [@role], checks: [@check]],
-    singleton_entity_keys: [:indicator, :fit]
+    entities: [detect: [@detect], confirm: [@confirm], roles: [@role], checks: [@check]],
+    singleton_entity_keys: [:detect, :confirm]
   }
 
   @option %Entity{

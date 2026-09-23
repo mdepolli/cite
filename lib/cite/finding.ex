@@ -1,7 +1,7 @@
 defmodule Cite.Finding do
   @moduledoc """
   A judged finding: its concern and category, the verdict, the raw answers
-  to its checks and descriptors, the passages it cites, those its fit
+  to its checks and descriptors, the passages it cites, those its confirm
   dropped, and the matches past `max_evidence` that were never judged.
 
   `checks` holds only the checks that were asked. Answers are the model's

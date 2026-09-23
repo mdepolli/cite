@@ -24,7 +24,7 @@ defmodule Cite.Gather do
 
     gathered =
       Enum.flat_map(terms.concerns, fn
-        %Concern{indicator: nil} = concern ->
+        %Concern{detect: nil} = concern ->
           built(concern, eligible, screen, threshold)
 
         %Concern{} = concern ->
@@ -45,7 +45,7 @@ defmodule Cite.Gather do
   # passage stays only with its highest-scoring concern; `Enum.max_by/2`
   # keeps the first of equals, so a tie goes to the concern declared first.
   defp direct_matches(%Terms{} = terms, eligible, screen, threshold) do
-    names = for %Concern{indicator: indicator, name: name} <- terms.concerns, indicator, do: name
+    names = for %Concern{detect: detect, name: name} <- terms.concerns, detect, do: name
 
     pairs =
       for %Passage{id: id} = passage <- eligible,

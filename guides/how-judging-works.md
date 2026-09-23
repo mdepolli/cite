@@ -12,7 +12,7 @@ flowchart LR
 
 | Step | Module | What it does |
 | ---- | ------ | ------------ |
-| Screen | `Cite.Screen` | every indicator of every passage, a window per request |
+| Screen | `Cite.Screen` | every detect of every passage, a window per request |
 | Gather | `Cite.Gather` | fixed rules turn matches into findings; no model call |
 | Judge | `Cite.Judge` | one request per finding, on its own evidence |
 
@@ -23,7 +23,7 @@ see the client.
 
 ## Round 1: screen
 
-Every indicator — filters, directly screened concerns, factors — is asked of
+Every detect — filters, directly screened concerns, factors — is asked of
 every passage, `window` passages per request. The window sits under the
 source's `as`, keyed by id, in source order:
 
@@ -48,7 +48,7 @@ source's `as`, keyed by id, in source order:
 }
 ```
 
-Question keys are `"<passage id>:<indicator>"`. A score above `threshold` is
+Question keys are `"<passage id>:<detect>"`. A score above `threshold` is
 a match; `threshold` only sets recall, the review band decides later.
 
 A request the provider refuses as `:request_too_large` is halved and both
@@ -76,7 +76,7 @@ Fixed rules, no model call:
 One request per finding.
 
 A directly screened concern puts its passages under `as`, so siblings give
-each other context. Fits are keyed `fit:<passage id>`; descriptors compare
+each other context. Confirms are keyed `confirm:<passage id>`; descriptors compare
 every passage:
 
 ```json
@@ -88,8 +88,8 @@ every passage:
     }
   },
   "questions": {
-    "fit:U014": {"type": "noul", "instructions": {"question": "Does `utterances.U014.text` evidence ...", "inspect": "`utterances.U014.text`"}, "criteria": {"...": "..."}},
-    "fit:U031": {"type": "noul", "instructions": {"question": "Does `utterances.U031.text` evidence ...", "inspect": "`utterances.U031.text`"}, "criteria": {"...": "..."}},
+    "confirm:U014": {"type": "noul", "instructions": {"question": "Does `utterances.U014.text` evidence ...", "inspect": "`utterances.U014.text`"}, "criteria": {"...": "..."}},
+    "confirm:U031": {"type": "noul", "instructions": {"question": "Does `utterances.U031.text` evidence ...", "inspect": "`utterances.U031.text`"}, "criteria": {"...": "..."}},
     "severity": {"type": "score", "instructions": {"question": "...", "compare": ["`utterances.U014.text`", "`utterances.U031.text`"]}, "criteria": ["...", "...", "..."]}
   }
 }
@@ -125,7 +125,7 @@ split, because the descriptors read all of the evidence at once.
 
 With `{low, high}` as the review band:
 
-- **Evidence of a directly screened concern.** A passage whose fit is at or
+- **Evidence of a directly screened concern.** A passage whose confirm is at or
   below `low` is dropped; below `high` it is cited as `:review`; at or above
   `high`, as `:holds`.
 - **Evidence of a concern built from factors.** Every passage filling a role
