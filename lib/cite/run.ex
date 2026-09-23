@@ -71,28 +71,16 @@ defmodule Cite.Run do
   end
 
   # A window over the request cap is split in half and both halves screened;
-  # only a single passage that still exceeds it is an error. Once one passage
-  # alone is too large, its siblings will not fare better, so they are
-  # recorded as the same error without a call.
+  # only a single passage that still exceeds it is an error.
   defp screen_window(client, window, source, terms) do
     case call(client, Screen.request(window, source, terms)) do
       {:error, :request_too_large} when length(window) > 1 ->
         {left, right} = Enum.split(window, div(length(window), 2))
-        left_outcomes = screen_window(client, left, source, terms)
-
-        if singleton_too_large?(left_outcomes) do
-          left_outcomes ++ [{right, {:error, :request_too_large}}]
-        else
-          left_outcomes ++ screen_window(client, right, source, terms)
-        end
+        screen_window(client, left, source, terms) ++ screen_window(client, right, source, terms)
 
       verdict ->
         [{window, verdict}]
     end
-  end
-
-  defp singleton_too_large?(outcomes) do
-    Enum.any?(outcomes, &match?({[_one], {:error, :request_too_large}}, &1))
   end
 
   # A reply must answer every question with a value it can have; a reply that

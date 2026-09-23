@@ -21,6 +21,35 @@ defmodule CiteTest do
   defp answer(_key, %{"type" => "choice"}, _nouls),
     do: %{"choice" => "persistent", "confidence" => 0.9}
 
+  # A client that reports each screening window it is sent, read off the
+  # question keys ("<id>:riddle"), refuses the windows `too_large?` picks as
+  # too large, and answers the rest with 0.1, so nothing matches.
+  defp window_client(too_large?) do
+    test_pid = self()
+    answering = client(%{})
+
+    fn %{"questions" => questions} = request ->
+      window =
+        questions
+        |> Map.keys()
+        |> Enum.map(&hd(String.split(&1, ":")))
+        |> Enum.sort()
+
+      send(test_pid, {:window, window})
+
+      if too_large?.(window), do: {:error, :request_too_large}, else: answering.(request)
+    end
+  end
+
+  # Every window the window client was sent, in order.
+  defp windows_sent do
+    receive do
+      {:window, window} -> [window | windows_sent()]
+    after
+      0 -> []
+    end
+  end
+
   defp refusing_client do
     fn _request -> flunk("no request should be sent") end
   end
@@ -97,43 +126,61 @@ defmodule CiteTest do
     test "halves a round-1 window the provider refuses as too large" do
       # Arrange
       source = Cite.source(["a", "b", "c", "d"])
-      test_pid = self()
-      answering = client(%{})
-
-      # Every answer is 0.1, so nothing matches and only screening requests are
-      # sent. A window's passages are read off its question keys, "<id>:riddle".
-      client = fn %{"questions" => questions} = request ->
-        window = questions |> Map.keys() |> Enum.map(&hd(String.split(&1, ":"))) |> Enum.sort()
-        send(test_pid, {:window, window})
-
-        if length(window) > 2,
-          do: {:error, :request_too_large},
-          else: answering.(request)
-      end
+      client = window_client(&(length(&1) > 2))
 
       # Act
       report = Cite.judge(client, source, Riddles, window: 4)
 
       # Assert
-      assert_received {:window, ["P000", "P001", "P002", "P003"]}
-      assert_received {:window, ["P000", "P001"]}
-      assert_received {:window, ["P002", "P003"]}
+      assert windows_sent() == [
+               ["P000", "P001", "P002", "P003"],
+               ["P000", "P001"],
+               ["P002", "P003"]
+             ]
+
       assert {report.errors, map_size(report.screen)} == {[], 4}
     end
 
-    test "records a lone passage over the cap as an error, and its siblings without a call" do
+    test "records a lone passage over the cap as an error, and still screens its siblings" do
       # Arrange
       source = Cite.source(["a", "b", "c", "d"])
-      client = fn _request -> {:error, :request_too_large} end
+      client = window_client(&("P001" in &1))
 
       # Act
       report = Cite.judge(client, source, Riddles, window: 4)
 
       # Assert
+      assert windows_sent() == [
+               ["P000", "P001", "P002", "P003"],
+               ["P000", "P001"],
+               ["P000"],
+               ["P001"],
+               ["P002", "P003"]
+             ]
+
+      assert report.errors == [
+               %Error{concern: nil, passage_ids: ["P001"], reason: :request_too_large}
+             ]
+
+      assert Enum.sort(Map.keys(report.screen)) == ["P000", "P002", "P003"]
+    end
+
+    test "records every passage as its own error when each alone is over the cap" do
+      # Arrange
+      source = Cite.source(["a", "b", "c", "d"])
+      client = window_client(fn _window -> true end)
+
+      # Act
+      report = Cite.judge(client, source, Riddles, window: 4)
+
+      # Assert
+      assert length(windows_sent()) == 7
+
       assert report.errors == [
                %Error{concern: nil, passage_ids: ["P000"], reason: :request_too_large},
                %Error{concern: nil, passage_ids: ["P001"], reason: :request_too_large},
-               %Error{concern: nil, passage_ids: ["P002", "P003"], reason: :request_too_large}
+               %Error{concern: nil, passage_ids: ["P002"], reason: :request_too_large},
+               %Error{concern: nil, passage_ids: ["P003"], reason: :request_too_large}
              ]
     end
 

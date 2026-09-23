@@ -51,8 +51,8 @@ Question keys are `"<passage id>:<indicator>"`. A score above `threshold` is
 a match; `threshold` only sets recall, the review band decides later.
 
 A request the provider refuses as `:request_too_large` is halved and both
-halves sent. Only a lone passage over the cap becomes an error, and its
-remaining siblings are recorded as the same error without a call.
+halves sent. Only a lone passage over the cap becomes an error; its
+siblings are still screened.
 
 ## Between rounds: gather
 
