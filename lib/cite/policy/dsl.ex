@@ -1,54 +1,12 @@
 defmodule Cite.Policy.Dsl do
   @moduledoc """
-  The Spark extension behind `use Cite.Policy`: its declarations and the
-  structs they build. `Cite.Policy.Checks` validates them and
-  `Cite.Policy.Build` compiles them to a `%Cite.Policy{}`. Internal.
+  The Spark extension behind `use Cite.Policy`: its declarations.
+  `Cite.Policy.Checks` validates the structs they build (defined in
+  `lib/cite/policy/dsl/entities.ex`) and `Cite.Policy.Build` compiles them to
+  a policy's `Cite.Policy.Terms`. Internal.
   """
 
-  defmodule Criterion do
-    @moduledoc false
-    defstruct [:what, :not_for, :examples, :__spark_metadata__]
-  end
-
-  defmodule Noul do
-    @moduledoc false
-    defstruct [:name, :question, :focus, :yes, :no, :distinct, :__spark_metadata__]
-  end
-
-  defmodule Filter do
-    @moduledoc false
-    defstruct [:name, :question, :focus, :yes, :no, :__spark_metadata__]
-  end
-
-  defmodule Factor do
-    @moduledoc false
-    defstruct [:name, :question, :focus, :yes, :no, :__spark_metadata__]
-  end
-
-  defmodule Role do
-    @moduledoc false
-    defstruct [:name, :factor, :optional, :distinct, :__spark_metadata__]
-  end
-
-  defmodule Concern do
-    @moduledoc false
-    defstruct [:name, :category, :indicator, :fit, :__spark_metadata__, roles: [], checks: []]
-  end
-
-  defmodule Score do
-    @moduledoc false
-    defstruct [:name, :question, :focus, :levels, :__spark_metadata__]
-  end
-
-  defmodule Option do
-    @moduledoc false
-    defstruct [:key, :description, :__spark_metadata__]
-  end
-
-  defmodule Choice do
-    @moduledoc false
-    defstruct [:name, :question, :focus, :__spark_metadata__, options: []]
-  end
+  alias Cite.Policy.Dsl.{Choice, Concern, Criterion, Factor, Filter, Noul, Option, Role, Score}
 
   @criterion_schema [
     what: [type: :string, required: true, doc: "What qualifies for this side."],
