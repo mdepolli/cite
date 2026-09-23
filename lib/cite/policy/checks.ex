@@ -65,21 +65,21 @@ defmodule Cite.Policy.Checks do
     with :ok <-
            first_error(
              repeats(indicators),
-             &{"indicator name #{inspect(&1.name)} is declared twice", [&1.name], &1}
+             &{:error, "indicator name #{inspect(&1.name)} is declared twice", [&1.name], &1}
            ),
          :ok <-
            first_error(
              repeats(descriptors),
-             &{"descriptor name #{inspect(&1.name)} is declared twice", [&1.name], &1}
+             &{:error, "descriptor name #{inspect(&1.name)} is declared twice", [&1.name], &1}
            ),
          :ok <-
            first_error(
              Enum.filter(indicators ++ checks ++ descriptors, &colon?(&1.name)),
-             &{~s(names must not contain ":", got #{inspect(&1.name)}), [&1.name], &1}
+             &{:error, ~s(names must not contain ":", got #{inspect(&1.name)}), [&1.name], &1}
            ) do
       first_error(
         Enum.filter(checks, &(&1.name in descriptor_names)),
-        &{"#{inspect(&1.name)} names both a check and a descriptor", [&1.name], &1}
+        &{:error, "#{inspect(&1.name)} names both a check and a descriptor", [&1.name], &1}
       )
     end
   end
@@ -98,7 +98,7 @@ defmodule Cite.Policy.Checks do
           nil
 
         [twice | _] ->
-          {"concern #{inspect(concern)} declares #{kind} #{inspect(twice.name)} twice",
+          {:error, "concern #{inspect(concern)} declares #{kind} #{inspect(twice.name)} twice",
            [concern, twice.name], twice}
       end
     end)
@@ -108,7 +108,7 @@ defmodule Cite.Policy.Checks do
     entities
     |> nouls()
     |> first_error(fn {_kind, label, noul, path} ->
-      if noul.yes && noul.no, do: nil, else: {"#{label} needs yes and no", path, noul}
+      if noul.yes && noul.no, do: nil, else: {:error, "#{label} needs yes and no", path, noul}
     end)
   end
 
@@ -122,7 +122,9 @@ defmodule Cite.Policy.Checks do
   defp check_concern_shapes(entities) do
     first_error(concerns(entities), fn %Dsl.Concern{name: name} = concern ->
       if is_nil(concern.indicator) == (concern.roles == []),
-        do: {"concern #{inspect(name)} needs an indicator or roles, not both", [name], concern}
+        do:
+          {:error, "concern #{inspect(name)} needs an indicator or roles, not both", [name],
+           concern}
     end)
   end
 
@@ -132,12 +134,12 @@ defmodule Cite.Policy.Checks do
   defp check_member_placement(entities) do
     first_error(concerns(entities), fn
       %Dsl.Concern{name: name, fit: fit, roles: [_ | _]} when not is_nil(fit) ->
-        {"concern #{inspect(name)}: a fit applies only to a concern with an indicator", [name],
-         fit}
+        {:error, "concern #{inspect(name)}: a fit applies only to a concern with an indicator",
+         [name], fit}
 
       %Dsl.Concern{name: name, checks: [check | _], roles: []} ->
-        {"concern #{inspect(name)}: checks apply only to a concern built from roles", [name],
-         check}
+        {:error, "concern #{inspect(name)}: checks apply only to a concern built from roles",
+         [name], check}
 
       _concern ->
         nil
@@ -151,15 +153,17 @@ defmodule Cite.Policy.Checks do
       {concern, %Dsl.Role{name: name, factor: factor} = role} ->
         cond do
           not Placeholder.name?(Atom.to_string(name)) ->
-            {"role #{inspect(name)} must be a word of letters, digits, and _: it is a placeholder and part of a path",
+            {:error,
+             "role #{inspect(name)} must be a word of letters, digits, and _: it is a placeholder and part of a path",
              [concern.name, name], role}
 
           name == :passage ->
-            {"concern #{inspect(concern.name)}: a role cannot be named :passage", [concern.name],
-             role}
+            {:error, "concern #{inspect(concern.name)}: a role cannot be named :passage",
+             [concern.name], role}
 
           factor not in factors ->
-            {"role #{inspect(name)} names factor #{inspect(factor)}, which the policy does not declare",
+            {:error,
+             "role #{inspect(name)} names factor #{inspect(factor)}, which the policy does not declare",
              [concern.name, name], role}
 
           true ->
@@ -175,11 +179,11 @@ defmodule Cite.Policy.Checks do
 
       cond do
         named == [] ->
-          {"check #{inspect(check.name)} must use at least one of its concern's roles",
+          {:error, "check #{inspect(check.name)} must use at least one of its concern's roles",
            [concern.name, check.name], check}
 
         (unknown = named -- roles) != [] ->
-          {"check #{inspect(check.name)} names unknown role {#{hd(unknown)}}",
+          {:error, "check #{inspect(check.name)} names unknown role {#{hd(unknown)}}",
            [concern.name, check.name], check}
 
         true ->
@@ -198,7 +202,8 @@ defmodule Cite.Policy.Checks do
 
       unless Enum.any?(concern.checks, &(not &1.distinct and placeholders(&1) -- required == [])),
         do:
-          {"concern #{inspect(concern.name)} needs a check that names only required roles and is not distinct",
+          {:error,
+           "concern #{inspect(concern.name)} needs a check that names only required roles and is not distinct",
            [concern.name], concern}
     end)
   end
@@ -207,7 +212,7 @@ defmodule Cite.Policy.Checks do
     first_error(checks(entities), fn {concern, check} ->
       if check.distinct and length(placeholders(check)) < 2,
         do:
-          {"distinct check #{inspect(check.name)} must name at least two roles",
+          {:error, "distinct check #{inspect(check.name)} must name at least two roles",
            [concern.name, check.name], check}
     end)
   end
@@ -217,10 +222,10 @@ defmodule Cite.Policy.Checks do
       %Dsl.Score{name: name} = score ->
         cond do
           placeholders(score) != [] ->
-            {"descriptor #{inspect(name)} must not use placeholders", [name], score}
+            {:error, "descriptor #{inspect(name)} must not use placeholders", [name], score}
 
           length(score.levels) not in 2..10 or Enum.uniq(score.levels) != score.levels ->
-            {"score #{inspect(name)} needs 2 to 10 unique levels", [name], score}
+            {:error, "score #{inspect(name)} needs 2 to 10 unique levels", [name], score}
 
           true ->
             nil
@@ -231,11 +236,11 @@ defmodule Cite.Policy.Checks do
 
         cond do
           placeholders(choice) != [] ->
-            {"descriptor #{inspect(name)} must not use placeholders", [name], choice}
+            {:error, "descriptor #{inspect(name)} must not use placeholders", [name], choice}
 
           keys == [] or Enum.uniq(keys) != keys ->
-            {"choice #{inspect(name)} needs at least one option, with unique keys", [name],
-             choice}
+            {:error, "choice #{inspect(name)} needs at least one option, with unique keys",
+             [name], choice}
 
           true ->
             nil
@@ -278,10 +283,10 @@ defmodule Cite.Policy.Checks do
 
     cond do
       (other = placeholders(noul) -- ["passage"]) != [] ->
-        {"#{label} may only use {passage}, got {#{hd(other)}}", path, noul}
+        {:error, "#{label} may only use {passage}, got {#{hd(other)}}", path, noul}
 
       "passage" not in in_question ->
-        {"#{label} must use {passage}", path, noul}
+        {:error, "#{label} must use {passage}", path, noul}
 
       true ->
         nil
@@ -310,16 +315,9 @@ defmodule Cite.Policy.Checks do
     repeats
   end
 
-  # The first item the rule rejects, as {:error, message, path, entity}, where
-  # entity is the declaration to point at; :ok if none.
-  defp first_error(items, rule) do
-    Enum.find_value(items, :ok, fn item ->
-      case rule.(item) do
-        nil -> nil
-        {message, path, entity} -> {:error, message, path, entity}
-      end
-    end)
-  end
+  # The first error a rule returns, as {:error, message, path, entity} where
+  # entity is the declaration to point at; :ok if the rule passes every item.
+  defp first_error(items, rule), do: Enum.find_value(items, :ok, rule)
 
   defp location(nil), do: nil
   defp location(entity), do: Entity.anno(entity)
