@@ -5,6 +5,10 @@ defmodule Cite.Source do
   `as` is the word the passages sit under in every request; `show` names the
   meta keys the model sees beside `id` and `text`. The rest of `meta` stays
   with the caller.
+
+  Shown meta goes on the wire, so its values must be JSON: `nil`, booleans,
+  atoms, numbers, UTF-8 binaries, and lists and plain maps of these, with
+  atom or binary keys.
   """
 
   alias Cite.Passage
@@ -24,8 +28,8 @@ defmodule Cite.Source do
   @doc """
   Builds a source from units, each a text or `%{text: text}` with optional
   `:id` and `:meta`. Text is kept byte for byte. Missing ids default to
-  `P000`, `P001`, and so on. Raises `ArgumentError` on a unit, id, text, or
-  option it cannot use.
+  `P000`, `P001`, and so on. Raises `ArgumentError` on a unit, id, text,
+  shown meta value, or option it cannot use.
   """
   @spec new([String.t() | map()], keyword()) :: t()
   def new(units, opts \\ []) when is_list(units) do
@@ -39,7 +43,7 @@ defmodule Cite.Source do
     passages =
       units
       |> Enum.with_index()
-      |> Enum.map(&passage/1)
+      |> Enum.map(&passage(&1, show))
       |> reject_duplicate_ids()
 
     %__MODULE__{passages: passages, as: as, show: show}
@@ -70,15 +74,16 @@ defmodule Cite.Source do
     raise ArgumentError, "show must be a list of atom or binary keys, got: #{inspect(show)}"
   end
 
-  defp passage({text, index}) when is_binary(text), do: passage({%{text: text}, index})
+  defp passage({text, index}, show) when is_binary(text),
+    do: passage({%{text: text}, index}, show)
 
-  defp passage({%{text: text} = unit, index}) when is_binary(text) do
+  defp passage({%{text: text} = unit, index}, show) when is_binary(text) do
     id = id(Map.get(unit, :id, default_id(index)))
 
-    %Passage{id: id, text: text(id, text), meta: meta(id, Map.get(unit, :meta, %{}))}
+    %Passage{id: id, text: text(id, text), meta: meta(id, Map.get(unit, :meta, %{}), show)}
   end
 
-  defp passage({unit, _index}) do
+  defp passage({unit, _index}, _show) do
     raise ArgumentError, "each unit must be a text or %{text: text}, got: #{inspect(unit)}"
   end
 
@@ -106,11 +111,37 @@ defmodule Cite.Source do
     end
   end
 
-  defp meta(_id, meta) when is_map(meta) and not is_struct(meta), do: meta
+  # Only shown values reach the wire; the rest may hold anything.
+  defp meta(id, meta, show) when is_map(meta) and not is_struct(meta) do
+    case Enum.find(Map.take(meta, show), fn {_key, value} -> not json?(value) end) do
+      nil ->
+        meta
 
-  defp meta(id, meta) do
+      {key, value} ->
+        raise ArgumentError, """
+        passage #{inspect(id)} shows meta #{inspect(key)}, so its value must be JSON: \
+        nil, booleans, atoms, numbers, UTF-8 binaries, and lists and plain maps of \
+        these with atom or binary keys; got: #{inspect(value)}
+        """
+    end
+  end
+
+  defp meta(id, meta, _show) do
     raise ArgumentError, "passage #{inspect(id)} meta must be a map, got: #{inspect(meta)}"
   end
+
+  defp json?(value) when is_atom(value) or is_number(value), do: true
+  defp json?(value) when is_binary(value), do: String.valid?(value)
+
+  defp json?(list) when is_list(list),
+    do: not List.improper?(list) and Enum.all?(list, &json?/1)
+
+  defp json?(map) when is_map(map) and not is_struct(map),
+    do: Enum.all?(map, fn {key, value} -> json_key?(key) and json?(value) end)
+
+  defp json?(_value), do: false
+
+  defp json_key?(key), do: is_atom(key) or (is_binary(key) and String.valid?(key))
 
   defp reject_duplicate_ids(passages) do
     dupes = for {id, n} <- Enum.frequencies_by(passages, & &1.id), n > 1, do: id

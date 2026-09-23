@@ -144,24 +144,6 @@ defmodule Cite.WireTest do
                "about" => %{"role" => [%{"kind" => :client}]}
              }
     end
-
-    test "raises on a struct it cannot send" do
-      # Arrange
-      passage = %Passage{id: "U1", text: "a", meta: %{at: URI.parse("x")}}
-
-      # Act + Assert
-      assert_raise ArgumentError, ~r/got a URI struct/, fn -> Wire.passage(passage, [:at]) end
-    end
-
-    test "raises on a nested key that is neither atom nor binary" do
-      # Arrange
-      passage = %Passage{id: "U1", text: "a", meta: %{about: %{1 => "x"}}}
-
-      # Act + Assert
-      assert_raise ArgumentError, ~r/keys must be atoms or binaries, got: 1/, fn ->
-        Wire.passage(passage, [:about])
-      end
-    end
   end
 
   test "passages keep source order on the wire past 32 entries" do

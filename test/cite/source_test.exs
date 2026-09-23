@@ -92,6 +92,44 @@ defmodule Cite.SourceTest do
       end
     end
 
+    test "raises on a shown meta value that is not JSON" do
+      for value <- [
+            ~D[2026-09-23],
+            {:ok, 1},
+            self(),
+            <<0xFF>>,
+            [1 | 2],
+            %{1 => "x"},
+            %{"a" => [%{b: make_ref()}]}
+          ] do
+        assert_raise ArgumentError,
+                     ~r/passage "P000" shows meta :at, so its value must be JSON/,
+                     fn ->
+                       Source.new([%{text: "a", meta: %{at: value}}], show: [:at])
+                     end
+      end
+    end
+
+    test "accepts shown meta that is JSON, nested or not" do
+      # Arrange
+      meta = %{about: %{"role" => [%{kind: :client, lead: true}], age: 41.5}, note: nil}
+
+      # Act
+      [passage] = Source.new([%{text: "a", meta: meta}], show: [:about, :note]).passages
+
+      # Assert
+      assert passage.meta == %{
+               about: %{"role" => [%{kind: :client, lead: true}], age: 41.5},
+               note: nil
+             }
+    end
+
+    test "keeps any value in meta it does not show" do
+      [passage] = Source.new([%{text: "a", meta: %{at: ~D[2026-09-23]}}]).passages
+
+      assert passage.meta == %{at: ~D[2026-09-23]}
+    end
+
     test "raises when show names id or text" do
       for key <- [:id, :text, "id", "text"] do
         assert_raise ArgumentError, ~r/show must not name id or text/, fn ->

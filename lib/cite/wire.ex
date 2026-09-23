@@ -64,20 +64,12 @@ defmodule Cite.Wire do
     Map.new(map, fn {key, value} -> {key(key), value(value)} end)
   end
 
+  # `Cite.Source` has already checked shown meta is JSON, so only atom keys
+  # need turning into strings.
   defp key(key) when is_atom(key), do: Atom.to_string(key)
-  defp key(key) when is_binary(key), do: key
+  defp key(key), do: key
 
-  defp key(other) do
-    raise ArgumentError, "meta keys must be atoms or binaries, got: #{inspect(other)}"
-  end
-
-  defp value(%{} = map) when not is_struct(map), do: stringify(map)
-
-  defp value(%{__struct__: module}) do
-    raise ArgumentError,
-          "shown meta may hold plain maps, lists, and scalars; got a #{inspect(module)} struct"
-  end
-
+  defp value(%{} = map), do: stringify(map)
   defp value(list) when is_list(list), do: Enum.map(list, &value/1)
   defp value(value), do: value
 end

@@ -76,8 +76,10 @@ or `%{text: text, id: id, meta: meta}`. Text is kept byte for byte; missing
 ids become `P000`, `P001`, and so on. `as:` names the passages in every
 request (`"utterances"` reads better than the default `"passages"`), and
 `show:` names the meta keys the model sees. Ids and `as` are part of every
-path the model reads, so a `.`, a backtick, `[` or `]` in one raises. The rest of `meta` — timestamps
-your UI needs, say — stays with you.
+path the model reads, so a `.`, a backtick, `[` or `]` in one raises. Shown
+meta goes on the wire, so a shown value that is not JSON (a struct, a tuple, a
+pid) raises too. The rest of `meta` — timestamps your UI needs, say — stays
+with you.
 
 **Judge.** `Cite.judge(client, source, policy, opts)` runs two fixed rounds.
 Round 1 screens every passage for every indicator, a window of passages per
