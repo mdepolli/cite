@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `member_questions` names the Nouls that ground each member; `match: :all`
   or `:any` sets how its Nouls combine.
 - `Cite.Result`, `Cite.Span`, and `Cite.Error` as the outputs, encodable
-  with Jason or the built-in `JSON`. Spans carry the cluster's class, a label
+  with Jason. Spans carry the cluster's class, a label
   per Score (the level index) and Choice (the option) — `"uncertain"` below
   `confidence_floor` — and the raw answers. `Result` keeps the pre-threshold
   scan index, every rejected cluster with its answers, token usage, and the

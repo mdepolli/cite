@@ -38,13 +38,6 @@ defmodule Cite.SpanTest do
     end
   end
 
-  describe "JSON.Encoder" do
-    test "matches Jason's output" do
-      value = encodable()
-      assert JSON.decode!(JSON.encode!(value)) == Jason.decode!(Jason.encode!(value))
-    end
-  end
-
   describe "Jason.Encoder" do
     test "encodes enforced fields plus class and attributes" do
       assert Jason.decode!(Jason.encode!(encodable())) == %{

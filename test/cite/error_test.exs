@@ -28,20 +28,6 @@ defmodule Cite.ErrorTest do
     end
   end
 
-  describe "JSON.Encoder" do
-    test "encodes the same shape as Jason, reasons normalised" do
-      error = Error.from_range(0, 10, {:bad_request, "x"})
-      assert JSON.decode!(JSON.encode!(error)) == Jason.decode!(Jason.encode!(error))
-
-      assert JSON.decode!(JSON.encode!(error)) == %{
-               "byte_start" => 0,
-               "byte_end" => 10,
-               "candidate_ids" => [],
-               "reason" => ~s({:bad_request, "x"})
-             }
-    end
-  end
-
   describe "Jason.Encoder" do
     test "encodes atom reasons as strings" do
       error = Error.from_range(0, 10, :timeout)

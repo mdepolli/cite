@@ -49,7 +49,3 @@ defimpl Jason.Encoder, for: Cite.Wire.Object do
   def encode(%{pairs: pairs}, opts),
     do: Jason.Encoder.encode(Jason.OrderedObject.new(pairs), opts)
 end
-
-defimpl JSON.Encoder, for: Cite.Wire.Object do
-  def encode(%{pairs: pairs}, encoder), do: :json.encode_key_value_list(pairs, encoder)
-end

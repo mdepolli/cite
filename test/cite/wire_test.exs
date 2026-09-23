@@ -72,7 +72,6 @@ defmodule Cite.WireTest do
       # Assert
       assert object["U039"] == %{"id" => "U039", "text" => "t39"}
       assert wire_keys(Jason.encode!(object)) == ids
-      assert JSON.encode!(object) == Jason.encode!(object)
       refute wire_keys(Jason.encode!(Map.new(object.pairs))) == ids
     end
 

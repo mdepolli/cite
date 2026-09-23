@@ -278,9 +278,8 @@ versioned model id that answered, so a run records what judged it. A run is
 diagnosable without another request. Candidates in a failed window have no
 `scan` row, so compose should look them up with `Map.get/2`.
 
-`Result`, `Span`, and `Error` encode with Jason or the built-in `JSON`; an
-`Error`'s reason is passed through when it is JSON-safe and `inspect`ed when
-it is not.
+`Result`, `Span`, and `Error` encode with Jason. An `Error`'s reason is
+passed through when it is JSON-safe and `inspect`ed when it is not.
 
 ## Options
 

@@ -49,7 +49,6 @@ defmodule Cite.Error do
     }
   end
 
-  # The one wire shape, for both encoders.
   @doc false
   @spec to_json_map(t()) :: map()
   def to_json_map(%__MODULE__{} = error) do
@@ -78,11 +77,4 @@ defimpl Jason.Encoder, for: Cite.Error do
   alias Cite.Error
 
   def encode(%Error{} = error, opts), do: Jason.Encode.map(Error.to_json_map(error), opts)
-end
-
-defimpl JSON.Encoder, for: Cite.Error do
-  alias Cite.Error
-
-  def encode(%Error{} = error, encoder),
-    do: JSON.Encoder.encode(Error.to_json_map(error), encoder)
 end

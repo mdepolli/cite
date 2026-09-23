@@ -37,13 +37,6 @@ defmodule Cite.ResultTest do
     end
   end
 
-  describe "JSON.Encoder" do
-    test "matches Jason's output" do
-      value = encodable()
-      assert JSON.decode!(JSON.encode!(value)) == Jason.decode!(Jason.encode!(value))
-    end
-  end
-
   describe "Jason.Encoder" do
     test "encodes the full result including nested spans and errors" do
       assert Jason.decode!(Jason.encode!(encodable())) == %{
