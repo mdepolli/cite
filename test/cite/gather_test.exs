@@ -81,9 +81,35 @@ defmodule Cite.GatherTest do
       assert summary(gather(TestTerms.household(), screen, max_evidence: 2)) ==
                [{:cashflow_stress, ["U2", "U3"], ["U1"], %{}}]
     end
+
+    test "at max_evidence, a tie goes to the passage earlier in the source" do
+      # Arrange
+      screen = %{
+        "U1" => spoken_by_client(%{cashflow_stress: 0.8}),
+        "U2" => spoken_by_client(%{cashflow_stress: 0.9}),
+        "U3" => spoken_by_client(%{cashflow_stress: 0.8})
+      }
+
+      # Act + Assert
+      assert summary(gather(TestTerms.household(), screen, max_evidence: 2)) ==
+               [{:cashflow_stress, ["U1", "U2"], ["U3"], %{}}]
+    end
   end
 
   describe "exclusive" do
+    test "leaves a passage free to fill a role beside its direct concern" do
+      # Arrange
+      screen = %{
+        "U1" => spoken_by_client(%{cashflow_stress: 0.9, dependents: 0.9, primary_income: 0.9})
+      }
+
+      # Act + Assert
+      assert summary(gather(TestTerms.household(), screen)) == [
+               {:cashflow_stress, ["U1"], [], %{}},
+               {:household_income, ["U1"], [], %{household: "U1", income: "U1"}}
+             ]
+    end
+
     test "when off, a passage stays with every direct concern it matches" do
       # Arrange
       terms = %{TestTerms.two_concerns() | exclusive: false}

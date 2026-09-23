@@ -217,6 +217,27 @@ defmodule CiteTest do
                 ]}
     end
 
+    test "reports each model that answered once, in order of first answer, across rounds" do
+      # Arrange
+      source = Cite.source(["Why is a raven like a writing-desk?", "Take some more tea."])
+      screening = client(%{"P000:riddle" => 0.94})
+
+      client = fn
+        %{"questions" => %{"fit:P000" => _}} = request ->
+          {:ok, verdict} = screening.(request)
+          {:ok, %{verdict | model: "jev-1.14.0"}}
+
+        request ->
+          screening.(request)
+      end
+
+      # Act
+      report = Cite.judge(client, source, Riddles, window: 1)
+
+      # Assert
+      assert report.models == ["jev-1.13.0", "jev-1.14.0"]
+    end
+
     test "a reply missing an answer fails its whole request" do
       # Arrange
       source = Cite.source(["Why is a raven like a writing-desk?"])
