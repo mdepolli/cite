@@ -83,6 +83,16 @@ defmodule Cite.GatherTest do
   end
 
   describe "exclusive" do
+    test "when off, a passage stays with every direct concern it matches" do
+      # Arrange
+      terms = %{TestTerms.two_concerns() | exclusive: false}
+      screen = %{"U1" => spoken_by_client(%{health: 0.6, life_event: 0.8})}
+
+      # Act + Assert
+      assert summary(gather(terms, screen)) ==
+               [{:health, ["U1"], [], %{}}, {:life_event, ["U1"], [], %{}}]
+    end
+
     test "keeps a passage only with its highest-scoring direct concern" do
       # Arrange
       screen = %{"U1" => spoken_by_client(%{health: 0.6, life_event: 0.8})}

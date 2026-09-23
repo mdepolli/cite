@@ -207,6 +207,25 @@ defmodule Cite.JudgeTest do
              }
     end
 
+    test "compares every filled role in the descriptors, the optional one included", ctx do
+      # Arrange
+      gathered = %Gathered{
+        concern: ctx.household,
+        passages: [@u3, @u4, @u9],
+        roles: %{household: @u3, income: @u9, other_earner: @u4}
+      }
+
+      # Act
+      %{"state" => state, "questions" => questions} =
+        Judge.request(gathered, ctx.source, ctx.terms)
+
+      # Assert
+      assert Enum.sort(Map.keys(state)) == ["household", "income", "other_earner"]
+
+      assert questions["severity"]["instructions"]["compare"] ==
+               ["`household.text`", "`income.text`", "`other_earner.text`"]
+    end
+
     test "skips a distinct check when its roles resolve to one passage", ctx do
       # Arrange
       same = @u3
@@ -423,6 +442,18 @@ defmodule Cite.JudgeTest do
 
       # Act + Assert
       assert judged(ctx.gathered, answers, ctx.terms).verdict == :fails
+    end
+
+    test "holds when a check sits exactly at high", ctx do
+      # Arrange
+      answers =
+        descriptors(%{
+          "same_household" => %{"noul" => 0.6},
+          "concentrated_income" => %{"noul" => 0.9}
+        })
+
+      # Act + Assert
+      assert judged(ctx.gathered, answers, ctx.terms).verdict == :holds
     end
 
     test "is review when a check sits in the band", ctx do
