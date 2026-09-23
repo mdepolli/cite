@@ -313,12 +313,16 @@ defmodule CiteTest do
     test "raises on unknown or invalid options, naming the option, before any request" do
       for {opts, message} <- [
             {[review_band: {0.6, 0.4}],
-             "invalid value for :review_band option: expected {low, high} with low < high, got: {0.6, 0.4}"},
+             "invalid value for :review_band option: expected {low, high} with 0 <= low < high <= 1, got: {0.6, 0.4}"},
+            {[review_band: {0.4, 1.5}],
+             "invalid value for :review_band option: expected {low, high} with 0 <= low < high <= 1, got: {0.4, 1.5}"},
             {[max_evidence: 0],
              "invalid value for :max_evidence option: expected positive integer, got: 0"},
             {[window: 0], "invalid value for :window option: expected positive integer, got: 0"},
             {[threshold: "high"],
-             ~s(invalid value for :threshold option: expected integer or float, got: "high")},
+             ~s(invalid value for :threshold option: expected a number from 0 to 1, got: "high")},
+            {[threshold: 5],
+             "invalid value for :threshold option: expected a number from 0 to 1, got: 5"},
             {[colour: :red],
              "unknown options [:colour], valid options are: [:threshold, :review_band, :window, :max_evidence]"}
           ] do

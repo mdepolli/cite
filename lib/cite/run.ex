@@ -12,15 +12,15 @@ defmodule Cite.Run do
 
   @schema Spark.Options.new!(
             threshold: [
-              type: :number,
+              type: {:custom, __MODULE__, :threshold, []},
               default: 0.5,
-              doc: "The round-1 score a match must exceed. Sets recall only."
+              doc: "The round-1 score a match must exceed, from 0 to 1. Sets recall only."
             ],
             review_band: [
               type: {:custom, __MODULE__, :review_band, []},
               default: {0.4, 0.6},
               doc: """
-              `{low, high}`, `low < high`. At or below `low` a passage is \
+              `{low, high}`, `0 <= low < high <= 1`. At or below `low` a passage is \
               dropped and a check fails; at or above `high` either holds.\
               """
             ],
@@ -98,10 +98,19 @@ defmodule Cite.Run do
     raise ArgumentError, "options must be a keyword list, got: #{inspect(other)}"
   end
 
+  # Round-1 scores, fits, and checks are all probabilities, so the options
+  # compared against them are too.
   @doc false
-  def review_band({low, high} = band) when is_number(low) and is_number(high) and low < high,
-    do: {:ok, band}
+  def threshold(threshold) when is_number(threshold) and threshold >= 0 and threshold <= 1,
+    do: {:ok, threshold}
+
+  def threshold(other), do: {:error, "expected a number from 0 to 1, got: #{inspect(other)}"}
+
+  @doc false
+  def review_band({low, high} = band)
+      when is_number(low) and is_number(high) and 0 <= low and low < high and high <= 1,
+      do: {:ok, band}
 
   def review_band(other),
-    do: {:error, "expected {low, high} with low < high, got: #{inspect(other)}"}
+    do: {:error, "expected {low, high} with 0 <= low < high <= 1, got: #{inspect(other)}"}
 end
