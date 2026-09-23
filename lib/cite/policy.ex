@@ -22,7 +22,6 @@ defmodule Cite.Policy do
   use Spark.Dsl, default_extensions: [extensions: [Cite.Policy.Dsl]]
 
   alias Cite.Policy.{Concern, Question}
-  alias Spark.Dsl.Extension
 
   @type t :: %__MODULE__{
           exclusive: boolean(),
@@ -33,14 +32,4 @@ defmodule Cite.Policy do
         }
 
   defstruct exclusive: false, filters: [], concerns: [], factors: [], descriptors: []
-
-  @doc false
-  @spec compiled(module()) :: t()
-  def compiled(module) when is_atom(module) do
-    if Spark.Dsl.is?(module, __MODULE__) do
-      Extension.get_persisted(module, :cite_policy)
-    else
-      raise ArgumentError, "#{inspect(module)} is not a Cite policy; it must `use Cite.Policy`"
-    end
-  end
 end

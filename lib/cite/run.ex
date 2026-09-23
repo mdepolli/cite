@@ -8,7 +8,8 @@ defmodule Cite.Run do
   `Cite.Judge`, which never see the client. Internal; use `Cite.judge/4`.
   """
 
-  alias Cite.{Answer, Error, Gather, Judge, Passage, Policy, Report, Screen, Source}
+  alias Cite.{Answer, Error, Gather, Judge, Passage, Report, Screen, Source}
+  alias Cite.Policy.Build
 
   @spec judge(Cite.client(), Source.t(), module(), keyword()) :: Report.t()
   def judge(client, %Source{} = source, policy_module, opts \\ [])
@@ -27,7 +28,7 @@ defmodule Cite.Run do
     max_evidence = opts[:max_evidence]
 
     check_options(threshold, review_band, window, max_evidence)
-    policy = Policy.compiled(policy_module)
+    policy = Build.read(policy_module)
 
     screened =
       source.passages

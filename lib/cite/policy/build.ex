@@ -1,15 +1,31 @@
 defmodule Cite.Policy.Build do
   @moduledoc """
   Compiles a policy's declarations to the `%Cite.Policy{}` the rounds read,
-  and persists it on the module. A Spark persister: it runs after
-  `Cite.Policy.Checks`, so every declaration it sees is valid. Internal.
+  persists it on the module, and reads it back (`read/1`). A Spark
+  persister: it runs after `Cite.Policy.Checks`, so every declaration it sees
+  is valid. Internal.
   """
 
   use Spark.Dsl.Transformer
 
   alias Cite.{Placeholder, Policy}
   alias Cite.Policy.{Check, Concern, Dsl, Question, Role}
-  alias Spark.Dsl.Transformer
+  alias Spark.Dsl.{Extension, Transformer}
+
+  @key :cite_policy
+
+  @doc """
+  The compiled policy of a module that uses `Cite.Policy`. Raises
+  `ArgumentError` for any other module.
+  """
+  @spec read(module()) :: Policy.t()
+  def read(module) when is_atom(module) do
+    if Spark.Dsl.is?(module, Policy) do
+      Extension.get_persisted(module, @key)
+    else
+      raise ArgumentError, "#{inspect(module)} is not a Cite policy; it must `use Cite.Policy`"
+    end
+  end
 
   @impl true
   def transform(dsl) do
@@ -28,7 +44,7 @@ defmodule Cite.Policy.Build do
         )
     }
 
-    {:ok, Transformer.persist(dsl, :cite_policy, policy)}
+    {:ok, Transformer.persist(dsl, @key, policy)}
   end
 
   defp concern(%Dsl.Concern{} = concern) do

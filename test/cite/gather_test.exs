@@ -1,7 +1,8 @@
 defmodule Cite.GatherTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Gather, Policy, Source}
+  alias Cite.{Gather, Source}
+  alias Cite.Policy.Build
   alias Cite.TestPolicies.{Household, TwoConcerns}
 
   defp gather(policy, screen, opts \\ []) do
@@ -9,7 +10,7 @@ defmodule Cite.GatherTest do
     source = Source.new(Enum.map(ids, &%{id: &1, text: "text of #{&1}"}), as: "utterances")
 
     policy
-    |> Policy.compiled()
+    |> Build.read()
     |> Gather.findings(source, screen, Keyword.merge([threshold: 0.5, max_evidence: 20], opts))
   end
 
@@ -36,7 +37,7 @@ defmodule Cite.GatherTest do
       source = Source.new([%{id: "U0", text: "lost"}, %{id: "U1", text: "kept"}])
 
       findings =
-        Gather.findings(Policy.compiled(Household), source, screen,
+        Gather.findings(Build.read(Household), source, screen,
           threshold: 0.5,
           max_evidence: 20
         )

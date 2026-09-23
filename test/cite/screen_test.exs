@@ -1,13 +1,14 @@
 defmodule Cite.ScreenTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Error, Policy, Screen, Source}
+  alias Cite.{Error, Screen, Source}
+  alias Cite.Policy.Build
   alias Cite.TestPolicies.{Household, Riddles}
   alias Cite.Wire.Object
 
   describe "indicators/1" do
     test "lists filters, then directly screened concerns, then factors" do
-      assert Keyword.keys(Screen.indicators(Policy.compiled(Household))) == [
+      assert Keyword.keys(Screen.indicators(Build.read(Household))) == [
                :client_speaking,
                :cashflow_stress,
                :dependents,
@@ -35,7 +36,7 @@ defmodule Cite.ScreenTest do
         )
 
       # Act
-      request = Screen.request(source.passages, source, Policy.compiled(Riddles))
+      request = Screen.request(source.passages, source, Build.read(Riddles))
 
       # Assert
       criteria = %{
@@ -81,7 +82,7 @@ defmodule Cite.ScreenTest do
       source = Source.new([%{id: "U3", text: "Two kids."}], as: "utterances")
 
       %{"questions" => questions} =
-        Screen.request(source.passages, source, Policy.compiled(Household))
+        Screen.request(source.passages, source, Build.read(Household))
 
       assert Enum.sort(Map.keys(questions)) == [
                "U3:cashflow_stress",
@@ -105,7 +106,7 @@ defmodule Cite.ScreenTest do
       }
 
       # Act
-      resolved = Screen.resolve([{source.passages, {:ok, verdict}}], Policy.compiled(Riddles))
+      resolved = Screen.resolve([{source.passages, {:ok, verdict}}], Build.read(Riddles))
 
       # Assert
       assert resolved == %{
@@ -119,7 +120,7 @@ defmodule Cite.ScreenTest do
     test "a failed window leaves no rows and records one error with its passage ids" do
       source = Source.new([%{id: "L1", text: "a"}, %{id: "L2", text: "b"}])
 
-      resolved = Screen.resolve([{source.passages, {:error, :timeout}}], Policy.compiled(Riddles))
+      resolved = Screen.resolve([{source.passages, {:error, :timeout}}], Build.read(Riddles))
 
       assert resolved == %{
                screen: %{},

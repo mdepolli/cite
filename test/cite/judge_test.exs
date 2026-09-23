@@ -1,15 +1,16 @@
 defmodule Cite.JudgeTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Citation, Finding, Judge, Passage, Policy, Source}
+  alias Cite.{Citation, Finding, Judge, Passage, Source}
   alias Cite.Gather.Finding, as: Gathered
+  alias Cite.Policy.Build
   alias Cite.TestPolicies.Household
   alias Cite.Wire.Object
 
   @band {0.4, 0.6}
 
   setup do
-    policy = Policy.compiled(Household)
+    policy = Build.read(Household)
     [cashflow, household] = policy.concerns
 
     %{
@@ -216,7 +217,7 @@ defmodule Cite.JudgeTest do
     test "skips that check while the role is empty, instead of failing to expand the focus",
          ctx do
       # Arrange
-      policy = Policy.compiled(Cite.TestPolicies.FocusRole)
+      policy = Build.read(Cite.TestPolicies.FocusRole)
       [household] = policy.concerns
 
       gathered = %Gathered{

@@ -2,10 +2,10 @@ defmodule Cite.PolicyTest do
   use ExUnit.Case, async: true
 
   alias Cite.Policy
-  alias Cite.Policy.{Check, Concern, Question, Role}
+  alias Cite.Policy.{Build, Check, Concern, Question, Role}
   alias Cite.TestPolicies.{Household, Riddles}
 
-  describe "compiled/1" do
+  describe "Build.read/1" do
     test "defaults category to the concern's name, the fit to its indicator, and exclusive to false" do
       riddle = %Question{
         type: :noul,
@@ -17,7 +17,7 @@ defmodule Cite.PolicyTest do
         }
       }
 
-      assert Policy.compiled(Riddles) == %Policy{
+      assert Build.read(Riddles) == %Policy{
                exclusive: false,
                filters: [],
                factors: [],
@@ -36,7 +36,7 @@ defmodule Cite.PolicyTest do
     end
 
     test "compiles a full policy: filters, both kinds of concern, factors, descriptors" do
-      assert Policy.compiled(Household) == %Policy{
+      assert Build.read(Household) == %Policy{
                exclusive: true,
                filters: [
                  client_speaking: %Question{
@@ -184,14 +184,14 @@ defmodule Cite.PolicyTest do
 
     test "raises on a module that is not a policy" do
       assert_raise ArgumentError, ~r/Enum is not a Cite policy/, fn ->
-        Policy.compiled(Enum)
+        Build.read(Enum)
       end
     end
   end
 
-  describe "compiled/1 check roles" do
+  describe "Build.read/1 check roles" do
     test "include the roles a check's focus names, not only its question" do
-      %Policy{concerns: [concern]} = Policy.compiled(Cite.TestPolicies.FocusRole)
+      %Policy{concerns: [concern]} = Build.read(Cite.TestPolicies.FocusRole)
 
       assert Enum.map(concern.checks, &{&1.name, &1.roles}) == [
                same_household: [:household, :income],
