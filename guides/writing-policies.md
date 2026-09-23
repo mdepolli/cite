@@ -213,6 +213,7 @@ A policy fails to compile, pointing at the declaration, on:
 - a role naming an undeclared factor, a role named `:passage`, or a role
   name that is not a word of letters, digits, and `_` (it is a placeholder
   and part of a path);
+- a concern built from factors whose roles are all optional;
 - a concern built from factors with no always-asked check, or a distinct
   check naming fewer than two roles;
 - a Score outside 2 to 10 unique levels, or a Choice without unique options;

@@ -25,6 +25,7 @@ defmodule Cite.Policy.Checks do
          :ok <- check_member_placement(entities),
          :ok <- check_roles(entities),
          :ok <- check_check_placeholders(entities),
+         :ok <- check_required_role(entities),
          :ok <- check_always_asked(entities),
          :ok <- check_distinct_arity(entities),
          :ok <- check_descriptors(entities),
@@ -190,6 +191,18 @@ defmodule Cite.Policy.Checks do
         true ->
           nil
       end
+    end)
+  end
+
+  defp check_required_role(entities) do
+    entities
+    |> concerns()
+    |> Enum.filter(&(&1.roles != []))
+    |> first_error(fn concern ->
+      unless Enum.any?(concern.roles, &(not &1.optional)),
+        do:
+          {:error, "concern #{inspect(concern.name)} needs at least one required role",
+           [concern.name], concern}
     end)
   end
 

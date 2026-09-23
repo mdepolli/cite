@@ -195,6 +195,26 @@ defmodule Cite.Policy.ChecksTest do
       end
     end
 
+    test "a concern whose roles are all optional" do
+      assert_policy_error ~r/concern :k needs at least one required role/ do
+        factor :f do
+          question "Does {passage} x?"
+          yes "y"
+          no "n"
+        end
+
+        concern :k do
+          role :a, factor: :f, optional: true
+
+          check :c do
+            question "Is {a} x?"
+            yes "y"
+            no "n"
+          end
+        end
+      end
+    end
+
     test "a concern whose every check could be skipped" do
       assert_policy_error ~r/concern :k needs a check that names only required roles and is not distinct/ do
         factor :f do
