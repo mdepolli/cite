@@ -225,6 +225,6 @@ defmodule Cite.Policy.Dsl do
 
   use Spark.Dsl.Extension,
     sections: [@policy],
-    transformers: [],
+    transformers: [Cite.Policy.Checks],
     persisters: [Cite.Policy.Build]
 end
