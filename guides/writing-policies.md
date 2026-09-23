@@ -130,7 +130,8 @@ end
 - Each role names a factor the policy declares, and is filled by that
   factor's strongest match. `optional: true` lets the finding stand without
   it; `distinct: true` requires a passage no other role holds.
-- A check is asked only when every role it names is filled. `distinct true`
+- A check is asked only when every role it names, in its question or its
+  focus, is filled. `distinct true`
   also requires those roles to be different passages: a line cannot
   corroborate itself. It sits inside the block because a Spark entity takes
   options or a `do` block, not both.
@@ -195,9 +196,13 @@ Questions name what they read, and Cite writes the backticked path.
 
 A policy fails to compile, pointing at the declaration, on:
 
-- two indicators with one name, or a name containing `:`;
+- a policy with no concern;
+- two indicators, or two descriptors, with one name, or a name containing `:`;
 - a check and a descriptor with one name;
+- two roles, or two checks, with one name in the same concern;
 - a concern with both an indicator and roles, or neither;
+- a fit on a concern built from roles, or checks on a concern screened
+  directly: either would compile and never be asked;
 - a role naming an undeclared factor, or a role named `:passage`;
 - a concern built from factors with no always-asked check, or a distinct
   check naming fewer than two roles;

@@ -75,7 +75,8 @@ document already consists of: utterances, rows, paragraphs. A unit is a text
 or `%{text: text, id: id, meta: meta}`. Text is kept byte for byte; missing
 ids become `P000`, `P001`, and so on. `as:` names the passages in every
 request (`"utterances"` reads better than the default `"passages"`), and
-`show:` names the meta keys the model sees. The rest of `meta` — timestamps
+`show:` names the meta keys the model sees. Ids and `as` are part of every
+path the model reads, so a `.`, a backtick, `[` or `]` in one raises. The rest of `meta` — timestamps
 your UI needs, say — stays with you.
 
 **Judge.** `Cite.judge(client, source, policy, opts)` runs two fixed rounds.
