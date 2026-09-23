@@ -156,7 +156,7 @@ the first request. Anything the model or the network did is a value:
 A failed request is never a verdict. A screening window that fails leaves
 its passages without a `screen` row (`concern: nil`); a finding whose request
 fails is left out of `findings`. A reply that skips a question, or answers
-one in a shape its type cannot have, fails its whole request
+one with a value its question cannot have, fails its whole request
 (`{:missing_answers, keys}`, `{:malformed_answers, keys}`). A request the
 provider refuses as too large is halved in round 1 and becomes the finding's
 error in round 2.

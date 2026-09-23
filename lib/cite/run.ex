@@ -95,9 +95,9 @@ defmodule Cite.Run do
     Enum.any?(outcomes, &match?({[_one], {:error, :request_too_large}}, &1))
   end
 
-  # A reply must be well-shaped and answer every question well; a reply that
-  # skips a question or answers it in a shape its type cannot have is not a
-  # verdict on it, so the whole request becomes an error rather than a "no".
+  # A reply must answer every question with a value it can have; a reply that
+  # skips one or answers it out of range is not a verdict on it, so the whole
+  # request becomes an error rather than a "no".
   defp call(client, request) do
     with {:ok, verdict} <- reply(client, request),
          :ok <- Answer.check(request["questions"], verdict.answers) do

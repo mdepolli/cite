@@ -6,8 +6,8 @@ defmodule Cite.Error do
 
   `reason` is whatever the provider returned, or `{:missing_answers, keys}`
   / `{:malformed_answers, keys}` when a reply skipped a question or answered
-  one in a shape its type cannot have. Encoding always succeeds: JSON-safe
-  reasons pass through, everything else becomes `inspect(reason)`.
+  one with a value its question cannot have. Encoding always succeeds:
+  JSON-safe reasons pass through, everything else becomes `inspect(reason)`.
   """
 
   @type t :: %__MODULE__{

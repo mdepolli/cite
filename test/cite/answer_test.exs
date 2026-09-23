@@ -10,10 +10,13 @@ defmodule Cite.AnswerTest do
   end
 
   describe "check/2" do
+    @score %{"type" => "score", "criteria" => ["low", "medium", "high"]}
+    @choice %{"type" => "choice", "criteria" => %{"transient" => "t", "persistent" => "p"}}
+
     @questions %{
       "P0:riddle" => %{"type" => "noul"},
-      "severity" => %{"type" => "score"},
-      "temporal" => %{"type" => "choice"}
+      "severity" => @score,
+      "temporal" => @choice
     }
 
     test "accepts one well-formed answer per question" do
@@ -45,17 +48,43 @@ defmodule Cite.AnswerTest do
     end
 
     test "rejects every answer shape its question type cannot have" do
-      for {type, answer} <- [
-            {"noul", %{"noul" => "high"}},
-            {"noul", %{}},
-            {"noul", nil},
-            {"noul", %{"score" => 1, "confidence" => 0.9}},
-            {"score", %{"score" => 1.2}},
-            {"choice", %{"choice" => "t"}},
-            {"choice", %{"choice" => 1, "confidence" => 0.9}}
+      for {question, answer} <- [
+            {%{"type" => "noul"}, %{"noul" => "high"}},
+            {%{"type" => "noul"}, %{}},
+            {%{"type" => "noul"}, nil},
+            {%{"type" => "noul"}, %{"score" => 1, "confidence" => 0.9}},
+            {@score, %{"score" => 1.2}},
+            {@choice, %{"choice" => "transient"}},
+            {@choice, %{"choice" => 1, "confidence" => 0.9}}
           ] do
-        assert Answer.check(%{"q" => %{"type" => type}}, %{"q" => answer}) ==
+        assert Answer.check(%{"q" => question}, %{"q" => answer}) ==
                  {:error, {:malformed_answers, ["q"]}}
+      end
+    end
+
+    test "rejects every value its question cannot have" do
+      for {question, answer} <- [
+            {%{"type" => "noul"}, %{"noul" => 7}},
+            {%{"type" => "noul"}, %{"noul" => -0.1}},
+            {@score, %{"score" => 2.5, "confidence" => 0.8}},
+            {@score, %{"score" => -1, "confidence" => 0.8}},
+            {@score, %{"score" => 1, "confidence" => 1.5}},
+            {@choice, %{"choice" => "forever", "confidence" => 0.9}},
+            {@choice, %{"choice" => "transient", "confidence" => -0.2}}
+          ] do
+        assert Answer.check(%{"q" => question}, %{"q" => answer}) ==
+                 {:error, {:malformed_answers, ["q"]}}
+      end
+    end
+
+    test "accepts the bounds of every range" do
+      for {question, answer} <- [
+            {%{"type" => "noul"}, %{"noul" => 0}},
+            {%{"type" => "noul"}, %{"noul" => 1.0}},
+            {@score, %{"score" => 0, "confidence" => 0}},
+            {@score, %{"score" => 2, "confidence" => 1}}
+          ] do
+        assert Answer.check(%{"q" => question}, %{"q" => answer}) == :ok
       end
     end
 

@@ -137,7 +137,9 @@ With `{low, high}` as the review band:
 ## Replies
 
 The client's reply is checked once, in the shell. A reply that skips a
-question, or answers one in a shape its type cannot have, is not a verdict
-on it: the whole request becomes a `Cite.Error` with
+question, or answers one with a value its question cannot have, is not a
+verdict on it: the whole request becomes a `Cite.Error` with
 `{:missing_answers, keys}` or `{:malformed_answers, keys}`, and nothing from
-it is read.
+it is read. A Noul or a confidence must be a probability from 0 to 1, a
+Score a level index from 0 to its last level, and a Choice one of its
+options.
