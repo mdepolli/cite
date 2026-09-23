@@ -268,6 +268,21 @@ defmodule CiteTest do
              }
     end
 
+    test "raises on a client, source, policy, or options of the wrong kind" do
+      for {client, source, policy, opts, message} <- [
+            {:not_a_function, Cite.source(["a"]), Riddles, [],
+             "client must be a 1-arity function, got: :not_a_function"},
+            {refusing_client(), ["a"], Riddles, [],
+             ~s(source must be a Cite.Source, built by Cite.source/2, got: ["a"])},
+            {refusing_client(), Cite.source(["a"]), "Riddles", [],
+             ~s("Riddles" is not a Cite policy; it must `use Cite.Policy`)},
+            {refusing_client(), Cite.source(["a"]), Riddles, %{window: 4},
+             "options must be a keyword list, got: %{window: 4}"}
+          ] do
+        assert_raise ArgumentError, message, fn -> Cite.judge(client, source, policy, opts) end
+      end
+    end
+
     test "raises on a module that is not a policy, before any request" do
       assert_raise ArgumentError, ~r/Enum is not a Cite policy/, fn ->
         Cite.judge(refusing_client(), Cite.source(["a"]), Enum)

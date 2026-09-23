@@ -19,7 +19,7 @@ defmodule Cite.Policy.Build do
   `ArgumentError` for any other module.
   """
   @spec read(module()) :: Terms.t()
-  def read(module) when is_atom(module) do
+  def read(module) do
     case persisted_terms(module) do
       %Terms{} = terms ->
         terms
@@ -32,11 +32,13 @@ defmodule Cite.Policy.Build do
   # A module is a policy exactly when it carries the terms this module
   # persisted. Asking that, rather than naming Cite.Policy, keeps Build free of
   # a reference back to the module whose compilation runs it.
-  defp persisted_terms(module) do
+  defp persisted_terms(module) when is_atom(module) do
     if Code.ensure_loaded?(module) and function_exported?(module, :spark_dsl_config, 0),
       do: Extension.get_persisted(module, @key),
       else: nil
   end
+
+  defp persisted_terms(_not_a_module), do: nil
 
   @impl true
   def transform(dsl) do

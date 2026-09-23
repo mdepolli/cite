@@ -62,22 +62,38 @@ defmodule Cite.Run do
   def options_docs, do: Spark.Options.docs(@schema)
 
   @doc """
-  A run of `source` against `policy_module`. Raises `ArgumentError` on an
-  option it cannot use, or a module that is not a policy.
+  A run of `source` against `policy_module`. Raises `ArgumentError` on a
+  client, source, or policy of the wrong kind, or an option it cannot use.
   """
   @spec new(Cite.client(), Source.t(), module(), keyword()) :: t()
-  def new(client, %Source{} = source, policy_module, opts)
-      when is_function(client, 1) and is_atom(policy_module) and is_list(opts) do
-    case Spark.Options.validate(opts, @schema) do
-      {:ok, options} ->
-        struct!(
-          __MODULE__,
-          [client: client, source: source, terms: Build.read(policy_module)] ++ options
-        )
+  def new(client, source, policy_module, opts) do
+    given = [client: client(client), source: source(source), terms: Build.read(policy_module)]
 
-      {:error, error} ->
-        raise ArgumentError, Exception.message(error)
+    struct!(__MODULE__, given ++ options(opts))
+  end
+
+  defp client(client) when is_function(client, 1), do: client
+
+  defp client(other) do
+    raise ArgumentError, "client must be a 1-arity function, got: #{inspect(other)}"
+  end
+
+  defp source(%Source{} = source), do: source
+
+  defp source(other) do
+    raise ArgumentError,
+          "source must be a Cite.Source, built by Cite.source/2, got: #{inspect(other)}"
+  end
+
+  defp options(opts) when is_list(opts) do
+    case Spark.Options.validate(opts, @schema) do
+      {:ok, options} -> options
+      {:error, error} -> raise ArgumentError, Exception.message(error)
     end
+  end
+
+  defp options(other) do
+    raise ArgumentError, "options must be a keyword list, got: #{inspect(other)}"
   end
 
   @doc false
