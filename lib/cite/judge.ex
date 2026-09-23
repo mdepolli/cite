@@ -5,11 +5,10 @@ defmodule Cite.Judge do
   rules. Pure. Internal.
   """
 
-  alias Cite.{Citation, Error, Finding, Passage, Source, Wire}
+  alias Cite.{Citation, Error, Finding, Passage, Run, Source, Wire}
   alias Cite.Gather.Finding, as: Gathered
   alias Cite.Policy.{Check, Concern, Role, Terms}
 
-  @type band :: {number(), number()}
   @type outcome :: {Gathered.t(), {:ok, Cite.verdict()} | {:error, term()}}
 
   @doc """
@@ -18,11 +17,10 @@ defmodule Cite.Judge do
   all of them. A concern built from factors: each role at the top level, the
   checks that apply, the descriptors over every role.
   """
-  @spec request(Gathered.t(), Source.t(), Terms.t()) :: map()
+  @spec request(Run.t(), Gathered.t()) :: map()
   def request(
-        %Gathered{concern: %Concern{indicator: nil}} = gathered,
-        %Source{show: show},
-        %Terms{} = terms
+        %Run{source: %Source{show: show}, terms: terms},
+        %Gathered{concern: %Concern{indicator: nil}} = gathered
       ) do
     state =
       Map.new(gathered.roles, fn {role, passage} ->
@@ -46,9 +44,8 @@ defmodule Cite.Judge do
   end
 
   def request(
-        %Gathered{concern: %Concern{fit: fit}, passages: passages},
-        %Source{as: as, show: show},
-        %Terms{} = terms
+        %Run{source: %Source{as: as, show: show}, terms: terms},
+        %Gathered{concern: %Concern{fit: fit}, passages: passages}
       ) do
     fits =
       for %Passage{id: id} <- passages, into: %{} do
@@ -64,9 +61,10 @@ defmodule Cite.Judge do
   end
 
   @doc """
-  Folds judged findings into `Cite.Finding`s, one `Cite.Error` per failed
-  request, and the usage and model of each reply, as `Cite.Screen.resolve/2`
-  does for round 1. Options: `review_band` (`{low, high}`, required).
+  Folds judged findings into the run: its `findings`, and one `Cite.Error`
+  per failed request, the usage and model of each reply added to its own,
+  as `Cite.Screen.resolve/2` does for round 1. The run's `review_band`,
+  `{low, high}`, sets the verdicts.
 
   Each fit drops its passage at or below `low`, cites it for review below
   `high`, and holds it at or above. A passage filling a role holds, once. A
@@ -74,24 +72,22 @@ defmodule Cite.Judge do
   cite, holds when every asked check is at or above `high` and a citation
   holds, and is sent to review otherwise.
   """
-  @spec resolve([outcome()], Terms.t(), keyword()) :: %{
-          findings: [Finding.t()],
-          errors: [Error.t()],
-          usages: [Cite.usage() | nil],
-          models: [String.t()]
-        }
-  def resolve(outcomes, %Terms{} = terms, opts) do
-    review_band = Keyword.fetch!(opts, :review_band)
+  @spec resolve(Run.t(), [outcome()]) :: Run.t()
+  def resolve(%Run{terms: terms, review_band: review_band} = run, outcomes) do
+    findings =
+      for {gathered, {:ok, verdict}} <- outcomes,
+          do: finding(gathered, verdict.answers, terms, review_band)
+
+    errors = for {gathered, {:error, reason}} <- outcomes, do: error(gathered, reason)
+    usages = for {_gathered, {:ok, verdict}} <- outcomes, do: verdict.usage
+    models = for {_gathered, {:ok, %{model: model}}} <- outcomes, do: model
 
     %{
-      findings:
-        for(
-          {gathered, {:ok, verdict}} <- outcomes,
-          do: finding(gathered, verdict.answers, terms, review_band)
-        ),
-      errors: for({gathered, {:error, reason}} <- outcomes, do: error(gathered, reason)),
-      usages: for({_gathered, {:ok, verdict}} <- outcomes, do: verdict.usage),
-      models: for({_gathered, {:ok, %{model: model}}} <- outcomes, do: model)
+      run
+      | findings: findings,
+        errors: run.errors ++ errors,
+        usages: run.usages ++ usages,
+        models: run.models ++ models
     }
   end
 

@@ -4,30 +4,31 @@ defmodule Cite.Gather do
   to judge, by fixed rules. Pure. Internal.
   """
 
-  alias Cite.{Gather.Finding, Passage, Screen, Source}
+  alias Cite.{Gather.Finding, Passage, Run}
   alias Cite.Policy.{Concern, Role, Terms}
 
   @doc """
-  The findings to judge, in the policy's concern order. A passage counts
-  only if it passes every filter; a directly screened concern gathers every
-  match (the strongest `max_evidence` of them); a concern built from factors
-  fills each role with its strongest match, and needs every required role.
+  The run's `gathered` findings, to judge in the policy's concern order. A
+  passage counts only if it passes every filter; a directly screened concern
+  gathers every match (the strongest `max_evidence` of them); a concern
+  built from factors fills each role with its strongest match, and needs
+  every required role.
   """
-  @spec findings(Terms.t(), Source.t(), Screen.screen(), keyword()) :: [Finding.t()]
-  def findings(%Terms{} = terms, %Source{} = source, screen, opts) do
-    threshold = Keyword.fetch!(opts, :threshold)
-    max_evidence = Keyword.fetch!(opts, :max_evidence)
-
-    eligible = Enum.filter(source.passages, &passes_filters?(screen[&1.id], terms, threshold))
+  @spec findings(Run.t()) :: Run.t()
+  def findings(%Run{terms: terms, screen: screen, threshold: threshold} = run) do
+    eligible = Enum.filter(run.source.passages, &passes_filters?(screen[&1.id], terms, threshold))
     direct = direct_matches(terms, eligible, screen, threshold)
 
-    Enum.flat_map(terms.concerns, fn
-      %Concern{indicator: nil} = concern ->
-        built(concern, eligible, screen, threshold)
+    gathered =
+      Enum.flat_map(terms.concerns, fn
+        %Concern{indicator: nil} = concern ->
+          built(concern, eligible, screen, threshold)
 
-      %Concern{} = concern ->
-        screened(concern, Map.get(direct, concern.name, []), screen, max_evidence)
-    end)
+        %Concern{} = concern ->
+          screened(concern, Map.get(direct, concern.name, []), screen, run.max_evidence)
+      end)
+
+    %{run | gathered: gathered}
   end
 
   # A passage whose window failed has no row, and so passes nothing.

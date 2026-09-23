@@ -81,36 +81,28 @@ defmodule Cite do
   """
   @spec judge(client(), Source.t(), module(), keyword()) :: Report.t()
   def judge(client, source, policy_module, opts \\ []) do
-    run = Run.new(client, source, policy_module, opts)
+    client
+    |> Run.new(source, policy_module, opts)
+    |> screen()
+    |> Gather.findings()
+    |> judge_findings()
+    |> Report.new()
+  end
 
-    screened =
-      source.passages
+  # Round 1: every passage, a window per request.
+  defp screen(%Run{} = run) do
+    outcomes =
+      run.source.passages
       |> Enum.chunk_every(run.window)
       |> Enum.flat_map(&screen_window(run, &1))
-      |> Screen.resolve(run.terms)
 
-    judged =
-      run.terms
-      |> Gather.findings(source, screened.screen,
-        threshold: run.threshold,
-        max_evidence: run.max_evidence
-      )
-      |> Enum.map(&{&1, call(run.client, Judge.request(&1, source, run.terms))})
-      |> Judge.resolve(run.terms, review_band: run.review_band)
-
-    %Report{
-      findings: judged.findings,
-      screen: screened.screen,
-      errors: screened.errors ++ judged.errors,
-      usage: Report.total_usage(screened.usages ++ judged.usages),
-      models: Enum.uniq(screened.models ++ judged.models)
-    }
+    Screen.resolve(run, outcomes)
   end
 
   # A window over the request cap is split in half and both halves screened;
   # only a single passage that still exceeds it is an error.
   defp screen_window(%Run{} = run, window) do
-    case call(run.client, Screen.request(window, run.source, run.terms)) do
+    case call(run.client, Screen.request(run, window)) do
       {:error, :request_too_large} when length(window) > 1 ->
         {left, right} = Enum.split(window, div(length(window), 2))
         screen_window(run, left) ++ screen_window(run, right)
@@ -118,6 +110,13 @@ defmodule Cite do
       verdict ->
         [{window, verdict}]
     end
+  end
+
+  # Round 2: one request per gathered finding.
+  defp judge_findings(%Run{} = run) do
+    outcomes = Enum.map(run.gathered, &{&1, call(run.client, Judge.request(run, &1))})
+
+    Judge.resolve(run, outcomes)
   end
 
   # A reply must answer every question with a value it can have; a reply that

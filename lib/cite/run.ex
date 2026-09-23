@@ -1,11 +1,15 @@
 defmodule Cite.Run do
   @moduledoc """
-  One judging run: what `Cite.judge/4` was given, validated once. Internal;
-  use `Cite.judge/4`.
+  One judging run, passed through every step of `Cite.judge/4`. It starts as
+  what the caller gave, validated once, and each step fills in its part:
+  round 1 the `screen`, gathering the `gathered` findings, round 2 the
+  `findings`. Both rounds add their `errors`, `usages`, and `models`.
+  Internal; use `Cite.judge/4`.
   """
 
+  alias Cite.{Error, Finding, Screen, Source}
+  alias Cite.Gather.Finding, as: Gathered
   alias Cite.Policy.{Build, Terms}
-  alias Cite.Source
 
   @schema Spark.Options.new!(
             threshold: [
@@ -40,11 +44,18 @@ defmodule Cite.Run do
           threshold: number(),
           review_band: {number(), number()},
           window: pos_integer(),
-          max_evidence: pos_integer()
+          max_evidence: pos_integer(),
+          screen: Screen.screen(),
+          gathered: [Gathered.t()],
+          findings: [Finding.t()],
+          errors: [Error.t()],
+          usages: [Cite.usage() | nil],
+          models: [String.t()]
         }
 
   @enforce_keys [:client, :source, :terms, :threshold, :review_band, :window, :max_evidence]
-  defstruct @enforce_keys
+  defstruct @enforce_keys ++
+              [screen: %{}, gathered: [], findings: [], errors: [], usages: [], models: []]
 
   @doc false
   @spec options_docs() :: String.t()

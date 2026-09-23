@@ -7,7 +7,7 @@ defmodule Cite.Report do
   appearance. Read it, don't build it.
   """
 
-  alias Cite.{Error, Finding}
+  alias Cite.{Error, Finding, Run}
 
   @derive Jason.Encoder
 
@@ -25,8 +25,18 @@ defmodule Cite.Report do
   defstruct [:findings, :screen, :errors, :usage, :models]
 
   @doc false
-  @spec total_usage([usage() | nil]) :: usage() | nil
-  def total_usage(usages) do
+  @spec new(Run.t()) :: t()
+  def new(%Run{} = run) do
+    %__MODULE__{
+      findings: run.findings,
+      screen: run.screen,
+      errors: run.errors,
+      usage: total_usage(run.usages),
+      models: Enum.uniq(run.models)
+    }
+  end
+
+  defp total_usage(usages) do
     case Enum.reject(usages, &is_nil/1) do
       [] ->
         nil

@@ -2,22 +2,20 @@ defmodule Cite.GatherTest do
   use ExUnit.Case, async: true
 
   alias Cite.{Gather, Source}
-  alias Cite.TestTerms
+  alias Cite.{TestRun, TestTerms}
 
-  defp gather(terms, screen, opts \\ []) do
+  # Gathers from a run whose source holds one passage per screen row, in id
+  # order; `fields` override the run's defaults.
+  defp gather(terms, screen, fields \\ []) do
     ids =
       screen
       |> Map.keys()
       |> Enum.sort()
 
     source = Source.new(Enum.map(ids, &%{id: &1, text: "text of #{&1}"}), as: "utterances")
+    run = TestRun.new(terms, [source: source, screen: screen] ++ fields)
 
-    Gather.findings(
-      terms,
-      source,
-      screen,
-      Keyword.merge([threshold: 0.5, max_evidence: 20], opts)
-    )
+    Gather.findings(run).gathered
   end
 
   # Each finding as {concern, cited ids, over-cap ids, %{role => id}}.
@@ -46,15 +44,13 @@ defmodule Cite.GatherTest do
       screen = %{"U1" => spoken_by_client(%{cashflow_stress: 0.9})}
       source = Source.new([%{id: "U0", text: "lost"}, %{id: "U1", text: "kept"}])
 
+      run = TestRun.new(TestTerms.household(), source: source, screen: screen)
+
       # Act
-      findings =
-        Gather.findings(TestTerms.household(), source, screen,
-          threshold: 0.5,
-          max_evidence: 20
-        )
+      run = Gather.findings(run)
 
       # Assert
-      assert summary(findings) == [{:cashflow_stress, ["U1"], [], %{}}]
+      assert summary(run.gathered) == [{:cashflow_stress, ["U1"], [], %{}}]
     end
   end
 

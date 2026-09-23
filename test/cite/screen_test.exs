@@ -2,10 +2,10 @@ defmodule Cite.ScreenTest do
   use ExUnit.Case, async: true
 
   alias Cite.{Error, Screen, Source}
-  alias Cite.TestTerms
+  alias Cite.{TestRun, TestTerms}
   alias Cite.Wire.Object
 
-  describe "request/3" do
+  describe "request/2" do
     test "asks every indicator of every passage in the window, under the source's word" do
       # Arrange
       source =
@@ -23,7 +23,7 @@ defmodule Cite.ScreenTest do
         )
 
       # Act
-      request = Screen.request(source.passages, source, TestTerms.riddles())
+      request = Screen.request(TestRun.new(TestTerms.riddles(), source: source), source.passages)
 
       # Assert
       criteria = %{
@@ -71,7 +71,7 @@ defmodule Cite.ScreenTest do
 
       # Act
       %{"questions" => questions} =
-        Screen.request(source.passages, source, TestTerms.household())
+        Screen.request(TestRun.new(TestTerms.household(), source: source), source.passages)
 
       # Assert
       assert Enum.sort(Map.keys(questions)) == [
@@ -96,15 +96,12 @@ defmodule Cite.ScreenTest do
       }
 
       # Act
-      resolved = Screen.resolve([{source.passages, {:ok, verdict}}], TestTerms.riddles())
+      run = Screen.resolve(TestRun.new(TestTerms.riddles()), [{source.passages, {:ok, verdict}}])
 
       # Assert
-      assert resolved == %{
-               screen: %{"L1" => %{riddle: 0.94}, "L2" => %{riddle: 0.03}},
-               errors: [],
-               usages: [%{input_tokens: 10, output_tokens: 0}],
-               models: ["jev-1.13.0"]
-             }
+      assert {run.screen, run.errors, run.usages, run.models} ==
+               {%{"L1" => %{riddle: 0.94}, "L2" => %{riddle: 0.03}}, [],
+                [%{input_tokens: 10, output_tokens: 0}], ["jev-1.13.0"]}
     end
 
     test "a failed window leaves no rows and records one error with its passage ids" do
@@ -112,15 +109,35 @@ defmodule Cite.ScreenTest do
       source = Source.new([%{id: "L1", text: "a"}, %{id: "L2", text: "b"}])
 
       # Act
-      resolved = Screen.resolve([{source.passages, {:error, :timeout}}], TestTerms.riddles())
+      run =
+        Screen.resolve(TestRun.new(TestTerms.riddles()), [{source.passages, {:error, :timeout}}])
 
       # Assert
-      assert resolved == %{
-               screen: %{},
-               errors: [%Error{concern: nil, passage_ids: ["L1", "L2"], reason: :timeout}],
-               usages: [],
-               models: []
-             }
+      assert {run.screen, run.errors, run.usages, run.models} ==
+               {%{}, [%Error{concern: nil, passage_ids: ["L1", "L2"], reason: :timeout}], [], []}
+    end
+
+    test "adds its errors, usages, and models to those the run already holds" do
+      # Arrange
+      earlier = %Error{concern: nil, passage_ids: ["L0"], reason: :timeout}
+
+      run =
+        TestRun.new(TestTerms.riddles(),
+          errors: [earlier],
+          usages: [nil],
+          models: ["jev-1.12.0"]
+        )
+
+      verdict = %{answers: %{"L1:riddle" => %{"noul" => 0.9}}, usage: nil, model: "jev-1.13.0"}
+      [l1, l2] = Source.new([%{id: "L1", text: "a"}, %{id: "L2", text: "b"}]).passages
+
+      # Act
+      run = Screen.resolve(run, [{[l1], {:ok, verdict}}, {[l2], {:error, :timeout}}])
+
+      # Assert
+      assert {run.errors, run.usages, run.models} ==
+               {[earlier, %Error{concern: nil, passage_ids: ["L2"], reason: :timeout}],
+                [nil, nil], ["jev-1.12.0", "jev-1.13.0"]}
     end
   end
 end

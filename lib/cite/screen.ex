@@ -5,7 +5,7 @@ defmodule Cite.Screen do
   Internal.
   """
 
-  alias Cite.{Answer, Error, Passage, Source, Wire}
+  alias Cite.{Answer, Error, Passage, Run, Source, Wire}
   alias Cite.Policy.{Question, Terms}
 
   @type outcome :: {[Passage.t()], {:ok, map()} | {:error, term()}}
@@ -15,10 +15,10 @@ defmodule Cite.Screen do
   One request: the window under the source's `as`, and every indicator asked
   of every passage in it, keyed `"<passage id>:<indicator>"`.
   """
-  @spec request([Passage.t()], Source.t(), Terms.t()) :: map()
-  def request(window, %Source{as: as, show: show}, %Terms{} = terms) do
+  @spec request(Run.t(), [Passage.t()]) :: map()
+  def request(%Run{source: %Source{as: as, show: show}} = run, window) do
     questions =
-      for %Passage{id: id} <- window, {name, question} <- indicators(terms), into: %{} do
+      for %Passage{id: id} <- window, {name, question} <- indicators(run.terms), into: %{} do
         {key(id, name), Wire.question(question, %{"passage" => "#{as}.#{id}.text"}, [])}
       end
 
@@ -26,24 +26,25 @@ defmodule Cite.Screen do
   end
 
   @doc """
-  Folds judged windows into scores per passage and indicator, one
-  `Cite.Error` per failed window, and the usage and model of each reply. A
-  failed window leaves its passages without a row.
+  Folds judged windows into the run: its `screen`, scores per passage and
+  indicator, and one `Cite.Error` per failed window, the usage and model of
+  each reply added to its own. A failed window leaves its passages without
+  a row.
   """
-  @spec resolve([outcome()], Terms.t()) :: %{
-          screen: screen(),
-          errors: [Error.t()],
-          usages: [Cite.usage() | nil],
-          models: [String.t()]
-        }
-  def resolve(outcomes, %Terms{} = terms) do
-    names = Keyword.keys(indicators(terms))
+  @spec resolve(Run.t(), [outcome()]) :: Run.t()
+  def resolve(%Run{} = run, outcomes) do
+    names = Keyword.keys(indicators(run.terms))
+    screen = Enum.reduce(outcomes, %{}, &merge(&1, &2, names))
+    errors = for {window, {:error, reason}} <- outcomes, do: window_error(window, reason)
+    usages = for {_window, {:ok, verdict}} <- outcomes, do: verdict.usage
+    models = for {_window, {:ok, %{model: model}}} <- outcomes, do: model
 
     %{
-      screen: Enum.reduce(outcomes, %{}, &merge(&1, &2, names)),
-      errors: for({window, {:error, reason}} <- outcomes, do: window_error(window, reason)),
-      usages: for({_window, {:ok, verdict}} <- outcomes, do: verdict.usage),
-      models: for({_window, {:ok, %{model: model}}} <- outcomes, do: model)
+      run
+      | screen: screen,
+        errors: run.errors ++ errors,
+        usages: run.usages ++ usages,
+        models: run.models ++ models
     }
   end
 
