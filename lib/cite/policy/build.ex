@@ -62,7 +62,6 @@ defmodule Cite.Policy.Build do
 
   defp concern(%Dsl.Concern{} = concern) do
     roles = Enum.map(concern.roles, &role/1)
-    role_names = Enum.map(roles, &Atom.to_string(&1.name))
     indicator = concern.indicator && noul(concern.indicator)
 
     %Concern{
@@ -71,7 +70,7 @@ defmodule Cite.Policy.Build do
       indicator: indicator,
       fit: (concern.fit && noul(concern.fit)) || indicator,
       roles: roles,
-      checks: Enum.map(concern.checks, &check(&1, role_names))
+      checks: Enum.map(concern.checks, &check/1)
     }
   end
 
@@ -79,13 +78,13 @@ defmodule Cite.Policy.Build do
     %Role{name: role.name, factor: role.factor, optional: role.optional, distinct: role.distinct}
   end
 
-  defp check(%Dsl.Noul{} = check, role_names) do
-    # The focus expands too, so a role it names must be filled for the check
-    # to be asked.
+  # Every placeholder in a check names one of its concern's roles, which
+  # `Cite.Policy.Checks` has made sure of. The focus expands too, so a role
+  # it names must be filled for the check to be asked.
+  defp check(%Dsl.Noul{} = check) do
     roles =
       [check.question, check.focus]
       |> Placeholder.names()
-      |> Enum.filter(&(&1 in role_names))
       |> Enum.map(&String.to_existing_atom/1)
 
     %Check{name: check.name, distinct: check.distinct, roles: roles, question: noul(check)}
