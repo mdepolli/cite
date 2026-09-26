@@ -54,30 +54,27 @@ defmodule Cite.GatherTest do
   end
 
   describe "directly screened concerns" do
-    test "gather every match above threshold, in source order" do
-      # Arrange
+    test "gather every match above threshold, in source order, not score order" do
       screen = %{
-        "U2" => spoken_by_client(%{cashflow_stress: 0.7}),
-        "U1" => spoken_by_client(%{cashflow_stress: 0.9}),
+        "U2" => spoken_by_client(%{cashflow_stress: 0.9}),
+        "U1" => spoken_by_client(%{cashflow_stress: 0.7}),
         "U3" => spoken_by_client(%{cashflow_stress: 0.5})
       }
 
-      # Act + Assert
       assert summary(gather(TestTerms.household(), screen)) == [
                {:cashflow_stress, ["U1", "U2"], %{}}
              ]
     end
 
-    test "gather every match, with no cap: twenty-five of them" do
-      # Arrange
-      ids = for n <- 10..34, do: "U#{n}"
-      screen = Map.new(ids, &{&1, spoken_by_client(%{cashflow_stress: 0.9})})
+    test "gather every match, with no cap: twenty-five of them, in source order" do
+      # Scores rise with the id, so score order would reverse the list.
+      screen = Map.new(10..34, &{"U#{&1}", spoken_by_client(%{cashflow_stress: 0.5 + &1 / 100})})
 
-      # Act
-      [{concern, cited, roles}] = summary(gather(TestTerms.household(), screen))
-
-      # Assert
-      assert {concern, length(cited), roles} == {:cashflow_stress, 25, %{}}
+      assert summary(gather(TestTerms.household(), screen)) == [
+               {:cashflow_stress,
+                ~w(U10 U11 U12 U13 U14 U15 U16 U17 U18 U19 U20 U21 U22 U23 U24 U25 U26 U27 U28 U29 U30 U31 U32 U33 U34),
+                %{}}
+             ]
     end
   end
 
