@@ -16,22 +16,29 @@ defmodule Cite.ProviderTest do
 
   @request %{"state" => %{}, "questions" => %{"U0:d" => %{"type" => "noul"}}}
 
-  test "client/2 closes a custom provider's handle into the client function" do
-    client = Cite.client(Echo, score: 0.9)
+  describe "Cite.client/2" do
+    test "closes a custom provider's handle into the client function" do
+      client = Cite.client(Echo, score: 0.9)
 
-    assert client.(@request) == {:ok, %{answers: %{"U0:d" => %{"noul" => 0.9}}, usage: nil}}
+      assert client.(@request) == {:ok, %{answers: %{"U0:d" => %{"noul" => 0.9}}, usage: nil}}
+    end
+
+    test "takes a provider module with no options" do
+      assert Cite.client(Echo).(@request) ==
+               {:ok, %{answers: %{"U0:d" => %{"noul" => 0.5}}, usage: nil}}
+    end
   end
 
-  test "client/1 takes a provider module with no options" do
-    assert Cite.client(Echo).(@request) ==
-             {:ok, %{answers: %{"U0:d" => %{"noul" => 0.5}}, usage: nil}}
-  end
+  describe "a custom provider" do
+    test "runs both rounds of Cite.judge/4" do
+      # Arrange
+      source = Cite.source(["Why is a raven like a writing-desk?"])
 
-  test "a custom provider runs both rounds" do
-    source = Cite.source(["Why is a raven like a writing-desk?"])
+      # Act
+      report = Cite.judge(Cite.client(Echo, score: 0.9), source, Cite.TestPolicies.Riddles)
 
-    report = Cite.judge(Cite.client(Echo, score: 0.9), source, Cite.TestPolicies.Riddles)
-
-    assert Enum.map(report.findings, &{&1.concern, &1.verdict}) == [riddle: :holds]
+      # Assert
+      assert Enum.map(report.findings, &{&1.concern, &1.verdict}) == [riddle: :holds]
+    end
   end
 end

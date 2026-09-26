@@ -13,6 +13,13 @@ defmodule Cite.PlaceholderTest do
     test "is empty when the text has none" do
       assert Placeholder.names("How severe is it?") == []
     end
+
+    test "given a question and its focus, skips a nil focus and lists each name once" do
+      assert Placeholder.names(["Do {household} and {income} agree?", "Weigh {income}."]) ==
+               ["household", "income"]
+
+      assert Placeholder.names(["Does {passage} pose a riddle?", nil]) == ["passage"]
+    end
   end
 
   describe "expand/2" do

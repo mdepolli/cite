@@ -24,6 +24,28 @@ defmodule Cite.Provider.TypeSafeTest do
     )
   end
 
+  # Answers the first attempt with `first`, every later one with an empty
+  # reply, and counts the attempts.
+  defp stub_failing_once(first) do
+    {:ok, calls} = Agent.start_link(fn -> 0 end)
+
+    Req.Test.stub(__MODULE__, fn conn ->
+      if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0,
+        do: first.(conn),
+        else: Req.Test.json(conn, %{"answers" => %{}})
+    end)
+
+    calls
+  end
+
+  defp send_with_retry_after(conn, status, nil), do: Plug.Conn.send_resp(conn, status, "")
+
+  defp send_with_retry_after(conn, status, retry_after) do
+    conn
+    |> Plug.Conn.put_resp_header("retry-after", retry_after)
+    |> Plug.Conn.send_resp(status, "")
+  end
+
   describe "new/1" do
     test "raises without an api key" do
       System.delete_env("JEV_API_KEY")
@@ -194,122 +216,6 @@ defmodule Cite.Provider.TypeSafeTest do
       assert judge().(@request) == {:error, :server_error}
     end
 
-    test "retries 529 and 429 with Retry-After, then succeeds" do
-      for status <- [529, 429] do
-        {:ok, calls} = Agent.start_link(fn -> 0 end)
-
-        Req.Test.stub(__MODULE__, fn conn ->
-          if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0 do
-            conn
-            |> Plug.Conn.put_resp_header("retry-after", "0")
-            |> Plug.Conn.send_resp(status, "later")
-          else
-            Req.Test.json(conn, %{"answers" => %{}})
-          end
-        end)
-
-        assert {:ok, _} = retrying_judge().(@request)
-        assert Agent.get(calls, & &1) == 2
-      end
-    end
-
-    test "gives up after the retries and reports the last 429" do
-      {:ok, calls} = Agent.start_link(fn -> 0 end)
-
-      Req.Test.stub(__MODULE__, fn conn ->
-        Agent.update(calls, &(&1 + 1))
-
-        conn
-        |> Plug.Conn.put_resp_header("retry-after", "0")
-        |> Plug.Conn.send_resp(429, "")
-      end)
-
-      assert retrying_judge().(@request) == {:error, {:rate_limited, 0}}
-      assert Agent.get(calls, & &1) == 4
-    end
-
-    test "an unparseable Retry-After falls back to backoff instead of raising mid-retry" do
-      {:ok, calls} = Agent.start_link(fn -> 0 end)
-
-      Req.Test.stub(__MODULE__, fn conn ->
-        if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0 do
-          conn
-          |> Plug.Conn.put_resp_header("retry-after", "soon")
-          |> Plug.Conn.send_resp(429, "")
-        else
-          Req.Test.json(conn, %{"answers" => %{}})
-        end
-      end)
-
-      assert {:ok, _} = retrying_judge(max_retry_delay: 0).(@request)
-      assert Agent.get(calls, & &1) == 2
-    end
-
-    test "retries a connection failure, then succeeds" do
-      {:ok, calls} = Agent.start_link(fn -> 0 end)
-
-      Req.Test.stub(__MODULE__, fn conn ->
-        if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0 do
-          Req.Test.transport_error(conn, :econnrefused)
-        else
-          Req.Test.json(conn, %{"answers" => %{}})
-        end
-      end)
-
-      assert {:ok, _} = retrying_judge(max_retry_delay: 0).(@request)
-      assert Agent.get(calls, & &1) == 2
-    end
-
-    test "a missing, negative, or fractional Retry-After falls back to backoff" do
-      for value <- [nil, "-1", "7.5"] do
-        {:ok, calls} = Agent.start_link(fn -> 0 end)
-
-        Req.Test.stub(__MODULE__, fn conn ->
-          if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0 do
-            conn
-            |> then(&if(value, do: Plug.Conn.put_resp_header(&1, "retry-after", value), else: &1))
-            |> Plug.Conn.send_resp(503, "")
-          else
-            Req.Test.json(conn, %{"answers" => %{}})
-          end
-        end)
-
-        assert {:ok, _} = retrying_judge(max_retry_delay: 0).(@request)
-        assert Agent.get(calls, & &1) == 2
-      end
-    end
-
-    test "an HTTP-date Retry-After already past waits no longer" do
-      {:ok, calls} = Agent.start_link(fn -> 0 end)
-
-      Req.Test.stub(__MODULE__, fn conn ->
-        if Agent.get_and_update(calls, &{&1, &1 + 1}) == 0 do
-          conn
-          |> Plug.Conn.put_resp_header("retry-after", "Thu, 01 Jan 2015 00:00:00 GMT")
-          |> Plug.Conn.send_resp(429, "")
-        else
-          Req.Test.json(conn, %{"answers" => %{}})
-        end
-      end)
-
-      assert {:ok, _} = retrying_judge().(@request)
-      assert Agent.get(calls, & &1) == 2
-    end
-
-    test "does not retry a timeout" do
-      {:ok, calls} = Agent.start_link(fn -> 0 end)
-
-      Req.Test.stub(__MODULE__, fn conn ->
-        Agent.update(calls, &(&1 + 1))
-        Req.Test.transport_error(conn, :timeout)
-      end)
-
-      assert {:error, {:request_error, %Req.TransportError{reason: :timeout}}} =
-               retrying_judge().(@request)
-
-      assert Agent.get(calls, & &1) == 1
-    end
-
     test "bounds an unexpected error body" do
       Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 418, String.duplicate("x", 5_000)))
       assert {:error, {:api_error, 418, preview}} = judge().(@request)
@@ -321,6 +227,78 @@ defmodule Cite.Provider.TypeSafeTest do
 
       assert {:error, {:request_error, %Req.TransportError{reason: :econnrefused}}} =
                judge().(@request)
+    end
+  end
+
+  describe "judge/2 retries" do
+    test "retries 529 and 429 with Retry-After, then succeeds" do
+      for status <- [529, 429] do
+        # Arrange
+        calls = stub_failing_once(&send_with_retry_after(&1, status, "0"))
+
+        # Act + Assert
+        assert {:ok, _} = retrying_judge().(@request)
+        assert Agent.get(calls, & &1) == 2
+      end
+    end
+
+    test "gives up after the retries and reports the last 429" do
+      # Arrange
+      {:ok, calls} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        Agent.update(calls, &(&1 + 1))
+        send_with_retry_after(conn, 429, "0")
+      end)
+
+      # Act + Assert
+      assert retrying_judge().(@request) == {:error, {:rate_limited, 0}}
+      assert Agent.get(calls, & &1) == 4
+    end
+
+    test "falls back to backoff when Retry-After is missing, unparseable, negative, or fractional" do
+      for {status, retry_after} <- [{503, nil}, {429, "soon"}, {503, "-1"}, {503, "7.5"}] do
+        # Arrange
+        calls = stub_failing_once(&send_with_retry_after(&1, status, retry_after))
+
+        # Act + Assert
+        assert {:ok, _} = retrying_judge(max_retry_delay: 0).(@request)
+        assert Agent.get(calls, & &1) == 2
+      end
+    end
+
+    test "an HTTP-date Retry-After already past waits no longer" do
+      # Arrange
+      calls = stub_failing_once(&send_with_retry_after(&1, 429, "Thu, 01 Jan 2015 00:00:00 GMT"))
+
+      # Act + Assert
+      assert {:ok, _} = retrying_judge().(@request)
+      assert Agent.get(calls, & &1) == 2
+    end
+
+    test "retries a connection failure, then succeeds" do
+      # Arrange
+      calls = stub_failing_once(&Req.Test.transport_error(&1, :econnrefused))
+
+      # Act + Assert
+      assert {:ok, _} = retrying_judge(max_retry_delay: 0).(@request)
+      assert Agent.get(calls, & &1) == 2
+    end
+
+    test "does not retry a timeout" do
+      # Arrange
+      {:ok, calls} = Agent.start_link(fn -> 0 end)
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        Agent.update(calls, &(&1 + 1))
+        Req.Test.transport_error(conn, :timeout)
+      end)
+
+      # Act + Assert
+      assert {:error, {:request_error, %Req.TransportError{reason: :timeout}}} =
+               retrying_judge().(@request)
+
+      assert Agent.get(calls, & &1) == 1
     end
   end
 end

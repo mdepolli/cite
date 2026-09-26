@@ -32,7 +32,7 @@ defmodule Cite.Policy.ChecksTest do
     error
   end
 
-  describe "detects and confirms" do
+  describe "yes/no questions: filters, factors, detects, and confirms" do
     test "a filter without {passage}" do
       assert_policy_error ~r/filter :f must use \{passage\}/ do
         filter :f do
@@ -71,7 +71,7 @@ defmodule Cite.Policy.ChecksTest do
       end
     end
 
-    test "a missing yes or no" do
+    test "a filter missing no" do
       assert_policy_error ~r/filter :f needs yes and no/ do
         filter :f do
           question "Is {passage} x?"
@@ -555,6 +555,40 @@ defmodule Cite.Policy.ChecksTest do
           levels ["only one"]
         end
       end
+    end
+
+    test "a score with eleven levels" do
+      assert_policy_error ~r/score :s needs 2 to 10 unique levels/ do
+        score :s do
+          question "How bad?"
+          levels ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"]
+        end
+      end
+    end
+
+    test "a score with ten levels compiles" do
+      # Arrange
+      source = """
+      defmodule Cite.Policy.ChecksTest.TenLevels do
+        use Cite.Policy
+
+        concern :k do
+          detect do
+            question "Is {passage} x?"
+            yes "y"
+            no "n"
+          end
+        end
+
+        score :s do
+          question "How bad?"
+          levels ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+        end
+      end
+      """
+
+      # Act + Assert
+      assert [{Cite.Policy.ChecksTest.TenLevels, _bytecode}] = Code.compile_string(source)
     end
 
     test "a score with duplicate levels" do

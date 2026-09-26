@@ -288,7 +288,7 @@ defmodule Cite.JudgeTest do
     end
   end
 
-  describe "resolve/2 over round 2" do
+  describe "resolve/2 folding replies into the run" do
     test "folds findings, an error per failed request, and each reply's usage and model", ctx do
       # Arrange
       held = %Gathered{concern: ctx.cashflow, passages: [@u1]}

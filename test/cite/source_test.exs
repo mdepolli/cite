@@ -15,9 +15,18 @@ defmodule Cite.SourceTest do
       source = Source.new(units, as: "utterances", show: [:speaker])
 
       # Assert
-      assert [%Passage{id: "U000", meta: %{start: 100}}, %Passage{id: "U001"}] = source.passages
-      assert source.as == "utterances"
-      assert source.show == [:speaker]
+      assert {source.passages, source.as, source.show} == {
+               [
+                 %Passage{
+                   id: "U000",
+                   text: "We've got two kids.",
+                   meta: %{speaker: "B", start: 100}
+                 },
+                 %Passage{id: "U001", text: "I'm on about sixty a year.", meta: %{speaker: "B"}}
+               ],
+               "utterances",
+               [:speaker]
+             }
     end
 
     test "accepts bare texts and numbers them P000, P001, ..." do
@@ -66,11 +75,13 @@ defmodule Cite.SourceTest do
       end
     end
 
-    test "raises on an id or meta of the wrong type" do
+    test "raises on an id that is not a binary" do
       assert_raise ArgumentError, ~r/passage id must be a non-empty binary/, fn ->
         Source.new([%{id: 7, text: "a"}])
       end
+    end
 
+    test "raises on meta that is not a map" do
       assert_raise ArgumentError, ~r/passage "P000" meta must be a map/, fn ->
         Source.new([%{text: "a", meta: [speaker: "B"]}])
       end

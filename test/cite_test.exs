@@ -54,7 +54,17 @@ defmodule CiteTest do
     fn _request -> flunk("no request should be sent") end
   end
 
-  describe "judge/4" do
+  describe "judge/4 end to end" do
+    test "an empty source sends no request and reports nothing" do
+      assert Cite.judge(refusing_client(), Cite.source([]), Riddles) == %Report{
+               findings: [],
+               screen: %{},
+               errors: [],
+               usage: nil,
+               models: []
+             }
+    end
+
     test "screens, gathers, and judges a riddle end to end" do
       # Arrange
       source = Cite.source(["Why is a raven like a writing-desk?", "Take some more tea."])
@@ -122,7 +132,9 @@ defmodule CiteTest do
              ) ==
                [{:household_income, :holds, ["U3", "U9"]}]
     end
+  end
 
+  describe "judge/4 when the provider refuses a request as too large" do
     test "halves a round-1 window the provider refuses as too large" do
       # Arrange
       source = Cite.source(["a", "b", "c", "d"])
@@ -216,7 +228,9 @@ defmodule CiteTest do
                   }
                 ]}
     end
+  end
 
+  describe "judge/4 reading replies" do
     test "reports each model that answered once, in order of first answer, across rounds" do
       # Arrange
       source = Cite.source(["Why is a raven like a writing-desk?", "Take some more tea."])
@@ -278,17 +292,9 @@ defmodule CiteTest do
                }
              ]
     end
+  end
 
-    test "an empty source sends no request and reports nothing" do
-      assert Cite.judge(refusing_client(), Cite.source([]), Riddles) == %Report{
-               findings: [],
-               screen: %{},
-               errors: [],
-               usage: nil,
-               models: []
-             }
-    end
-
+  describe "judge/4 arguments" do
     test "raises on a client, source, policy, or options of the wrong kind" do
       for {client, source, policy, opts, message} <- [
             {:not_a_function, Cite.source(["a"]), Riddles, [],

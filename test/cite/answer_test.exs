@@ -88,6 +88,17 @@ defmodule Cite.AnswerTest do
       end
     end
 
+    test "ignores answers to questions it did not ask" do
+      answers = %{
+        "P0:riddle" => %{"noul" => 0.9},
+        "severity" => %{"score" => 1.2, "confidence" => 0.8},
+        "temporal" => %{"choice" => "persistent", "confidence" => 0.9},
+        "P1:riddle" => %{"noul" => "anything"}
+      }
+
+      assert Answer.check(@questions, answers) == :ok
+    end
+
     test "reports missing answers before malformed ones" do
       answers = %{"P0:riddle" => %{"noul" => "high"}}
 
