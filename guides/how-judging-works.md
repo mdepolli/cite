@@ -118,7 +118,8 @@ checks that apply:
 ```
 
 A round-2 request refused as too large is that finding's error; it is not
-split, because the descriptors read all of the evidence at once.
+split, because each confirm reads its passage beside all the others, and a
+split would judge a different finding (see How a finding is read).
 
 ## Verdict rules
 
