@@ -168,13 +168,6 @@ defmodule Cite.Policy.Dsl do
     name: :policy,
     describe: "What the source is judged against.",
     top_level?: true,
-    schema: [
-      exclusive: [
-        type: :boolean,
-        default: false,
-        doc: "A passage is evidence for at most one directly screened concern."
-      ]
-    ],
     entities: [@filter, @concern, @factor, @score, @choice]
   }
 

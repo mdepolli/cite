@@ -8,7 +8,6 @@ defmodule Cite.TestTerms do
 
   def riddles do
     %Terms{
-      exclusive: false,
       filters: [],
       factors: [],
       descriptors: [],
@@ -43,7 +42,6 @@ defmodule Cite.TestTerms do
 
   def household do
     %Terms{
-      exclusive: true,
       filters: [
         client_speaking: %Question{
           type: :noul,
@@ -190,7 +188,6 @@ defmodule Cite.TestTerms do
 
   def two_concerns do
     %Terms{
-      exclusive: true,
       filters: [
         client_speaking: %Question{
           type: :noul,
@@ -244,7 +241,6 @@ defmodule Cite.TestTerms do
 
   def focus_role do
     %Terms{
-      exclusive: false,
       filters: [],
       concerns: [
         %Concern{

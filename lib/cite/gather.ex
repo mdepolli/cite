@@ -40,24 +40,18 @@ defmodule Cite.Gather do
     Enum.all?(filters, fn {name, _question} -> above?(row, name, threshold) end)
   end
 
-  # Each directly screened concern's matching passages. Under `exclusive` a
-  # passage stays only with its highest-scoring concern; `Enum.max_by/2`
-  # keeps the first of equals, so a tie goes to the concern declared first.
+  # Each directly screened concern's matching passages, in source order. A
+  # passage that matches several concerns is evidence for each (ADR 3).
   defp direct_matches(%Terms{} = terms, eligible, screen, threshold) do
-    names = for %Concern{detect: detect, name: name} <- terms.concerns, detect, do: name
-
     pairs =
       for %Passage{id: id} = passage <- eligible,
-          matched = Enum.filter(names, &above?(screen[id], &1, threshold)),
-          matched != [],
-          name <- keep(matched, screen[id], terms.exclusive),
+          %Concern{detect: detect, name: name} <- terms.concerns,
+          detect,
+          above?(screen[id], name, threshold),
           do: {name, passage}
 
     Enum.group_by(pairs, &elem(&1, 0), &elem(&1, 1))
   end
-
-  defp keep(matched, _row, false), do: matched
-  defp keep(matched, row, true), do: [Enum.max_by(matched, &row[&1])]
 
   # Matches arrive in source order, and a finding is judged whole: every one
   # is cited (ADR 1, ADR 2).

@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `use Cite.Policy`: a policy declared once in a module, built on Spark.
   Filters, concerns (screened directly with a detect and an optional
   confirm, or built from factors with roles and checks), factors, and Score or
-  Choice descriptors; `exclusive` keeps a passage with one concern. Questions
+  Choice descriptors. A passage is evidence for every concern it matches. Questions
   name what they read by placeholder (`{passage}`, `{household}`) and Cite
   writes the path. Every mistake in a policy is a compile error.
 - A DSL reference in `Cite.Policy`'s docs, generated from the DSL by Spark.

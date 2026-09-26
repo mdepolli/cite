@@ -15,8 +15,6 @@ defmodule Cite.TestPolicies.Household do
   @moduledoc false
   use Cite.Policy
 
-  exclusive true
-
   filter :client_speaking do
     question "Is the speaker of {passage} the client?"
     yes "The client speaks about their own life."
@@ -103,8 +101,6 @@ end
 defmodule Cite.TestPolicies.TwoConcerns do
   @moduledoc false
   use Cite.Policy
-
-  exclusive true
 
   filter :client_speaking do
     question "Is the speaker of {passage} the client?"

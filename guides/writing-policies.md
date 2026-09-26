@@ -12,8 +12,6 @@ from the DSL itself.
 defmodule Vuln.Policy do
   use Cite.Policy
 
-  exclusive true
-
   filter :client_speaking do ... end
   concern :cashflow_stress do ... end
   concern :household_income do ... end
@@ -173,13 +171,15 @@ end
 Every finding is described by every descriptor, asked over all of its
 evidence. A Score has 2 to 10 unique levels; a Choice at least one option.
 
-## Exclusive
+## Overlapping concerns
 
-`exclusive true` makes a passage evidence for at most one directly screened
-concern: the one whose detect scored it highest, the concern declared
-first winning a tie. The choice is final; a passage its winning concern's confirm
-drops is not reconsidered elsewhere. Without it, a passage is evidence for
-every concern it matches. Concerns built from factors are unaffected.
+A passage is evidence for every directly screened concern it matches. When
+two concerns claim the same ground (say, redundancy listed as both a life
+event and a threat to the job), the overlap is the policy's: give one of
+them a `not_for` that sends the case to the other. Cite does not choose
+between concerns for you; their scores come from differently worded
+questions and cannot be compared. If your readers should see a passage once,
+decide which finding shows it when you present the report.
 
 ## Placeholders
 

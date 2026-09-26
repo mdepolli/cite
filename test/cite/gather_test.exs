@@ -81,8 +81,20 @@ defmodule Cite.GatherTest do
     end
   end
 
-  describe "exclusive" do
-    test "leaves a passage free to fill a role beside its direct concern" do
+  describe "a passage matching several concerns" do
+    test "is evidence for every directly screened concern it matches" do
+      # Arrange
+      screen = %{
+        "U1" => spoken_by_client(%{health: 0.6, life_event: 0.8}),
+        "U2" => spoken_by_client(%{health: 0.1, life_event: 0.7})
+      }
+
+      # Act + Assert
+      assert summary(gather(TestTerms.two_concerns(), screen)) ==
+               [{:health, ["U1"], %{}}, {:life_event, ["U1", "U2"], %{}}]
+    end
+
+    test "can fill a role beside its direct concern" do
       # Arrange
       screen = %{
         "U1" => spoken_by_client(%{cashflow_stress: 0.9, dependents: 0.9, primary_income: 0.9})
@@ -93,44 +105,6 @@ defmodule Cite.GatherTest do
                {:cashflow_stress, ["U1"], %{}},
                {:household_income, ["U1"], %{household: "U1", income: "U1"}}
              ]
-    end
-
-    test "when off, a passage stays with every direct concern it matches" do
-      # Arrange
-      terms = %{TestTerms.two_concerns() | exclusive: false}
-      screen = %{"U1" => spoken_by_client(%{health: 0.6, life_event: 0.8})}
-
-      # Act + Assert
-      assert summary(gather(terms, screen)) ==
-               [{:health, ["U1"], %{}}, {:life_event, ["U1"], %{}}]
-    end
-
-    test "keeps a passage only with its highest-scoring direct concern" do
-      # Arrange
-      screen = %{"U1" => spoken_by_client(%{health: 0.6, life_event: 0.8})}
-
-      # Act + Assert
-      assert summary(gather(TestTerms.two_concerns(), screen)) == [{:life_event, ["U1"], %{}}]
-    end
-
-    test "breaks a tie by concern declaration order" do
-      # Arrange
-      screen = %{"U1" => spoken_by_client(%{health: 0.8, life_event: 0.8})}
-
-      # Act + Assert
-      assert summary(gather(TestTerms.two_concerns(), screen)) == [{:health, ["U1"], %{}}]
-    end
-
-    test "leaves other passages with their own concerns" do
-      # Arrange
-      screen = %{
-        "U1" => spoken_by_client(%{health: 0.9, life_event: 0.6}),
-        "U2" => spoken_by_client(%{health: 0.1, life_event: 0.7})
-      }
-
-      # Act + Assert
-      assert summary(gather(TestTerms.two_concerns(), screen)) ==
-               [{:health, ["U1"], %{}}, {:life_event, ["U2"], %{}}]
     end
   end
 

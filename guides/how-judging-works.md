@@ -61,11 +61,9 @@ Fixed rules, no model call:
 
 - A passage that fails any filter is set aside. So is a passage whose window
   failed: it has no scores.
-- With `exclusive true`, a passage matching several directly screened
-  concerns stays only with the highest-scoring one; the concern declared
-  first wins a tie.
 - A directly screened concern gathers every remaining match into one
-  finding, however many.
+  finding, however many. A passage that matches several concerns is
+  evidence for each.
 - A concern built from factors fills each role with its strongest match. A
   distinct role takes the strongest match no other role holds. A required
   role left empty means no finding.

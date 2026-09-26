@@ -6,7 +6,7 @@ defmodule Cite.PolicyTest do
   alias Cite.TestTerms
 
   describe "Build.read/1" do
-    test "defaults category to the concern's name, the confirm to its detect, and exclusive to false" do
+    test "defaults category to the concern's name and the confirm to its detect" do
       assert Build.read(Riddles) == TestTerms.riddles()
     end
 
@@ -14,7 +14,7 @@ defmodule Cite.PolicyTest do
       assert Build.read(Household) == TestTerms.household()
     end
 
-    test "compiles two directly screened concerns under exclusive" do
+    test "compiles two directly screened concerns" do
       assert Build.read(TwoConcerns) == TestTerms.two_concerns()
     end
 
@@ -26,6 +26,27 @@ defmodule Cite.PolicyTest do
       assert_raise ArgumentError, ~r/Enum is not a Cite policy/, fn ->
         Build.read(Enum)
       end
+    end
+  end
+
+  describe "the policy language" do
+    test "has no exclusive: overlapping concerns are the policy's to separate (ADR 3)" do
+      # Arrange
+      source = """
+      defmodule Cite.PolicyTest.Exclusive do
+        use Cite.Policy
+        exclusive true
+      end
+      """
+
+      # Act
+      diagnostic =
+        ExUnit.CaptureIO.capture_io(:stderr, fn ->
+          assert_raise CompileError, fn -> Code.compile_string(source) end
+        end)
+
+      # Assert
+      assert diagnostic =~ "undefined function exclusive/1"
     end
   end
 end

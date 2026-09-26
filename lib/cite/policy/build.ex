@@ -45,7 +45,6 @@ defmodule Cite.Policy.Build do
     entities = Transformer.get_entities(dsl, [:policy])
 
     terms = %Terms{
-      exclusive: Transformer.get_option(dsl, [:policy], :exclusive, false),
       filters: for(%Dsl.Filter{} = filter <- entities, do: {filter.name, noul(filter)}),
       concerns: for(%Dsl.Concern{} = concern <- entities, do: concern(concern)),
       factors: for(%Dsl.Factor{} = factor <- entities, do: {factor.name, noul(factor)}),

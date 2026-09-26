@@ -21,7 +21,7 @@ defmodule Cite.Policy do
         end
       end
 
-  Declarations: `exclusive`, `filter`, `concern` (with `category`,
+  Declarations: `filter`, `concern` (with `category`,
   `detect`, `confirm`, `role`, `check`), `factor`, `score`, `choice`. Every
   mistake is a compile error. The policy guide explains the language; the
   reference below, generated from the DSL, lists every declaration's
