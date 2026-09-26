@@ -49,7 +49,9 @@ source's `as`, keyed by id, in source order:
 ```
 
 Question keys are `"<passage id>:<detect>"`. A score above `threshold` is
-a match; `threshold` only sets recall, the review band decides later.
+a match. A match decides what is gathered, and so what every confirm
+reads: `threshold` changes verdicts, not only recall (see How a finding is
+read).
 
 A request the provider refuses as `:request_too_large` is halved and both
 halves sent. Only a lone passage over the cap becomes an error; its
