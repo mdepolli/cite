@@ -113,8 +113,7 @@ defmodule Cite.Judge do
           {name, answers[Atom.to_string(name)]}
         end),
       evidence: evidence,
-      dropped: dropped,
-      over_cap: gathered.over_cap
+      dropped: dropped
     }
   end
 

@@ -65,8 +65,7 @@ Fixed rules, no model call:
   concerns stays only with the highest-scoring one; the concern declared
   first wins a tie.
 - A directly screened concern gathers every remaining match into one
-  finding. Past `max_evidence` it keeps the strongest; the rest are the
-  finding's `over_cap` and are never judged.
+  finding, however many.
 - A concern built from factors fills each role with its strongest match. A
   distinct role takes the strongest match no other role holds. A required
   role left empty means no finding.

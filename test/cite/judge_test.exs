@@ -329,8 +329,7 @@ defmodule Cite.JudgeTest do
                      evidence: [
                        %Citation{passage: @u1, verdict: :holds, answer: %{"noul" => 0.9}}
                      ],
-                     dropped: [],
-                     over_cap: []
+                     dropped: []
                    }
                  ],
                  errors: [
@@ -383,8 +382,7 @@ defmodule Cite.JudgeTest do
       # Arrange
       gathered = %Gathered{
         concern: ctx.cashflow,
-        passages: [@u1, @u2, @u3],
-        over_cap: [@u4]
+        passages: [@u1, @u2, @u3]
       }
 
       answers =
@@ -413,8 +411,7 @@ defmodule Cite.JudgeTest do
                ],
                dropped: [
                  %Citation{passage: @u1, verdict: :dropped, answer: %{"noul" => 0.4}}
-               ],
-               over_cap: [@u4]
+               ]
              }
     end
 
@@ -479,8 +476,7 @@ defmodule Cite.JudgeTest do
                  %Citation{passage: @u3, verdict: :holds, answer: nil},
                  %Citation{passage: @u9, verdict: :holds, answer: nil}
                ],
-               dropped: [],
-               over_cap: []
+               dropped: []
              }
     end
 
@@ -568,8 +564,7 @@ defmodule Cite.JudgeTest do
                  "answer" => %{"noul" => 0.9}
                }
              ],
-             "dropped" => [],
-             "over_cap" => []
+             "dropped" => []
            }
   end
 end

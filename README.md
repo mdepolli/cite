@@ -118,8 +118,7 @@ They are part of the product:
           answer: %{"noul" => 0.91}
         }
       ],
-      dropped: [],
-      over_cap: []
+      dropped: []
     }
   ],
   screen: %{"P000" => %{riddle: 0.94}, "P001" => %{riddle: 0.03}, "P002" => %{riddle: 0.02}},
@@ -137,9 +136,9 @@ so a run is diagnosable without another request.
 
 ## Options
 
-`threshold`, `review_band`, `window`, and `max_evidence` tune a run. Their
-defaults and meaning are in the docs of `Cite.judge/4`, generated from the
-schema that validates them.
+`threshold`, `review_band`, and `window` tune a run. Their defaults and
+meaning are in the docs of `Cite.judge/4`, generated from the schema that
+validates them.
 
 ## Errors
 

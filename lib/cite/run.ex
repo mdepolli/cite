@@ -28,11 +28,6 @@ defmodule Cite.Run do
               type: :pos_integer,
               default: 40,
               doc: "Passages per round-1 request."
-            ],
-            max_evidence: [
-              type: :pos_integer,
-              default: 20,
-              doc: "Passages a finding may cite; the rest are `over_cap`."
             ]
           )
 
@@ -43,7 +38,6 @@ defmodule Cite.Run do
           threshold: number(),
           review_band: {number(), number()},
           window: pos_integer(),
-          max_evidence: pos_integer(),
           screen: Screen.screen() | nil,
           gathered: [Gathered.t()] | nil,
           findings: [Finding.t()] | nil,
@@ -55,7 +49,7 @@ defmodule Cite.Run do
   # A stage's output is nil until its step runs, and the next step matches
   # on it, so steps run out of order fail loudly instead of reading an empty
   # result. Errors, usages, and models start empty: both rounds add to them.
-  @enforce_keys [:client, :source, :terms, :threshold, :review_band, :window, :max_evidence]
+  @enforce_keys [:client, :source, :terms, :threshold, :review_band, :window]
   defstruct @enforce_keys ++
               [screen: nil, gathered: nil, findings: nil, errors: [], usages: [], models: []]
 

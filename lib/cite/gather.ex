@@ -10,9 +10,8 @@ defmodule Cite.Gather do
   @doc """
   The run's `gathered` findings, to judge in the policy's concern order. A
   passage counts only if it passes every filter; a directly screened concern
-  gathers every match (the strongest `max_evidence` of them); a concern
-  built from factors fills each role with its strongest match, and needs
-  every required role.
+  gathers every match; a concern built from factors fills each role with its
+  strongest match, and needs every required role.
   """
   @spec findings(Run.t()) :: Run.t()
   def findings(%Run{screen: screen} = run) when is_map(screen) do
@@ -28,7 +27,7 @@ defmodule Cite.Gather do
           built(concern, eligible, screen, threshold)
 
         %Concern{} = concern ->
-          screened(concern, Map.get(direct, concern.name, []), screen, run.max_evidence)
+          screened(concern, Map.get(direct, concern.name, []))
       end)
 
     %{run | gathered: gathered}
@@ -60,22 +59,12 @@ defmodule Cite.Gather do
   defp keep(matched, _row, false), do: matched
   defp keep(matched, row, true), do: [Enum.max_by(matched, &row[&1])]
 
-  defp screened(_concern, [], _screen, _max_evidence), do: []
+  # Matches arrive in source order, and a finding is judged whole: every one
+  # is cited (ADR 1, ADR 2).
+  defp screened(_concern, []), do: []
 
-  defp screened(%Concern{name: name} = concern, matches, screen, max_evidence) do
-    {kept, over_cap} =
-      matches
-      |> Enum.sort_by(&screen[&1.id][name], :desc)
-      |> Enum.split(max_evidence)
-
-    [
-      %Gathered{
-        concern: concern,
-        passages: in_order(kept, matches),
-        over_cap: in_order(over_cap, matches)
-      }
-    ]
-  end
+  defp screened(%Concern{} = concern, matches),
+    do: [%Gathered{concern: concern, passages: matches}]
 
   # Roles that need not be distinct are filled first, so a distinct role can
   # avoid every passage already in one.

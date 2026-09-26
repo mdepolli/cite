@@ -89,8 +89,7 @@ defmodule CiteTest do
                        answer: %{"noul" => 0.9}
                      }
                    ],
-                   dropped: [],
-                   over_cap: []
+                   dropped: []
                  }
                ],
                screen: %{"P000" => %{riddle: 0.94}, "P001" => %{riddle: 0.1}},
@@ -131,6 +130,30 @@ defmodule CiteTest do
                &{&1.concern, &1.verdict, Enum.map(&1.evidence, fn c -> c.passage.id end)}
              ) ==
                [{:household_income, :holds, ["U3", "U9"]}]
+    end
+
+    test "judges every match in one round-2 request, however many" do
+      # Arrange
+      source = Cite.source(Enum.map(1..25, &"Riddle number #{&1}?"))
+      screening = client(Map.new(0..24, &{"P#{String.pad_leading("#{&1}", 3, "0")}:riddle", 0.9}))
+      test_pid = self()
+
+      client = fn
+        %{"questions" => %{"confirm:P000" => _} = questions} = request ->
+          send(test_pid, {:round_2, map_size(questions)})
+          screening.(request)
+
+        request ->
+          screening.(request)
+      end
+
+      # Act
+      %Report{findings: [finding]} = Cite.judge(client, source, Riddles)
+
+      # Assert
+      assert_received {:round_2, 25}
+      refute_received {:round_2, _}
+      assert length(finding.evidence) + length(finding.dropped) == 25
     end
   end
 
@@ -322,15 +345,13 @@ defmodule CiteTest do
              "invalid value for :review_band option: expected {low, high} with 0 <= low < high <= 1, got: {0.6, 0.4}"},
             {[review_band: {0.4, 1.5}],
              "invalid value for :review_band option: expected {low, high} with 0 <= low < high <= 1, got: {0.4, 1.5}"},
-            {[max_evidence: 0],
-             "invalid value for :max_evidence option: expected positive integer, got: 0"},
             {[window: 0], "invalid value for :window option: expected positive integer, got: 0"},
             {[threshold: "high"],
              ~s(invalid value for :threshold option: expected a number from 0 to 1, got: "high")},
             {[threshold: 5],
              "invalid value for :threshold option: expected a number from 0 to 1, got: 5"},
             {[colour: :red],
-             "unknown options [:colour], valid options are: [:threshold, :review_band, :window, :max_evidence]"}
+             "unknown options [:colour], valid options are: [:threshold, :review_band, :window]"}
           ] do
         assert_raise ArgumentError, message, fn ->
           Cite.judge(refusing_client(), Cite.source(["a"]), Riddles, opts)

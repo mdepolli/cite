@@ -18,11 +18,10 @@ defmodule Cite.GatherTest do
     Gather.findings(run).gathered
   end
 
-  # Each finding as {concern, cited ids, over-cap ids, %{role => id}}.
+  # Each finding as {concern, cited ids, %{role => id}}.
   defp summary(findings) do
     for finding <- findings do
       {finding.concern.name, Enum.map(finding.passages, & &1.id),
-       Enum.map(finding.over_cap, & &1.id),
        Map.new(finding.roles, fn {role, p} -> {role, p.id} end)}
     end
   end
@@ -50,7 +49,7 @@ defmodule Cite.GatherTest do
       run = Gather.findings(run)
 
       # Assert
-      assert summary(run.gathered) == [{:cashflow_stress, ["U1"], [], %{}}]
+      assert summary(run.gathered) == [{:cashflow_stress, ["U1"], %{}}]
     end
   end
 
@@ -65,34 +64,20 @@ defmodule Cite.GatherTest do
 
       # Act + Assert
       assert summary(gather(TestTerms.household(), screen)) == [
-               {:cashflow_stress, ["U1", "U2"], [], %{}}
+               {:cashflow_stress, ["U1", "U2"], %{}}
              ]
     end
 
-    test "past max_evidence keep the strongest and record the rest as over_cap" do
+    test "gather every match, with no cap: twenty-five of them" do
       # Arrange
-      screen = %{
-        "U1" => spoken_by_client(%{cashflow_stress: 0.6}),
-        "U2" => spoken_by_client(%{cashflow_stress: 0.9}),
-        "U3" => spoken_by_client(%{cashflow_stress: 0.8})
-      }
+      ids = for n <- 10..34, do: "U#{n}"
+      screen = Map.new(ids, &{&1, spoken_by_client(%{cashflow_stress: 0.9})})
 
-      # Act + Assert
-      assert summary(gather(TestTerms.household(), screen, max_evidence: 2)) ==
-               [{:cashflow_stress, ["U2", "U3"], ["U1"], %{}}]
-    end
+      # Act
+      [{concern, cited, roles}] = summary(gather(TestTerms.household(), screen))
 
-    test "at max_evidence, a tie goes to the passage earlier in the source" do
-      # Arrange
-      screen = %{
-        "U1" => spoken_by_client(%{cashflow_stress: 0.8}),
-        "U2" => spoken_by_client(%{cashflow_stress: 0.9}),
-        "U3" => spoken_by_client(%{cashflow_stress: 0.8})
-      }
-
-      # Act + Assert
-      assert summary(gather(TestTerms.household(), screen, max_evidence: 2)) ==
-               [{:cashflow_stress, ["U1", "U2"], ["U3"], %{}}]
+      # Assert
+      assert {concern, length(cited), roles} == {:cashflow_stress, 25, %{}}
     end
   end
 
@@ -105,8 +90,8 @@ defmodule Cite.GatherTest do
 
       # Act + Assert
       assert summary(gather(TestTerms.household(), screen)) == [
-               {:cashflow_stress, ["U1"], [], %{}},
-               {:household_income, ["U1"], [], %{household: "U1", income: "U1"}}
+               {:cashflow_stress, ["U1"], %{}},
+               {:household_income, ["U1"], %{household: "U1", income: "U1"}}
              ]
     end
 
@@ -117,7 +102,7 @@ defmodule Cite.GatherTest do
 
       # Act + Assert
       assert summary(gather(terms, screen)) ==
-               [{:health, ["U1"], [], %{}}, {:life_event, ["U1"], [], %{}}]
+               [{:health, ["U1"], %{}}, {:life_event, ["U1"], %{}}]
     end
 
     test "keeps a passage only with its highest-scoring direct concern" do
@@ -125,7 +110,7 @@ defmodule Cite.GatherTest do
       screen = %{"U1" => spoken_by_client(%{health: 0.6, life_event: 0.8})}
 
       # Act + Assert
-      assert summary(gather(TestTerms.two_concerns(), screen)) == [{:life_event, ["U1"], [], %{}}]
+      assert summary(gather(TestTerms.two_concerns(), screen)) == [{:life_event, ["U1"], %{}}]
     end
 
     test "breaks a tie by concern declaration order" do
@@ -133,7 +118,7 @@ defmodule Cite.GatherTest do
       screen = %{"U1" => spoken_by_client(%{health: 0.8, life_event: 0.8})}
 
       # Act + Assert
-      assert summary(gather(TestTerms.two_concerns(), screen)) == [{:health, ["U1"], [], %{}}]
+      assert summary(gather(TestTerms.two_concerns(), screen)) == [{:health, ["U1"], %{}}]
     end
 
     test "leaves other passages with their own concerns" do
@@ -145,7 +130,7 @@ defmodule Cite.GatherTest do
 
       # Act + Assert
       assert summary(gather(TestTerms.two_concerns(), screen)) ==
-               [{:health, ["U1"], [], %{}}, {:life_event, ["U2"], [], %{}}]
+               [{:health, ["U1"], %{}}, {:life_event, ["U2"], %{}}]
     end
   end
 
@@ -160,7 +145,7 @@ defmodule Cite.GatherTest do
 
       # Act + Assert
       assert summary(gather(TestTerms.household(), screen)) ==
-               [{:household_income, ["U2", "U3"], [], %{household: "U2", income: "U3"}}]
+               [{:household_income, ["U2", "U3"], %{household: "U2", income: "U3"}}]
     end
 
     test "a distinct role skips passages that fill another role" do
@@ -173,7 +158,7 @@ defmodule Cite.GatherTest do
 
       # Act + Assert
       assert summary(gather(TestTerms.household(), screen)) == [
-               {:household_income, ["U1", "U2", "U3"], [],
+               {:household_income, ["U1", "U2", "U3"],
                 %{household: "U1", income: "U2", other_earner: "U3"}}
              ]
     end
@@ -184,7 +169,7 @@ defmodule Cite.GatherTest do
 
       # Act + Assert
       assert summary(gather(TestTerms.household(), screen)) ==
-               [{:household_income, ["U1"], [], %{household: "U1", income: "U1"}}]
+               [{:household_income, ["U1"], %{household: "U1", income: "U1"}}]
     end
 
     test "an empty required role means no finding" do
@@ -211,8 +196,8 @@ defmodule Cite.GatherTest do
 
     # Act + Assert
     assert summary(gather(TestTerms.household(), screen)) == [
-             {:cashflow_stress, ["U2"], [], %{}},
-             {:household_income, ["U1"], [], %{household: "U1", income: "U1"}}
+             {:cashflow_stress, ["U2"], %{}},
+             {:household_income, ["U1"], %{household: "U1", income: "U1"}}
            ]
   end
 end

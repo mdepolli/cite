@@ -20,12 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the word they sit under and `show:` for the meta the model sees.
 - `Cite.judge/4`: two fixed rounds. A screen of every passage for every
   detect in windows, fixed rules that gather matches into findings, and
-  one judgment per finding on its own evidence, gated by a review band.
-  Options: `threshold`, `review_band`, `window`, `max_evidence`.
+  one judgment per finding on all of its evidence, gated by a review band.
+  Options: `threshold`, `review_band`, `window`.
 - `Cite.Report`, `Cite.Finding`, `Cite.Citation`, `Cite.Passage`, and
   `Cite.Error` as the outputs, encodable with Jason. A finding carries its
   verdict, the raw answers to its checks and descriptors, the passages it
-  cites, those its confirm dropped, and those past `max_evidence`; the report
+  cites and those its confirm dropped; the report
   keeps every round-1 score, token usage, and the model ids that answered.
 - `Cite.Provider` behaviour and `Cite.Provider.TypeSafe`, a Req client for
   TypeSafe System One; `Cite.client/2` builds the client function

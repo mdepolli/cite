@@ -1,14 +1,14 @@
 defmodule Cite.Finding do
   @moduledoc """
   A judged finding: its concern and category, the verdict, the raw answers
-  to its checks and descriptors, the passages it cites, those its confirm
-  dropped, and the matches past `max_evidence` that were never judged.
+  to its checks and descriptors, the passages it cites, and those its
+  confirm dropped. Every passage it gathered was judged.
 
   `checks` holds only the checks that were asked. Answers are the model's
   maps, string keys as they came off the wire. Read it, don't build it.
   """
 
-  alias Cite.{Citation, Passage}
+  alias Cite.Citation
 
   @derive Jason.Encoder
 
@@ -19,8 +19,7 @@ defmodule Cite.Finding do
           checks: %{atom() => map()},
           descriptors: %{atom() => map()},
           evidence: [Citation.t()],
-          dropped: [Citation.t()],
-          over_cap: [Passage.t()]
+          dropped: [Citation.t()]
         }
 
   @enforce_keys [:concern, :category, :verdict]
@@ -31,7 +30,6 @@ defmodule Cite.Finding do
     checks: %{},
     descriptors: %{},
     evidence: [],
-    dropped: [],
-    over_cap: []
+    dropped: []
   ]
 end

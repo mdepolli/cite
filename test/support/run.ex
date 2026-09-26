@@ -17,8 +17,7 @@ defmodule Cite.TestRun do
         terms: terms,
         threshold: 0.5,
         review_band: {0.4, 0.6},
-        window: 40,
-        max_evidence: 20
+        window: 40
       ] ++ fields
     )
   end
