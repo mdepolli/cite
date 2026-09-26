@@ -54,7 +54,7 @@ defmodule Cite.Gather do
   end
 
   # Matches arrive in source order, and a finding is judged whole: every one
-  # is cited (ADR 1, ADR 2).
+  # is judged (ADR 1, ADR 2).
   defp screened(_concern, []), do: []
 
   defp screened(%Concern{} = concern, matches),
