@@ -19,7 +19,7 @@ defmodule Cite.Run do
               It decides which passages are gathered, and a finding's confirms read \
               every passage gathered with it, so it changes verdicts as well as \
               recall. Below 0.5, measured on transcripts, it invents findings in \
-              concerns that have none and multiplies review load.\
+              concerns with no match at 0.5 and multiplies review load.\
               """
             ],
             review_band: [
