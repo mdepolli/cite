@@ -153,7 +153,8 @@ defmodule CiteTest do
       # Assert
       assert_received {:round_2, 25}
       refute_received {:round_2, _}
-      assert length(finding.evidence) + length(finding.dropped) == 25
+      # Every confirm answers the stub's default 0.1, so all 25 are dropped.
+      assert {finding.evidence, length(finding.dropped), finding.verdict} == {[], 25, :fails}
     end
   end
 
