@@ -248,3 +248,34 @@ occasions" and sank a same-household check; keep them in `meta`, unshown.
 benchmark. A model's reading of the same wording shifts between versions, so
 a change of model is a change of questions until you have measured
 otherwise.
+
+## Tuning against labels
+
+With passages labelled by hand, you can tune the wording the way you would
+tune any model. These held up in practice.
+
+**Hold some labels out.** Read the misses on part of your labelled sources
+only, and score the rest once the wording settles. Wording written while
+reading a passage catches that passage; only passages you never read tell
+you whether it generalises. A held-out part that has checked a tuned policy
+once is spent.
+
+**Find where each miss happens.** The report keeps every round-1 score. A
+labelled passage that was never gathered scored below `threshold` at the
+screen, and the lever is the detect's wording, not the threshold (see How
+judging works). One gathered and then dropped is the confirm's.
+
+**Match the unit your labels mark.** Labels often mark a whole provision,
+section, or episode, and tag some of its passages and not others. A detect
+that asks whether a passage *is* such a thing misses the passages that only
+belong to one: its procedure, its exceptions, the line that says where it
+does not apply. Ask whether the passage is *part of* one: "Is {passage}
+part of an arbitration clause, including its procedure and any opt-out?"
+
+**Recall alone rewards citing everything.** When labels tag only some of a
+provision's passages, an unlabelled passage is evidence of nothing, and only
+recall can be scored. Watch two numbers beside it: labelled passages cited
+under a concern they are not labelled with, and how many unlabelled passages
+are cited. When either climbs, read a sample; the fix is usually a
+`not_for`. To measure precision, label every passage of a few sources as a
+separate reference, and never merge it with the first.
