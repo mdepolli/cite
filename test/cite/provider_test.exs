@@ -27,6 +27,18 @@ defmodule Cite.ProviderTest do
       assert Cite.client(Echo).(@request) ==
                {:ok, %{answers: %{"U0:d" => %{"noul" => 0.5}}, usage: nil}}
     end
+
+    test "raises on a provider that is not a module" do
+      assert_raise ArgumentError, ~r/provider must be a module implementing Cite.Provider/, fn ->
+        Cite.client("Cite.Provider.TypeSafe", api_key: "k")
+      end
+    end
+
+    test "raises on provider options that are not a keyword list" do
+      assert_raise ArgumentError, ~r/provider options must be a keyword list/, fn ->
+        Cite.client(Echo, %{score: 0.9})
+      end
+    end
   end
 
   describe "a custom provider" do

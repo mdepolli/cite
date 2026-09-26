@@ -67,6 +67,16 @@ defmodule Cite.SourceTest do
       end
     end
 
+    test "raises on units that are not a list" do
+      for units <- ["a", %{text: "a"}] do
+        assert_raise ArgumentError,
+                     ~r/units must be a list of texts or %\{text: text\} maps/,
+                     fn ->
+                       Source.new(units)
+                     end
+      end
+    end
+
     test "raises on a unit that is neither a text nor a map with text" do
       for unit <- [:x, %{id: "U1"}, %{text: :x}] do
         assert_raise ArgumentError, ~r/each unit must be a text or %\{text: text\}/, fn ->

@@ -58,7 +58,9 @@ defmodule Cite.Source do
   shown meta value, or option it cannot use.
   """
   @spec new([String.t() | map()], keyword()) :: t()
-  def new(units, opts \\ []) when is_list(units) do
+  def new(units, opts \\ [])
+
+  def new(units, opts) when is_list(units) do
     opts = options(opts)
     as = opts[:as]
     show = opts[:show]
@@ -70,6 +72,11 @@ defmodule Cite.Source do
       |> reject_duplicate_ids()
 
     %__MODULE__{passages: passages, as: as, show: show}
+  end
+
+  def new(units, _opts) do
+    raise ArgumentError,
+          "units must be a list of texts or %{text: text} maps, got: #{inspect(units)}"
   end
 
   defp options(opts) do
