@@ -13,7 +13,6 @@ spark_locals_without_parens = [
   detect: 1,
   distinct: 1,
   examples: 1,
-  exclusive: 1,
   factor: 1,
   factor: 2,
   filter: 1,
