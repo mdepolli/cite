@@ -11,10 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `use Cite.Policy`: a policy declared once in a module, built on Spark.
   Filters, concerns (screened directly with a detect and an optional
-  confirm, or built from factors with roles and checks), factors, and Score or
-  Choice descriptors. A passage is evidence for every concern it matches. Questions
-  name what they read by placeholder (`{passage}`, `{household}`) and Cite
-  writes the path. Every mistake in a policy is a compile error.
+  confirm, or built from factors with roles and checks), factors, and Score
+  or Choice descriptors. A passage is evidence for every concern it matches.
+  Questions name what they read by placeholder (`{passage}`, `{household}`)
+  and Cite writes the path. Every mistake in a policy is a compile error.
 - A DSL reference in `Cite.Policy`'s docs, generated from the DSL by Spark.
 - `Cite.source/2`: the caller's passages, kept byte for byte, with `as:` for
   the word they sit under and `show:` for the meta the model sees.
@@ -25,8 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Cite.Report`, `Cite.Finding`, `Cite.Citation`, `Cite.Passage`, and
   `Cite.Error` as the outputs, encodable with Jason. A finding carries its
   verdict, the raw answers to its checks and descriptors, the passages it
-  cites and those its confirm dropped; the report
-  keeps every round-1 score, token usage, and the model ids that answered.
+  cites and those its confirm dropped; the report keeps every round-1 score,
+  token usage, and the model ids that answered.
 - `Cite.Provider` behaviour and `Cite.Provider.TypeSafe`, a Req client for
   TypeSafe System One; `Cite.client/2` builds the client function
   `judge/4` takes. The TypeSafe client retries 429, 529, 500–504, and
