@@ -132,6 +132,25 @@ With `{low, high}` as the review band:
   citation holds.
 - **`:review`**: everything else.
 
+## How a finding is read
+
+A confirm does not judge its passage alone. It reads the passage's part in
+the whole finding, beside every other passage gathered with it, so a line
+that refers back to another ("I kind of resent it") can hold beside the line
+it refers to and fail alone. That was measured on conversation transcripts,
+where lines lean on turns far away; a source of self-contained passages may
+behave differently. Three things follow:
+
+- **A finding's evidence is judged as a set.** Show a finding's citations
+  together. One citation shown alone is something the model never judged
+  alone.
+- **Gathering shapes judgment.** `threshold` decides which passages are
+  gathered, and so what every confirm reads. A passage near the threshold
+  can move a sibling's verdict across the review band from run to run:
+  round-1 noise reaches round 2.
+- **A finding is one request.** Round 2 never splits a finding, so a larger
+  finding is a larger request, not more of them.
+
 ## Replies
 
 The client's reply is checked once, in the shell. A reply that skips a

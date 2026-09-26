@@ -138,7 +138,11 @@ so a run is diagnosable without another request.
 
 `threshold`, `review_band`, and `window` tune a run. Their defaults and
 meaning are in the docs of `Cite.judge/4`, generated from the schema that
-validates them.
+validates them. `threshold` does more than set recall: it decides which
+passages are gathered, and a finding's confirms read all of them together,
+so it changes verdicts too. Round 2 judges every passage gathered, one
+request per finding, so its cost follows the threshold. See
+[How judging works](guides/how-judging-works.md).
 
 ## Errors
 

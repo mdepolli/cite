@@ -14,7 +14,13 @@ defmodule Cite.Run do
             threshold: [
               type: {:custom, __MODULE__, :threshold, []},
               default: 0.5,
-              doc: "The round-1 score a match must exceed, from 0 to 1. Sets recall only."
+              doc: """
+              The round-1 score a filter, factor, or detect must exceed, from 0 to 1. \
+              It decides which passages are gathered, and a finding's confirms read \
+              every passage gathered with it, so it changes verdicts as well as \
+              recall. Below 0.5, measured on transcripts, it invents findings in \
+              concerns that have none and multiplies review load.\
+              """
             ],
             review_band: [
               type: {:custom, __MODULE__, :review_band, []},
