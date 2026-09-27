@@ -132,6 +132,61 @@ defmodule CiteTest do
                [{:household_income, :holds, ["U3", "U9"]}]
     end
 
+    test "screens a concern directly through a filter, confirms it, and describes it" do
+      # Arrange
+      source =
+        Cite.source([%{id: "U1", text: "We're behind on the mortgage.", meta: %{speaker: "B"}}],
+          as: "utterances",
+          show: [:speaker]
+        )
+
+      client =
+        client(%{"U1:client_speaking" => 0.9, "U1:cashflow_stress" => 0.9, "confirm:U1" => 0.9})
+
+      # Act
+      report = Cite.judge(client, source, Household)
+
+      # Assert
+      assert report == %Report{
+               findings: [
+                 %Finding{
+                   concern: :cashflow_stress,
+                   category: :resilience,
+                   verdict: :holds,
+                   checks: %{},
+                   descriptors: %{
+                     severity: %{"score" => 1.0, "confidence" => 0.9},
+                     temporal: %{"choice" => "persistent", "confidence" => 0.9}
+                   },
+                   evidence: [
+                     %Citation{
+                       passage: %Passage{
+                         id: "U1",
+                         text: "We're behind on the mortgage.",
+                         meta: %{speaker: "B"}
+                       },
+                       verdict: :holds,
+                       answer: %{"noul" => 0.9}
+                     }
+                   ],
+                   dropped: []
+                 }
+               ],
+               screen: %{
+                 "U1" => %{
+                   client_speaking: 0.9,
+                   cashflow_stress: 0.9,
+                   dependents: 0.1,
+                   primary_income: 0.1,
+                   other_household_income: 0.1
+                 }
+               },
+               errors: [],
+               usage: %{input_tokens: 20, output_tokens: 0},
+               models: ["jev-1.13.0"]
+             }
+    end
+
     test "judges every match in one round-2 request, however many" do
       # Arrange
       source = Cite.source(Enum.map(1..25, &"Riddle number #{&1}?"))
