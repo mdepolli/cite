@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-27
+
 ### Added
 
 - `use Cite.Policy`: a policy declared once in a module, built on Spark.
@@ -52,4 +54,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (the SemVer contract), Providers, and Internal.
 - Requires Elixir `~> 1.18`.
 
-[Unreleased]: https://github.com/mdepolli/cite/commits/main
+[Unreleased]: https://github.com/mdepolli/cite/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/mdepolli/cite/releases/tag/v0.1.0
