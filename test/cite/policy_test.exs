@@ -22,9 +22,12 @@ defmodule Cite.PolicyTest do
       assert Build.read(FocusRole) == TestTerms.focus_role()
     end
 
-    test "raises on a module that is not a policy" do
-      assert_raise ArgumentError, ~r/Enum is not a Cite policy/, fn ->
-        Build.read(Enum)
+    test "raises on a module that is not a policy, and on a name that is not a module" do
+      for {module, message} <- [
+            {Enum, ~r/Enum is not a Cite policy/},
+            {"Riddles", ~r/"Riddles" is not a Cite policy/}
+          ] do
+        assert_raise ArgumentError, message, fn -> Build.read(module) end
       end
     end
   end
