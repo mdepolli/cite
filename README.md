@@ -69,8 +69,9 @@ count at all), *factors* (facts that only count in combination), and
 they read by placeholder — `{passage}`, or a role like `{household}` — and
 Cite writes the path the model sees. Every mistake in a policy is a compile
 error. [Writing policies](https://hexdocs.pm/cite/writing-policies.html) is
-the full language. [Triaging logs](https://hexdocs.pm/cite/triaging-logs.html)
-and [Finding sponsor segments](https://hexdocs.pm/cite/finding-sponsor-segments.html)
+the full language. [Triaging logs](https://hexdocs.pm/cite/triaging-logs.html),
+[Finding sponsor segments](https://hexdocs.pm/cite/finding-sponsor-segments.html),
+and [Labelling allergens in recipes](https://hexdocs.pm/cite/labelling-allergens.html)
 each build a policy from scratch.
 
 **Hand over the source.** `Cite.source(units, opts)` takes the passages your

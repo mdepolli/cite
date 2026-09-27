@@ -83,6 +83,7 @@ defmodule Cite.MixProject do
         "guides/how-judging-works.md",
         "guides/tutorials/triaging-logs.md",
         "guides/tutorials/finding-sponsor-segments.md",
+        "guides/tutorials/labelling-allergens.md",
         "CHANGELOG.md"
       ],
       # The language and the rounds first; then tutorials, each building a
