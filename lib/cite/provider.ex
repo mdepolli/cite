@@ -9,16 +9,14 @@ defmodule Cite.Provider do
 
   ## Requests
 
-  The request is the question schema TypeSafe's System One API defined and
-  Laya adopted: `"state"` plus
-  `"questions"`. A value in `"state"` may be a `Cite.Wire.Object`, a JSON
-  object whose keys keep their order; each question is a map with `"type"` (`noul`, `score`,
-  `choice`), `"instructions"` (`question`, then `inspect` or `compare`, and
-  an optional `focus`) and `"criteria"`.
-  TypeSafe Jev and Laya share it, so a provider for either sends it as is; a
-  provider for a model with different inputs converts from it. Cite encodes
-  questions to that schema before they reach a provider; the provider never
-  sees a policy.
+  The request is the question schema of TypeSafe's System One API: `"state"`
+  plus `"questions"`. A value in `"state"` may be a `Cite.Wire.Object`, a JSON
+  object whose keys keep their order; each question is a map with `"type"`
+  (`noul`, `score`, `choice`), `"instructions"` (`question`, then `inspect`
+  or `compare`, and an optional `focus`) and `"criteria"`. A provider for a
+  model that takes that schema sends it as is; a provider for a model with
+  different inputs converts from it. Cite encodes questions to that schema
+  before they reach a provider; the provider never sees a policy.
 
   ## Errors
 
