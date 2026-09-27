@@ -35,8 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Cite.Provider` behaviour and `Cite.Provider.TypeSafe`, a Req client for
   TypeSafe System One; `Cite.client/2` builds the client function
   `judge/4` takes. A request's `"state"` may hold `Cite.Wire.Object`
-  values, JSON objects that keep their key order. The TypeSafe client takes `api_key` (or reads `JEV_API_KEY`),
-  `model`, `base_url`, `max_retry_delay`, and `req_options`. It retries 429,
+  values, JSON objects that keep their key order. The TypeSafe client takes
+  `api_key`, `model`, `base_url`, `max_retry_delay`, and `req_options`. It retries 429,
   529, 500–504, and connection failures up to three times, honouring
   `Retry-After`, delays capped at 30 seconds; timeouts are not retried.
 - Round-1 windows over the provider's size cap (`{:error,

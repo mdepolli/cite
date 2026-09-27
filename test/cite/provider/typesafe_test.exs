@@ -1,6 +1,5 @@
 defmodule Cite.Provider.TypeSafeTest do
-  # Not async: new/1 tests clear JEV_API_KEY, which is process-global.
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   alias Cite.Provider.TypeSafe
 
@@ -48,10 +47,12 @@ defmodule Cite.Provider.TypeSafeTest do
 
   describe "new/1" do
     test "raises without an api key" do
-      System.delete_env("JEV_API_KEY")
-
-      assert_raise ArgumentError, ~r/missing API key/, fn -> TypeSafe.new() end
-      assert_raise ArgumentError, ~r/missing API key/, fn -> TypeSafe.new(api_key: "") end
+      for {opts, message} <- [
+            {[], ~r/required :api_key option not found/},
+            {[api_key: ""], ~r/invalid value for :api_key option: expected a non-empty string/}
+          ] do
+        assert_raise ArgumentError, message, fn -> TypeSafe.new(opts) end
+      end
     end
 
     test "refuses a max_retry_delay that would not cap anything" do

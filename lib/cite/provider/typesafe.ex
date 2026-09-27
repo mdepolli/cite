@@ -9,8 +9,9 @@ defmodule Cite.Provider.TypeSafe do
 
   @schema Spark.Options.new!(
             api_key: [
-              type: :string,
-              doc: "The TypeSafe API key. Without it, `JEV_API_KEY`; with neither, it raises."
+              type: {:custom, __MODULE__, :validate_api_key, []},
+              required: true,
+              doc: "The TypeSafe API key."
             ],
             model: [
               type: :string,
@@ -70,7 +71,7 @@ defmodule Cite.Provider.TypeSafe do
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
     opts = options(opts)
-    api_key = api_key(opts[:api_key])
+    api_key = opts[:api_key]
     model = opts[:model]
     base_url = opts[:base_url]
     max_retry_delay = opts[:max_retry_delay]
@@ -102,16 +103,9 @@ defmodule Cite.Provider.TypeSafe do
     end
   end
 
-  # An explicit key wins; without one, the environment's.
-  defp api_key(given) do
-    case given || System.get_env("JEV_API_KEY") do
-      key when key in [nil, ""] ->
-        raise ArgumentError, "missing API key: pass :api_key or set JEV_API_KEY"
-
-      key ->
-        key
-    end
-  end
+  @doc false
+  def validate_api_key(key) when is_binary(key) and key != "", do: {:ok, key}
+  def validate_api_key(key), do: {:error, "expected a non-empty string, got: #{inspect(key)}"}
 
   # Req forbids :retry_delay next to a retry function that returns its own
   # delays; better to say so here than inside the first call.
