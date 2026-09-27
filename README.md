@@ -68,7 +68,9 @@ count at all), *factors* (facts that only count in combination), and
 *descriptors* (a Score or Choice asked of every finding). Questions name what
 they read by placeholder — `{passage}`, or a role like `{household}` — and
 Cite writes the path the model sees. Every mistake in a policy is a compile
-error. [Writing policies](guides/writing-policies.md) is the full language.
+error. [Writing policies](https://hexdocs.pm/cite/writing-policies.html) is
+the full language; [Triaging logs](https://hexdocs.pm/cite/triaging-logs.html)
+builds a policy from scratch.
 
 **Hand over the source.** `Cite.source(units, opts)` takes the passages your
 document already consists of: utterances, rows, paragraphs. A unit is a text
@@ -86,8 +88,8 @@ with you.
 Round 1 screens every passage for every detect, a window of passages per
 request. Between the rounds, fixed rules gather the matches into findings.
 Round 2 judges each finding with one request on its own evidence.
-[How judging works](guides/how-judging-works.md) has the requests and the
-verdict rules.
+[How judging works](https://hexdocs.pm/cite/how-judging-works.html) has the
+requests and the verdict rules.
 
 ## The limits
 
@@ -142,7 +144,7 @@ validates them. `threshold` does more than set recall: it decides which
 passages are gathered, and a finding's confirms read all of them together,
 so it changes verdicts too. Round 2 judges every passage gathered, one
 request per finding, so its cost follows the threshold. See
-[How judging works](guides/how-judging-works.md).
+[How judging works](https://hexdocs.pm/cite/how-judging-works.html).
 
 ## Errors
 
