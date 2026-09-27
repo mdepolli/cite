@@ -371,18 +371,4 @@ defmodule CiteTest do
       end
     end
   end
-
-  test "a report encodes with Jason" do
-    # Arrange
-    report = Cite.judge(client(%{}), Cite.source(["a"]), Riddles)
-
-    # Act + Assert
-    assert Jason.decode!(Jason.encode!(report)) == %{
-             "findings" => [],
-             "screen" => %{"P000" => %{"riddle" => 0.1}},
-             "errors" => [],
-             "usage" => %{"input_tokens" => 10, "output_tokens" => 0},
-             "models" => ["jev-1.13.0"]
-           }
-  end
 end

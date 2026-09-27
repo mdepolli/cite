@@ -574,20 +574,17 @@ defmodule Cite.Policy.ChecksTest do
       end
     end
 
-    test "a score with one level" do
-      assert_policy_error ~r/score :s needs 2 to 10 unique levels/ do
-        score :s do
-          question "How bad?"
-          levels ["only one"]
-        end
-      end
-    end
-
-    test "a score with eleven levels" do
-      assert_policy_error ~r/score :s needs 2 to 10 unique levels/ do
-        score :s do
-          question "How bad?"
-          levels ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"]
+    test "a score with one, eleven, or duplicate levels" do
+      for given <- [
+            ["only one"],
+            ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"],
+            ["same", "same"]
+          ] do
+        assert_policy_error ~r/score :s needs 2 to 10 unique levels/ do
+          score :s do
+            question "How bad?"
+            levels given
+          end
         end
       end
     end
@@ -615,15 +612,6 @@ defmodule Cite.Policy.ChecksTest do
 
       # Act + Assert
       assert [{Cite.Policy.ChecksTest.TenLevels, _bytecode}] = Code.compile_string(source)
-    end
-
-    test "a score with duplicate levels" do
-      assert_policy_error ~r/score :s needs 2 to 10 unique levels/ do
-        score :s do
-          question "How bad?"
-          levels ["same", "same"]
-        end
-      end
     end
 
     test "a choice with no options" do

@@ -273,7 +273,7 @@ defmodule Cite.Provider.TypeSafeTest do
                {true, 2, true}
     end
 
-    test "falls back to backoff when Retry-After is missing, unparseable, negative, or fractional" do
+    test "retries when Retry-After is missing, unparseable, negative, or fractional" do
       for {status, retry_after} <- [{503, nil}, {429, "soon"}, {503, "-1"}, {503, "7.5"}] do
         # Arrange
         calls = stub_failing_once(&send_with_retry_after(&1, status, retry_after))
@@ -284,7 +284,7 @@ defmodule Cite.Provider.TypeSafeTest do
       end
     end
 
-    test "an HTTP-date Retry-After already past waits no longer" do
+    test "retries on an HTTP-date Retry-After" do
       # Arrange
       calls = stub_failing_once(&send_with_retry_after(&1, 429, "Thu, 01 Jan 2015 00:00:00 GMT"))
 

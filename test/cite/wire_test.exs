@@ -164,8 +164,8 @@ defmodule Cite.WireTest do
     end
   end
 
-  describe "passages/2 on the wire" do
-    test "keeps source order past 32 entries" do
+  describe "Object on the wire" do
+    test "encodes its keys in order past 32 entries, where a plain map goes to hash order" do
       # Arrange: 40 passages; a plain map of these encodes in hash order.
       passages = for i <- 0..39, do: %Passage{id: id(i), text: "t#{i}"}
 

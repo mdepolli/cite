@@ -14,7 +14,7 @@ defmodule Cite.PolicyTest do
       assert Build.read(Household) == TestTerms.household()
     end
 
-    test "compiles two directly screened concerns" do
+    test "keeps concerns in declaration order" do
       assert Build.read(TwoConcerns) == TestTerms.two_concerns()
     end
 

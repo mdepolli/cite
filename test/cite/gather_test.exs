@@ -54,7 +54,7 @@ defmodule Cite.GatherTest do
   end
 
   describe "directly screened concerns" do
-    test "gather every match above threshold, in source order, not score order" do
+    test "gathers every match strictly above threshold, in source order, not score order" do
       screen = %{
         "U2" => spoken_by_client(%{cashflow_stress: 0.9}),
         "U1" => spoken_by_client(%{cashflow_stress: 0.7}),
@@ -66,7 +66,7 @@ defmodule Cite.GatherTest do
              ]
     end
 
-    test "gather every match, with no cap: twenty-five of them, in source order" do
+    test "gathers every match, with no cap: twenty-five of them, in source order" do
       # Scores rise with the id, so score order would reverse the list.
       screen = Map.new(10..34, &{"U#{&1}", spoken_by_client(%{cashflow_stress: 0.5 + &1 / 100})})
 

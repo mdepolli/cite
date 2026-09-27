@@ -37,4 +37,24 @@ defmodule Cite.ReportTest do
       end
     end
   end
+
+  test "encodes with Jason" do
+    # Arrange
+    report = %Report{
+      findings: [],
+      screen: %{"P000" => %{riddle: 0.1}},
+      errors: [],
+      usage: %{input_tokens: 10, output_tokens: 0},
+      models: ["jev-1.13.0"]
+    }
+
+    # Act + Assert
+    assert Jason.decode!(Jason.encode!(report)) == %{
+             "findings" => [],
+             "screen" => %{"P000" => %{"riddle" => 0.1}},
+             "errors" => [],
+             "usage" => %{"input_tokens" => 10, "output_tokens" => 0},
+             "models" => ["jev-1.13.0"]
+           }
+  end
 end
