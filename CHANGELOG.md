@@ -45,8 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   over the cap becomes an error. A round-2 request refused as too large is
   that finding's error.
 - Guides: Writing policies, and How judging works. Tutorials, each building
-  a policy from scratch: Triaging logs, Finding sponsor segments, and
-  Labelling allergens in recipes.
+  a policy from scratch: Triaging logs, Finding sponsor segments,
+  Labelling allergens in recipes, and Checking support calls against
+  procedure.
 - Stability tiers, named in the README and grouping the docs: Core API
   (the SemVer contract), Providers, and Internal.
 - Requires Elixir `~> 1.18`.
