@@ -59,8 +59,8 @@ the unit you triage and the unit you want cited.
 
 ```elixir
 lines = [
-  %{id: "L000", text: "data TLB error interrupt", meta: %{component: "KERNEL", time: "2005-06-14-09.12.48"}},
-  %{id: "L001", text: "Lustre mount FAILED : bglio856 : point /p/gb1", meta: %{component: "KERNEL", time: "2005-06-14-09.13.02"}},
+  %{id: "L000", text: "data TLB error interrupt", meta: %{component: "KERNEL", time: "2005-06-11-18.01.53.500378"}},
+  %{id: "L001", text: "Lustre mount FAILED : bglio856 : point /p/gb1", meta: %{component: "KERNEL", time: "2005-09-05-11.39.48.578783"}},
   # ...
 ]
 
@@ -97,7 +97,7 @@ a passage that fails a filter is evidence for nothing.
 filter :reports_event do
   question "Does {passage} report something that happened on the machine, rather than print one field or value of a register dump?"
   yes "The line reports an event, a failure, or a state change in words."
-  no "The line prints a status field as a name, a row of dots, and a 0 or 1, or prints a register's or address's values: detail from a dump, whatever the field is named after."
+  no "The line prints a status field as a name, a row of dots, and a 0 or 1, or prints a register's or address's values: detail from a dump, whatever the field is named after, even when its name is an interrupt or exception followed by the dots and a digit."
 end
 ```
 
@@ -233,9 +233,11 @@ end
 
 Three things to handle deliberately:
 
-- **A line can be several kinds.** "Link has been severed" during a crash
-  may be cited as both a lost connection and a kernel crash. Keep both, or
-  decide by your own precedence; Cite does not choose for you.
+- **A line can be several kinds.** `external input interrupt (unit=0x02
+  bit=0x00): uncorrectable torus error` is a hardware error in the torus
+  network, and it was cited as both a hardware error and a lost connection.
+  Keep both, or decide by your own precedence; Cite does not choose for
+  you.
 - **Review is a queue, not a verdict.** Page on `:holds`; send `:review` to
   a person with the line and its neighbours.
 - **An error is not a "no alert".** A failed request lands in
@@ -283,7 +285,7 @@ defmodule MyApp.LogTriage do
   filter :reports_event do
     question "Does {passage} report something that happened on the machine, rather than print one field or value of a register dump?"
     yes "The line reports an event, a failure, or a state change in words."
-    no "The line prints a status field as a name, a row of dots, and a 0 or 1, or prints a register's or address's values: detail from a dump, whatever the field is named after."
+    no "The line prints a status field as a name, a row of dots, and a 0 or 1, or prints a register's or address's values: detail from a dump, whatever the field is named after, even when its name is an interrupt or exception followed by the dots and a digit."
   end
 
   concern :cpu_exception do
