@@ -190,7 +190,10 @@ end
 %Cite.Report{findings: findings} = Cite.judge(client, source, Riddles)
 ```
 
-Both rounds run for real; only the model is stubbed. `Cite.Provider.TypeSafe`
+Both rounds run for real; only the model is stubbed. That stub fits `Riddles`,
+whose questions are all Nouls; a Score needs `%{"score" => level_index,
+"confidence" => p}` and a Choice `%{"choice" => option_key, "confidence" =>
+p}`, or the request fails as malformed. `Cite.Provider.TypeSafe`
 itself is tested with [`Req.Test`](https://hexdocs.pm/req/Req.Test.html):
 pass `req_options: [plug: {Req.Test, name}]` to `Cite.client/2`.
 
