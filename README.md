@@ -17,8 +17,8 @@ each match once with all of its passages in view.
 
 A decision model answers with a probability for a yes-or-no question, a
 level on a scale, or one option from a set, never with prose. Cite never
-asks it to write, so it cannot misquote: every citation is one of your
-passages, byte for byte.
+asks it to write, so it cannot misquote. Every finding is grounded in your
+own passages, cited byte for byte.
 
 ## Installation
 

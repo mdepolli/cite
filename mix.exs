@@ -44,7 +44,7 @@ defmodule Cite.MixProject do
   end
 
   defp description do
-    "Finds what you describe in a document, such as failures in a log or allergens in a recipe, and cites the exact passages behind each finding. Judges with a decision model, not a generative LLM."
+    "Finds what you describe in a document, such as failures in a log or allergens in a recipe. Every finding is grounded in the exact passages it cites. Judges with a decision model, not a generative LLM."
   end
 
   defp package do
