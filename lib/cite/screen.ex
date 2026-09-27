@@ -26,10 +26,10 @@ defmodule Cite.Screen do
   end
 
   @doc """
-  Folds judged windows into the run: its `screen`, scores per passage and
-  detect, and one `Cite.Error` per failed window, the usage and model of
-  each reply added to its own. A failed window leaves its passages without
-  a row.
+  Folds judged windows into the run. It sets `screen`, the scores per
+  passage and detect, adds one `Cite.Error` per failed window, and adds each
+  reply's usage and model to the run's. A failed window leaves its passages
+  without a row.
   """
   @spec resolve(Run.t(), [outcome()]) :: Run.t()
   def resolve(%Run{} = run, outcomes) do

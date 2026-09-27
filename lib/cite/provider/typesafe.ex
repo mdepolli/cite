@@ -59,12 +59,12 @@ defmodule Cite.Provider.TypeSafe do
   ## The size cap
 
   A request over the model's token cap comes back as a 400 whose body names
-  the failure, `{"detail": {"error_type": "max_tokens_exceeded"}}`, and this
-  provider reports it as `:request_too_large`, the error `Cite.judge/4`
-  halves round-1 windows on. That name is observed behaviour, checked against
-  the live API on 2026-09-26; TypeSafe's docs do not list it. Should it
-  change, oversized windows would be recorded as bad requests instead of
-  halved.
+  the failure: `{"detail": {"error_type": "max_tokens_exceeded"}}`. This
+  provider reports it as `:request_too_large`, the error on which
+  `Cite.judge/4` halves round-1 windows. That name is observed behaviour,
+  checked against the live API on 2026-09-26; TypeSafe's docs do not list
+  it. If TypeSafe renames it, oversized windows will be recorded as bad
+  requests instead of halved.
   """
 
   @behaviour Cite.Provider

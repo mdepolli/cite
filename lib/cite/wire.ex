@@ -4,9 +4,9 @@ defmodule Cite.Wire do
 
   The one place passages and compiled questions become the maps a client
   receives: atom keys become strings, and placeholders become backticked
-  paths, built by `text_path/1` and `text_path/2`.
-  Past this edge a client sees string-keyed maps, lists, and scalars, and a
-  `Cite.Wire.Object` wherever key order matters. Internal.
+  paths, built by `text_path/1` and `text_path/2`. Past this edge a client
+  sees string-keyed maps, lists, and scalars, and a `Cite.Wire.Object`
+  wherever key order matters. Internal.
   """
 
   alias Cite.{Passage, Placeholder}

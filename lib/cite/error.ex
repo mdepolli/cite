@@ -5,8 +5,8 @@ defmodule Cite.Error do
   never a verdict; it lands in `Cite.Report.errors` and nowhere else.
 
   `reason` is whatever the provider returned, or `{:missing_answers, keys}`
-  / `{:malformed_answers, keys}` when a reply skipped a question or answered
-  one with a value its question cannot have. Encoding always succeeds:
+  or `{:malformed_answers, keys}` when a reply skipped a question or
+  answered one with a value its question cannot have. Encoding always succeeds:
   JSON-safe reasons pass through, everything else becomes `inspect(reason)`.
   """
 

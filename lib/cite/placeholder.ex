@@ -4,8 +4,9 @@ defmodule Cite.Placeholder do
   expand to.
 
   A policy's questions name what they look at by role (`{passage}`,
-  `{household}`); Cite writes the path. The policy's compile-time checks use
-  `names/1` and `name?/1`; `Cite.Wire` uses `instructions/4`. Internal.
+  `{household}`); Cite replaces each with its path. The policy's
+  compile-time checks use `names/1` and `name?/1`; `Cite.Wire` uses
+  `instructions/4`. Internal.
   """
 
   @placeholder ~r/\{(\w+)\}/
@@ -45,10 +46,10 @@ defmodule Cite.Placeholder do
   end
 
   @doc """
-  The wire `instructions` for a question and its focus (`nil` for none): each
-  text expanded, and what to read. The placeholders of both, in order of first
-  use, become `inspect` for one and `compare` for several; with none, it is
-  `compare` over `fallback`.
+  The wire `instructions` for a question and its focus (`nil` for none):
+  both texts expanded, plus what to read. The placeholders of both, in order
+  of first use, become `inspect` when there is one and `compare` when there
+  are several; with none, it is `compare` over `fallback`.
   """
   @spec instructions(String.t(), String.t() | nil, %{String.t() => String.t()}, [String.t()]) ::
           map()

@@ -2,7 +2,7 @@ defmodule Cite.Run do
   @moduledoc """
   One judging run, passed through every step of `Cite.judge/4`. It starts as
   what the caller gave, validated once, and each step fills in its part:
-  round 1 the `screen`, gathering the `gathered` findings, round 2 the
+  round 1 fills `screen`, gathering fills `gathered`, and round 2 fills
   `findings`. Both rounds add their `errors`, `usages`, and `models`.
   Internal; use `Cite.judge/4`.
   """

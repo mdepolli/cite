@@ -1,9 +1,9 @@
 defmodule Cite.Policy.Build do
   @moduledoc """
   Compiles a policy's declarations to its `Cite.Policy.Terms`, the data the
-  rounds read, persists them on the module, and reads them back (`read/1`). A Spark
-  persister: it runs after `Cite.Policy.Checks`, so every declaration it sees
-  is valid. Internal.
+  rounds read, persists them on the module, and reads them back (`read/1`).
+  A Spark persister: it runs after `Cite.Policy.Checks`, so every
+  declaration it sees is valid. Internal.
   """
 
   use Spark.Dsl.Transformer

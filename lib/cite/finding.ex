@@ -2,10 +2,10 @@ defmodule Cite.Finding do
   @moduledoc """
   A judged finding: its concern and category, the verdict, the raw answers
   to its checks and descriptors, the passages it cites, and those its
-  confirm dropped. Every passage it gathered was judged.
+  confirm dropped. Every passage it gathered is in one list or the other.
 
   `checks` holds only the checks that were asked. Answers are the model's
-  maps, string keys as they came off the wire. Read it, don't build it.
+  maps, with string keys as they came off the wire. Read it, don't build it.
   """
 
   alias Cite.Citation

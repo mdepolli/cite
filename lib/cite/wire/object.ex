@@ -9,9 +9,10 @@ defmodule Cite.Wire.Object do
 
   A provider meets one as a value in a request's `"state"`. It implements
   `Access`, so it reads like a map (`object["U014"]`), and `Jason.Encoder`,
-  encoding as a JSON object with its keys in order; a provider that sends
-  the request as JSON needs nothing else. `pairs` holds the keys and values
-  in order, for a provider that converts the request to another shape.
+  so it encodes as a JSON object with its keys in order. A provider that
+  sends the request as JSON needs nothing else. `pairs` holds the keys and
+  values in order, for a provider that converts the request to another
+  shape.
   """
 
   @behaviour Access

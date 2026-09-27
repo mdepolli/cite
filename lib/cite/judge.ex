@@ -12,9 +12,9 @@ defmodule Cite.Judge do
 
   @doc """
   The round-2 request. A directly screened concern: its passages under the
-  source's `as`, a confirm per passage keyed `"confirm:<id>"`, the descriptors over
-  all of them. A concern built from factors: each role at the top level, the
-  checks that apply, the descriptors over every role.
+  source's `as`, a confirm per passage keyed `"confirm:<id>"`, the
+  descriptors over all of them. A concern built from factors: each role at
+  the top level, the checks that apply, the descriptors over every role.
   """
   @spec request(Run.t(), Gathered.t()) :: map()
   def request(
@@ -65,9 +65,9 @@ defmodule Cite.Judge do
   end
 
   @doc """
-  Folds judged findings into the run: its `findings`, and one `Cite.Error`
-  per failed request, the usage and model of each reply added to its own,
-  as `Cite.Screen.resolve/2` does for round 1. The run's `review_band`,
+  Folds judged findings into the run, as `Cite.Screen.resolve/2` does for
+  round 1. It sets `findings`, adds one `Cite.Error` per failed request, and
+  adds each reply's usage and model to the run's. The run's `review_band`,
   `{low, high}`, sets the verdicts.
 
   Each confirm drops its passage at or below `low`, cites it for review below

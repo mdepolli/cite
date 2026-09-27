@@ -1,10 +1,16 @@
 defmodule Cite.Report do
   @moduledoc """
-  What `Cite.judge/4` returns: the judged findings in the policy's concern
-  order, every round-1 score for diagnosis, one error per failed request,
-  token usage totalled across both rounds (`nil` when the provider reported
-  none), and every versioned model id that answered, in order of first
-  appearance. Read it, don't build it.
+  What `Cite.judge/4` returns:
+
+  - `findings`: the judged findings, in the policy's concern order.
+  - `screen`: every round-1 score, for diagnosis.
+  - `errors`: one per failed request.
+  - `usage`: tokens totalled across both rounds, or `nil` when the provider
+    reported none.
+  - `models`: every versioned model id that answered, in order of first
+    appearance.
+
+  Read it, don't build it.
   """
 
   alias Cite.{Error, Finding, Run}

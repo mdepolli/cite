@@ -1,7 +1,7 @@
 defmodule Cite do
   @moduledoc """
-  Judgments plus grounding: findings about a document, each citing the
-  caller's own passages, unchanged.
+  Finds what a policy describes in a document and cites the caller's own
+  passages behind each finding, unchanged.
 
   Three steps:
 
@@ -32,10 +32,10 @@ defmodule Cite do
 
       request -> {:ok, verdict} | {:error, reason}
 
-  where `request` is `%{"state" => map(), "questions" => map()}`, a value in
-  `"state"` may be a `Cite.Wire.Object` (a JSON object in key order), and
-  `verdict` is `%{answers: map(), usage: usage | nil}` plus `model`, the
-  versioned id that answered, when the provider reports it.
+  `request` is `%{"state" => map(), "questions" => map()}`; a value in
+  `"state"` may be a `Cite.Wire.Object`, a JSON object that keeps its keys
+  in order. `verdict` is `%{answers: map(), usage: usage | nil}`, plus
+  `:model`, the versioned id that answered, when the provider reports it.
   """
 
   alias Cite.{Answer, Gather, Judge, Report, Run, Screen, Source}
@@ -85,9 +85,9 @@ defmodule Cite do
 
   @doc """
   Judges `source` against `policy_module`, a module that uses `Cite.Policy`.
-  Raises `ArgumentError`, before any request, on an option it cannot use or
-  a module that is not a policy, and when the client returns something
-  outside its contract.
+  Raises `ArgumentError` before any request on an option it cannot use or a
+  module that is not a policy, and mid-run when the client returns
+  something outside its contract.
 
   ## Options
 

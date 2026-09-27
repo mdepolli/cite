@@ -9,8 +9,9 @@ defmodule Cite.Answer do
 
   @doc """
   Checks a reply against the questions it answers, as they went on the wire:
-  `:ok` when every question has one well-formed answer, otherwise `{:error, {:missing_answers, keys}}`
-  or `{:error, {:malformed_answers, keys}}`, keys sorted, missing first. A
+  `:ok` when every question has one well-formed answer, otherwise
+  `{:error, {:missing_answers, keys}}` or
+  `{:error, {:malformed_answers, keys}}`, keys sorted, missing first. A
   reply that fails is an error for its whole request, never a "no".
   """
   @spec check(%{String.t() => map()}, map()) ::

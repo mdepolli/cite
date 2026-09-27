@@ -9,14 +9,16 @@ defmodule Cite.Provider do
 
   ## Requests
 
-  The request is the question schema of TypeSafe's System One API: `"state"`
-  plus `"questions"`. A value in `"state"` may be a `Cite.Wire.Object`, a JSON
-  object whose keys keep their order; each question is a map with `"type"`
-  (`noul`, `score`, `choice`), `"instructions"` (`question`, then `inspect`
-  or `compare`, and an optional `focus`) and `"criteria"`. A provider for a
-  model that takes that schema sends it as is; a provider for a model with
-  different inputs converts from it. Cite encodes questions to that schema
-  before they reach a provider; the provider never sees a policy.
+  The request follows the question schema of TypeSafe's System One API:
+  `"state"` plus `"questions"`. A value in `"state"` may be a
+  `Cite.Wire.Object`, a JSON object that keeps its keys in order. Each
+  question is a map with `"type"` (`noul`, `score`, `choice`),
+  `"instructions"` (`question`, then `inspect` or `compare`, and an optional
+  `focus`), and `"criteria"`.
+
+  Cite encodes questions to that schema before they reach a provider, so a
+  provider never sees a policy. A provider for a model that takes the schema
+  sends it as is; one for a model with different inputs converts from it.
 
   ## Errors
 
@@ -25,7 +27,7 @@ defmodule Cite.Provider do
   read. `Cite.judge/4` records those as `Cite.Error`s and carries on.
 
   One reason is shared across providers: `:request_too_large`, meaning the
-  request exceeded the provider's size cap. The screen halves its window and
+  request exceeded the provider's size cap. Round 1 halves its window and
   retries on it, so a provider must map its own overflow signal to that
   atom.
   """
