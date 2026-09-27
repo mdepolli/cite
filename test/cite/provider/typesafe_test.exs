@@ -179,9 +179,12 @@ defmodule Cite.Provider.TypeSafeTest do
       assert judge().(@request) == {:error, {:bad_request, "invalid_question"}}
     end
 
-    test "a 400 without TypeSafe's detail carries the body preview" do
-      Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 400, "nope"))
-      assert judge().(@request) == {:error, {:bad_request, "nope"}}
+    test "a 400 or 422 without TypeSafe's detail carries the body preview" do
+      for status <- [400, 422] do
+        Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, status, "nope"))
+
+        assert judge().(@request) == {:error, {:bad_request, "nope"}}
+      end
     end
 
     test "a 200 without a map of answers is a malformed reply, not a verdict" do

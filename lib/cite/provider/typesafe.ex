@@ -199,7 +199,7 @@ defmodule Cite.Provider.TypeSafe do
        when status in [400, 422] and is_binary(type),
        do: {:error, {:bad_request, type}}
 
-  defp decode({:ok, %Req.Response{status: 400, body: body}}),
+  defp decode({:ok, %Req.Response{status: status, body: body}}) when status in [400, 422],
     do: {:error, {:bad_request, preview(body)}}
 
   defp decode({:ok, %Req.Response{status: 401}}), do: {:error, :unauthorized}
