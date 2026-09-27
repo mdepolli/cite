@@ -6,8 +6,8 @@
 
 Cite finds what you describe in a document, such as failures in a log,
 sponsor reads in a video's captions, or allergens in a recipe, and cites
-the exact passages behind each one. It does this without a generative LLM:
-no prompts, no generated text, only typed answers to your questions.
+the exact passages behind each one. It judges with a decision model, not a
+generative LLM: no prompts, and no generated text.
 
 You declare the questions in a small DSL and pass the document as the
 passages it already has: log lines, caption chunks, conversation turns.
@@ -15,10 +15,10 @@ A decision model such as TypeSafe's Jev answers them for every passage.
 Cite gathers the matches with fixed rules in code, then has the model judge
 each match once with all of its passages in view.
 
-A decision model returns typed answers, not prose: a probability for a
-yes-or-no question, a level on a scale, or one option from a set. Cite
-never asks it to write, so it cannot misquote: every citation is one of
-your passages, byte for byte.
+A decision model answers with a probability for a yes-or-no question, a
+level on a scale, or one option from a set, never with prose. Cite never
+asks it to write, so it cannot misquote: every citation is one of your
+passages, byte for byte.
 
 ## Installation
 
