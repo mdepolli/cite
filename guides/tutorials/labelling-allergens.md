@@ -199,10 +199,10 @@ end
   them; say "may contain, depending on your choice" where the cited line
   offers a choice.
 - **Send composite products to a person.** A line such as "2 tbsp barbecue
-  sauce" is often left uncited, since its usual recipe does not settle it.
-  Find those lines yourself (a list of such products is enough) and check
-  them against the product's label, rather than reading their silence as
-  "free of".
+  sauce" can be left uncited, since its usual recipe does not settle it,
+  and a citation of one is a guess about the brand. Find those lines
+  yourself (a list of such products is enough) and check them against the
+  product's label, rather than reading their silence as "free of".
 
 ## 6. Check it against labels
 
@@ -216,16 +216,16 @@ levels:
 
 Score a lookup table beside the policy: a list of ingredient words per
 allergen. It is a strong baseline here, right about most plain lines, and
-its false alarms gather on the free-from lines it reads backwards. What
+its false alarms include the free-from lines it reads backwards. What
 matters is where the policy beats it: free-from forms, hidden sources,
 steps that use an ingredient. Report those cases on their own; a handful
 of "gluten-free" recipes can move a total by little and still be the
 reason a user trusts the label.
 
 Mark the lines your rules leave open, such as composite products and
-alternatives, as borderline, and score them apart. Both the policy and the
-table miss most of them; mixed into the clear lines, they hide how well the
-clear lines are read.
+alternatives, as borderline, and score them apart. Most of what both the
+policy and the table miss is on these lines; mixed into the clear lines,
+they hide how well the clear lines are read.
 
 Keep some recipes aside that you never read while rewording.
 [Tuning against labels](../writing-policies.md#tuning-against-labels) has the
