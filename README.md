@@ -9,14 +9,16 @@ sponsor reads in a video's captions, or allergens in a recipe, and cites
 the exact passages behind each one. It does this without a generative LLM:
 no prompts, no generated text, only typed answers to your questions.
 
-You write what to look for as yes-or-no questions and hand over the
-document as the passages you already have: log lines, caption chunks,
-turns of a conversation. A model answers the questions about each passage.
-Cite groups what matched and returns each match with its passages.
+You declare the questions in a small DSL and pass the document as the
+passages it already has: log lines, caption chunks, conversation turns.
+A decision model such as TypeSafe's Jev answers them for every passage.
+Cite gathers the matches with fixed rules in code, then has the model judge
+each match once with all of its passages in view.
 
-The model answers yes or no, a level, or one of a few choices. It never
-writes text, so it cannot misquote: every citation is a passage you gave
-it, unchanged.
+A decision model returns typed answers, not prose: a probability for a
+yes-or-no question, a level on a scale, or one option from a set. Cite
+never asks it to write, so it cannot misquote: every citation is one of
+your passages, byte for byte.
 
 ## Installation
 
