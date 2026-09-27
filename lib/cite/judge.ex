@@ -5,7 +5,7 @@ defmodule Cite.Judge do
   rules. Pure. Internal.
   """
 
-  alias Cite.{Citation, Error, Finding, Gathered, Passage, Run, Source, Wire}
+  alias Cite.{Answer, Citation, Error, Finding, Gathered, Passage, Run, Source, Wire}
   alias Cite.Policy.{Check, Concern, Role, Terms}
 
   @type outcome :: {Gathered.t(), {:ok, Cite.verdict()} | {:error, term()}}
@@ -146,7 +146,12 @@ defmodule Cite.Judge do
     passages
     |> Enum.map(fn %Passage{id: id} = passage ->
       answer = answers[confirm_key(id)]
-      %Citation{passage: passage, verdict: confirm_verdict(answer["noul"], band), answer: answer}
+
+      %Citation{
+        passage: passage,
+        verdict: confirm_verdict(Answer.noul(answer), band),
+        answer: answer
+      }
     end)
     |> Enum.split_with(&(&1.verdict != :dropped))
   end
@@ -156,7 +161,7 @@ defmodule Cite.Judge do
   defp confirm_verdict(_noul, _band), do: :holds
 
   defp verdict(check_answers, evidence, {low, high}) do
-    nouls = Enum.map(check_answers, & &1["noul"])
+    nouls = Enum.map(check_answers, &Answer.noul/1)
 
     cond do
       evidence == [] or Enum.any?(nouls, &(&1 <= low)) -> :fails
