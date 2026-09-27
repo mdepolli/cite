@@ -32,9 +32,8 @@ defmodule Cite.SourceTest do
     test "accepts bare texts and numbers them P000, P001, ..." do
       source = Source.new(["one", "two"])
 
-      assert Enum.map(source.passages, & &1.id) == ["P000", "P001"]
-      assert source.as == "passages"
-      assert source.show == []
+      assert {Enum.map(source.passages, & &1.id), source.as, source.show} ==
+               {["P000", "P001"], "passages", []}
     end
 
     test "keeps text byte for byte, surrounding whitespace included" do

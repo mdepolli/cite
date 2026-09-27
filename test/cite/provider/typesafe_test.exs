@@ -141,42 +141,35 @@ defmodule Cite.Provider.TypeSafeTest do
 
     test "omits model when the reply does not name one" do
       Req.Test.stub(__MODULE__, &Req.Test.json(&1, %{"answers" => %{}}))
-      assert {:ok, verdict} = judge().(@request)
-      refute Map.has_key?(verdict, :model)
+
+      assert judge().(@request) == {:ok, %{answers: %{}, usage: nil}}
     end
 
     test "usage is nil when the reply omits it or reports a count the shell would refuse" do
-      Req.Test.stub(__MODULE__, &Req.Test.json(&1, %{"answers" => %{}}))
-      assert {:ok, %{usage: nil}} = judge().(@request)
+      for body <- [
+            %{"answers" => %{}},
+            %{"answers" => %{}, "usage" => %{"input_tokens" => -1, "output_tokens" => 0}}
+          ] do
+        Req.Test.stub(__MODULE__, &Req.Test.json(&1, body))
 
-      Req.Test.stub(__MODULE__, fn conn ->
-        Req.Test.json(conn, %{
-          "answers" => %{},
-          "usage" => %{"input_tokens" => -1, "output_tokens" => 0}
-        })
-      end)
-
-      assert {:ok, %{usage: nil}} = judge().(@request)
+        assert judge().(@request) == {:ok, %{answers: %{}, usage: nil}}
+      end
     end
 
     test "maps the token cap to :request_too_large on 400 and 422, keeps other names" do
-      for status <- [400, 422] do
+      for {status, type, expected} <- [
+            {400, "max_tokens_exceeded", :request_too_large},
+            {422, "max_tokens_exceeded", :request_too_large},
+            {400, "invalid_question", {:bad_request, "invalid_question"}}
+          ] do
         Req.Test.stub(__MODULE__, fn conn ->
           conn
           |> Plug.Conn.put_status(status)
-          |> Req.Test.json(%{"detail" => %{"error_type" => "max_tokens_exceeded"}})
+          |> Req.Test.json(%{"detail" => %{"error_type" => type}})
         end)
 
-        assert judge().(@request) == {:error, :request_too_large}
+        assert judge().(@request) == {:error, expected}
       end
-
-      Req.Test.stub(__MODULE__, fn conn ->
-        conn
-        |> Plug.Conn.put_status(400)
-        |> Req.Test.json(%{"detail" => %{"error_type" => "invalid_question"}})
-      end)
-
-      assert judge().(@request) == {:error, {:bad_request, "invalid_question"}}
     end
 
     test "a 400 or 422 without TypeSafe's detail carries the body preview" do
@@ -188,40 +181,34 @@ defmodule Cite.Provider.TypeSafeTest do
     end
 
     test "a 200 without a map of answers is a malformed reply, not a verdict" do
-      Req.Test.stub(__MODULE__, &Req.Test.json(&1, %{"ok" => true}))
-      assert {:error, {:malformed_reply, _}} = judge().(@request)
+      for body <- [%{"ok" => true}, %{"answers" => []}] do
+        Req.Test.stub(__MODULE__, &Req.Test.json(&1, body))
 
-      Req.Test.stub(__MODULE__, &Req.Test.json(&1, %{"answers" => []}))
-      assert {:error, {:malformed_reply, _}} = judge().(@request)
+        assert {:error, {:malformed_reply, _}} = judge().(@request)
+      end
     end
 
     test "maps 401, 429 with retry-after, and 5xx" do
-      Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 401, ""))
-      assert judge().(@request) == {:error, :unauthorized}
+      for {status, retry_after, expected} <- [
+            {401, nil, :unauthorized},
+            {429, "7", {:rate_limited, 7000}},
+            {429, "soon", {:rate_limited, nil}},
+            {503, nil, :server_error}
+          ] do
+        Req.Test.stub(__MODULE__, &send_with_retry_after(&1, status, retry_after))
 
-      Req.Test.stub(__MODULE__, fn conn ->
-        conn
-        |> Plug.Conn.put_resp_header("retry-after", "7")
-        |> Plug.Conn.send_resp(429, "")
-      end)
-
-      assert judge().(@request) == {:error, {:rate_limited, 7000}}
-
-      Req.Test.stub(__MODULE__, fn conn ->
-        conn
-        |> Plug.Conn.put_resp_header("retry-after", "soon")
-        |> Plug.Conn.send_resp(429, "")
-      end)
-
-      assert judge().(@request) == {:error, {:rate_limited, nil}}
-
-      Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 503, "down"))
-      assert judge().(@request) == {:error, :server_error}
+        assert judge().(@request) == {:error, expected}
+      end
     end
 
     test "bounds an unexpected error body" do
+      # Arrange
       Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 418, String.duplicate("x", 5_000)))
-      assert {:error, {:api_error, 418, preview}} = judge().(@request)
+
+      # Act
+      {:error, {:api_error, 418, preview}} = judge().(@request)
+
+      # Assert
       assert String.length(preview) == 2_000
     end
 
