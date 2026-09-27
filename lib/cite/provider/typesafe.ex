@@ -48,6 +48,14 @@ defmodule Cite.Provider.TypeSafe do
 
   #{Spark.Options.docs(@schema)}
 
+  ## Retries
+
+  Rate limits (429), overloads (529), server errors (500–504), and connection
+  failures are retried up to three times, honouring `Retry-After`, with any one
+  wait capped at `max_retry_delay` (30 seconds by default). Timeouts are not
+  retried: a 120-second call retried is eight minutes, and a slow success would
+  be billed twice.
+
   ## The size cap
 
   A request over the model's token cap comes back as a 400 whose body names
