@@ -197,8 +197,8 @@ method.
 ## 7. When not to use Cite
 
 A keyword rule ("sponsored by", "use code", "link in the description") is
-cheap and usually right when it fires, about six times in seven. It misses
-most reads, which do not announce themselves: a lead-in, a pitch that never
+cheap and usually right when it fires. It misses most reads, which do not
+announce themselves: a lead-in, a pitch that never
 says "sponsor", a code read out without the word. If you only need to flag
 videos that disclose a sponsorship in so many words, the rule is enough.
 Cite is for finding the whole read, and the reads that do not say what
