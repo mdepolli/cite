@@ -1,6 +1,6 @@
 defmodule Cite.Provider.TypeSafe do
-  # The model the vulnerability benchmark's questions and criteria were tuned
-  # against; a newer Jev may read the same wording differently.
+  # The Jev release Cite's behaviour was measured against; a newer Jev may
+  # read the same wording differently.
   @default_model "jev-1.13.0"
   @default_base_url "https://api.typesafe.ai"
   @max_error_body_bytes 2_000
