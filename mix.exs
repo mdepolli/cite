@@ -33,7 +33,7 @@ defmodule Cite.MixProject do
   defp deps do
     [
       {:jason, "~> 1.4"},
-      {:req, "~> 0.6"},
+      {:req, "~> 0.7"},
       {:spark, "~> 2.7"},
       {:sourceror, "~> 1.2", only: [:dev, :test], runtime: false},
       {:plug, "~> 1.0", only: :test},
