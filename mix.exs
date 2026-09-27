@@ -82,6 +82,7 @@ defmodule Cite.MixProject do
         "guides/writing-policies.md",
         "guides/how-judging-works.md",
         "guides/triaging-logs.md",
+        "guides/finding-sponsor-segments.md",
         "CHANGELOG.md"
       ],
       # Groups mirror the stability tiers (see README "Stability"): Core API
