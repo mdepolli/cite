@@ -262,8 +262,9 @@ once is spent.
 
 **Find where each miss happens.** The report keeps every round-1 score. A
 labelled passage that was never gathered scored below `threshold` at the
-screen, and the lever is the detect's wording, not the threshold (see How
-judging works). One gathered and then dropped is the confirm's.
+screen, and the lever is the detect's wording, not the threshold (see
+[How judging works](how-judging-works.md)). One gathered and then dropped is
+the confirm's.
 
 **Match the unit your labels mark.** Labels often mark a whole provision,
 section, or episode, and tag some of its passages and not others. A detect
@@ -279,3 +280,10 @@ under a concern they are not labelled with, and how many unlabelled passages
 are cited. When either climbs, read a sample; the fix is usually a
 `not_for`. To measure precision, label every passage of a few sources as a
 separate reference, and never merge it with the first.
+
+**Check the negatives before you trust a false alarm.** Crowd-sourced
+labels mark what someone chose to mark, so a passage nobody marked is not
+proof of a "no". On such labels, many of a good policy's false alarms are
+true cases nobody submitted. Before rewording to remove one, have a reader
+who has not seen your results judge those passages blind, mixed with
+passages nobody cited, and measure precision against that reading.
