@@ -121,6 +121,7 @@ To build a policy of your own, start with a tutorial:
 - [Triaging logs](https://hexdocs.pm/cite/triaging-logs.html)
 - [Finding sponsor segments](https://hexdocs.pm/cite/finding-sponsor-segments.html)
 - [Labelling allergens in recipes](https://hexdocs.pm/cite/labelling-allergens.html)
+- [Checking support calls against procedure](https://hexdocs.pm/cite/checking-support-calls.html)
 
 ## What Cite does not do
 
