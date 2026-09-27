@@ -125,7 +125,7 @@ defmodule Cite.Policy.Dsl do
 
   @concern %Entity{
     name: :concern,
-    describe: "Something a finding can be: screened directly, or built from factors.",
+    describe: "One kind of thing you want found: screened directly, or built from factors.",
     target: Concern,
     args: [:name],
     schema: @name_schema ++ [category: [type: :atom, doc: "What the finding is reported as."]],

@@ -26,8 +26,8 @@ end
 - **Detect**: a yes/no question asked of every passage in round 1. It
   comes in three kinds:
   - **Filter**: never a finding; decides which passages count at all.
-  - **Concern**: something a finding can be. Screened directly with its own
-    detect, or built from factors.
+  - **Concern**: one kind of thing you want found. Screened directly with
+    its own detect, or built from factors.
   - **Factor**: never a finding alone; fills a role in a concern built from
     factors.
 - **Confirm**: a directly screened concern's second question, asked in round 2
