@@ -3,7 +3,8 @@ defmodule Cite.ReadmeTest do
 
   alias Cite.{Finding, Report}
 
-  # The README's Quick start is a program: it must run as written.
+  # The Quick start is a program. Its client line needs a key, so the test
+  # drops that line and injects a stub; the rest runs as written.
   test "the Quick start example runs and cites the riddle" do
     # Arrange
     example = quick_start_code()
@@ -32,6 +33,7 @@ defmodule Cite.ReadmeTest do
     readme = File.read!("README.md")
     [_before, quick_start] = String.split(readme, "## Quick start", parts: 2)
     [_prose, code | _rest] = String.split(quick_start, ["```elixir\n", "```\n"])
-    code
+    ["client = " <> _client | program] = String.split(code, "\n")
+    Enum.join(program, "\n")
   end
 end
