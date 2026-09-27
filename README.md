@@ -9,15 +9,14 @@ sponsor reads in a video's captions, or allergens in a recipe, and cites
 the exact passages behind each one. It does this without a generative LLM:
 no prompts, no generated text, only typed answers to your questions.
 
-You write down what to look for as yes-or-no questions, and hand over the
-document in the passages you already have: log lines, caption chunks,
-turns of a conversation. A model answers the questions about each passage,
-and Cite groups what matched and returns each match with its passages,
-unchanged.
+You write what to look for as yes-or-no questions and hand over the
+document as the passages you already have: log lines, caption chunks,
+turns of a conversation. A model answers the questions about each passage.
+Cite groups what matched and returns each match with its passages.
 
 The model answers yes or no, a level, or one of a few choices. It never
 writes text, so it cannot misquote: every citation is a passage you gave
-it.
+it, unchanged.
 
 ## Installation
 
@@ -65,7 +64,7 @@ Cite.judge(client, source, Riddles)
 ```
 
 Cite finds one riddle and cites the line it came from. Here is the report,
-trimmed to the fields that matter here:
+trimmed to the fields that matter:
 
 ```elixir
 %Cite.Report{
@@ -99,9 +98,9 @@ every passage. A policy can also have filters, factors, and descriptors;
 them all.
 
 A **source** is your text, split into passages. `Cite.source/2` keeps each
-passage exactly as you gave it. Name the passages with `as:` ("lines",
-"utterances"), and let the model see extra fields, such as who said a line,
-with `show:`.
+passage exactly as you gave it. `as:` names the passages ("lines",
+"utterances"). `show:` lets the model see extra fields, such as who said a
+line.
 
 `Cite.judge/4` runs the policy over the source in two rounds. First it asks
 every question about every passage. Then it groups the passages that
@@ -112,8 +111,8 @@ the details.
 
 Each finding has a **verdict**: `:holds`, `:review` (a person should
 decide), or `:fails`. Each citation has its own verdict too. The model's
-answers come back as it gave them, in `answer`, so you decide what to do
-with a level or a choice.
+answers come back untouched, a citation's in `answer` and a finding's in
+`checks` and `descriptors`, so you decide what a level or a choice means.
 
 To build a policy of your own, start with a tutorial:
 
@@ -151,8 +150,8 @@ A mistake in a policy stops it from compiling. A mistake in the source or
 the options raises `ArgumentError`, before any request is sent.
 
 A failed request never counts as a "no". If the model or the network fails,
-Cite reports an error and gives the passages it covered no verdict, so you
-can tell "nothing found" from "not checked". Each error is a
+Cite reports an error and leaves the passages it covered without a verdict,
+so you can tell "nothing found" from "not checked". Each error is a
 `%Cite.Error{}` in the report's `errors`; `Cite.Error` lists the reasons.
 
 ## Testing without a key
@@ -172,10 +171,13 @@ Both rounds run for real; only the model is faked. This one answers "yes"
 (0.9) to every question, so all three quick-start lines come back as
 riddles.
 
-A `noul` answer suits yes-or-no questions. A level needs
-`%{"score" => level_index, "confidence" => p}`, and a choice
-`%{"choice" => option_key, "confidence" => p}`. Any other shape fails the
-request.
+Each answer must fit its question:
+
+- yes or no: `%{"noul" => p}`
+- a level: `%{"score" => level_index, "confidence" => p}`
+- a choice: `%{"choice" => option_key, "confidence" => p}`
+
+Any other shape fails the request.
 
 To test the TypeSafe client itself, pass
 `req_options: [plug: {Req.Test, name}]` to `Cite.client/2` and use
@@ -192,12 +194,12 @@ live, and pass it in.
 list its options, what it retries, and why.
 
 To write your own, implement `Cite.Provider`. The client receives
-`%{"state" => map, "questions" => map}` and returns either
-`{:ok, %{answers: map, usage: usage | nil}}`, with an optional `model`, or
-`{:error, reason}`. A value in `"state"` may be a `Cite.Wire.Object`, a
-JSON object that keeps its keys in order. Return
-`{:error, :request_too_large}` for a request that is too big: Cite then
-splits first-round requests in half.
+`%{"state" => map, "questions" => map}` and returns
+`{:ok, %{answers: map, usage: usage | nil}}` (plus an optional `:model`
+key) or `{:error, reason}`. A value in `"state"` may be a
+`Cite.Wire.Object`, a JSON object that keeps its keys in order. Return
+`{:error, :request_too_large}` when a request is too big, and Cite splits
+first-round requests in half and retries.
 
 ## Stability
 
@@ -209,8 +211,7 @@ reply maps. The docs group modules by tier.
 **Providers.** `Cite.Provider` may change in a minor release while it has
 only one implementation; the changelog will say so.
 `Cite.Provider.TypeSafe` is stable through its documented options.
-`Cite.Wire.Object` is stable as what it implements: `Access` and
-`Jason.Encoder`.
+`Cite.Wire.Object` is stable only through `Access` and `Jason.Encoder`.
 
 **Internal.** Everything else carries no guarantee: the compiled policy
 structs, the Spark extension, `Run`, `Screen`, `Gather`, `Judge`,
