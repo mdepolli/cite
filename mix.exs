@@ -44,11 +44,7 @@ defmodule Cite.MixProject do
   end
 
   defp description do
-    """
-    Judgments plus grounding: declare a policy, hand over your document's
-    passages, and a decision model's findings come back citing those passages,
-    unchanged.
-    """
+    "Finds what you describe in a document, such as failures in a log or allergens in a recipe, and cites the exact passages behind each finding. Uses a decision model's typed answers, not a generative LLM."
   end
 
   defp package do
