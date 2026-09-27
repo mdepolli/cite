@@ -15,10 +15,12 @@ defmodule Cite.PlaceholderTest do
     end
 
     test "given a question and its focus, skips a nil focus and lists each name once" do
-      assert Placeholder.names(["Do {household} and {income} agree?", "Weigh {income}."]) ==
-               ["household", "income"]
-
-      assert Placeholder.names(["Does {passage} pose a riddle?", nil]) == ["passage"]
+      for {texts, names} <- [
+            {["Do {household} and {income} agree?", "Weigh {income}."], ["household", "income"]},
+            {["Does {passage} pose a riddle?", nil], ["passage"]}
+          ] do
+        assert Placeholder.names(texts) == names
+      end
     end
   end
 

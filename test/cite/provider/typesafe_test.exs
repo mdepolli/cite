@@ -135,7 +135,6 @@ defmodule Cite.Provider.TypeSafeTest do
 
   describe "judge/2 replies" do
     test "returns answers, usage, and the model that answered on 200" do
-      # Arrange
       Req.Test.stub(__MODULE__, fn conn ->
         Req.Test.json(conn, %{
           "model" => "jev-1.13.0",
@@ -144,7 +143,6 @@ defmodule Cite.Provider.TypeSafeTest do
         })
       end)
 
-      # Act + Assert
       assert judge().(@request) ==
                {:ok,
                 %{
@@ -217,13 +215,9 @@ defmodule Cite.Provider.TypeSafeTest do
     end
 
     test "bounds an unexpected error body" do
-      # Arrange
       Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 418, String.duplicate("x", 5_000)))
-
-      # Act
       {:error, {:api_error, 418, preview}} = judge().(@request)
 
-      # Assert
       assert String.length(preview) == 2_000
     end
 
@@ -262,13 +256,9 @@ defmodule Cite.Provider.TypeSafeTest do
     end
 
     test "honours Retry-After, capped at max_retry_delay: a minute asked, none waited" do
-      # Arrange
       calls = stub_failing_once(&send_with_retry_after(&1, 429, "60"))
-
-      # Act
       {elapsed_us, reply} = :timer.tc(fn -> retrying_judge(max_retry_delay: 0).(@request) end)
 
-      # Assert
       assert {match?({:ok, _}, reply), Agent.get(calls, & &1), elapsed_us < 500_000} ==
                {true, 2, true}
     end

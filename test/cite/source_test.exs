@@ -5,16 +5,13 @@ defmodule Cite.SourceTest do
 
   describe "new/2" do
     test "keeps units in order, with the caller's ids, text, and meta" do
-      # Arrange
       units = [
         %{id: "U000", text: "We've got two kids.", meta: %{speaker: "B", start: 100}},
         %{id: "U001", text: "I'm on about sixty a year.", meta: %{speaker: "B"}}
       ]
 
-      # Act
       source = Source.new(units, as: "utterances", show: [:speaker])
 
-      # Assert
       assert {source.passages, source.as, source.show} == {
                [
                  %Passage{
@@ -137,13 +134,9 @@ defmodule Cite.SourceTest do
     end
 
     test "accepts shown meta that is JSON, nested or not" do
-      # Arrange
       meta = %{about: %{"role" => [%{kind: :client, lead: true}], age: 41.5}, note: nil}
-
-      # Act
       [passage] = Source.new([%{text: "a", meta: meta}], show: [:about, :note]).passages
 
-      # Assert
       assert passage.meta == %{
                about: %{"role" => [%{kind: :client, lead: true}], age: 41.5},
                note: nil

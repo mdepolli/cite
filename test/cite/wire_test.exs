@@ -7,7 +7,6 @@ defmodule Cite.WireTest do
 
   describe "passages/2" do
     test "keys passages by id in source order, with only the shown meta" do
-      # Arrange
       passages = [
         %Passage{
           id: "U014",
@@ -17,11 +16,7 @@ defmodule Cite.WireTest do
         %Passage{id: "U015", text: "the cashflow chart", meta: %{speaker: "A"}}
       ]
 
-      # Act
-      object = Wire.passages(passages, [:speaker])
-
-      # Assert
-      assert object == %Object{
+      assert Wire.passages(passages, [:speaker]) == %Object{
                pairs: [
                  {"U014",
                   %{"id" => "U014", "speaker" => "B", "text" => "behind on the mortgage"}},
@@ -31,18 +26,13 @@ defmodule Cite.WireTest do
     end
 
     test "sends no meta when show is empty" do
-      # Act
-      object = Wire.passages([%Passage{id: "P0", text: "a", meta: %{speaker: "B"}}], [])
-
-      # Assert
-      assert object == %Object{pairs: [{"P0", %{"id" => "P0", "text" => "a"}}]}
+      assert Wire.passages([%Passage{id: "P0", text: "a", meta: %{speaker: "B"}}], []) ==
+               %Object{pairs: [{"P0", %{"id" => "P0", "text" => "a"}}]}
     end
 
     test "matches show keys exactly as given" do
-      # Arrange
       passages = [%Passage{id: "P0", text: "a", meta: %{"speaker" => "B", "role" => "client"}}]
 
-      # Act + Assert
       assert Wire.passages(passages, [:speaker, "role"]) ==
                %Object{pairs: [{"P0", %{"id" => "P0", "text" => "a", "role" => "client"}}]}
     end
@@ -50,19 +40,15 @@ defmodule Cite.WireTest do
 
   describe "passage/2" do
     test "wires one passage with its shown meta" do
-      # Arrange
       passage = %Passage{id: "U003", text: "two kids", meta: %{speaker: "B", start: 9}}
 
-      # Act + Assert
       assert Wire.passage(passage, [:speaker]) ==
                %{"id" => "U003", "speaker" => "B", "text" => "two kids"}
     end
 
     test "stringifies nested meta keys and leaves binary keys alone" do
-      # Arrange
       passage = %Passage{id: "U1", text: "a", meta: %{about: %{"role" => [%{kind: :client}]}}}
 
-      # Act + Assert
       assert Wire.passage(passage, [:about]) == %{
                "id" => "U1",
                "text" => "a",
@@ -73,7 +59,6 @@ defmodule Cite.WireTest do
 
   describe "question/3" do
     test "encodes a Noul with its placeholder path and structured criteria" do
-      # Arrange
       question = %Question{
         type: :noul,
         text: "Does {passage} say money is short?",
@@ -84,11 +69,7 @@ defmodule Cite.WireTest do
         }
       }
 
-      # Act
-      wired = Wire.question(question, %{"passage" => "utterances.U014.text"}, [])
-
-      # Assert
-      assert wired == %{
+      assert Wire.question(question, %{"passage" => "utterances.U014.text"}, []) == %{
                "type" => "noul",
                "instructions" => %{
                  "question" => "Does `utterances.U014.text` say money is short?",
@@ -102,7 +83,6 @@ defmodule Cite.WireTest do
     end
 
     test "leaves braces in criteria as written: placeholders expand only in question and focus" do
-      # Arrange
       question = %Question{
         type: :noul,
         text: "Does {passage} say money is short?",
@@ -110,11 +90,9 @@ defmodule Cite.WireTest do
         criteria: %{true: %{what: "Says {passage} is short."}, false: %{what: "No strain."}}
       }
 
-      # Act
       %{"criteria" => criteria} =
         Wire.question(question, %{"passage" => "utterances.U014.text"}, [])
 
-      # Assert
       assert criteria == %{
                "true" => %{"what" => "Says {passage} is short."},
                "false" => %{"what" => "No strain."}
@@ -122,7 +100,6 @@ defmodule Cite.WireTest do
     end
 
     test "encodes a Score with its focus and compare over the fallback paths" do
-      # Arrange
       question = %Question{
         type: :score,
         text: "How bad?",
@@ -130,7 +107,6 @@ defmodule Cite.WireTest do
         criteria: ["a", "b"]
       }
 
-      # Act + Assert
       assert Wire.question(question, %{}, ["household.text", "income.text"]) == %{
                "type" => "score",
                "instructions" => %{
@@ -143,7 +119,6 @@ defmodule Cite.WireTest do
     end
 
     test "encodes a Choice and expands placeholders in its focus" do
-      # Arrange
       question = %Question{
         type: :choice,
         text: "Is {passage} temporary?",
@@ -151,7 +126,6 @@ defmodule Cite.WireTest do
         criteria: %{"transient" => "recovers", "persistent" => "lasting"}
       }
 
-      # Act + Assert
       assert Wire.question(question, %{"passage" => "p.P0.text"}, []) == %{
                "type" => "choice",
                "instructions" => %{
@@ -166,13 +140,9 @@ defmodule Cite.WireTest do
 
   describe "Object on the wire" do
     test "encodes its keys in order past 32 entries, where a plain map goes to hash order" do
-      # Arrange: 40 passages; a plain map of these encodes in hash order.
       passages = for i <- 0..39, do: %Passage{id: id(i), text: "t#{i}"}
-
-      # Act
       json = Jason.encode!(Wire.passages(passages, []))
 
-      # Assert
       assert wire_keys(json) == [
                "U000",
                "U001",
@@ -224,8 +194,9 @@ defmodule Cite.WireTest do
     end
 
     test "reads a key like a map, and nil for a missing one", %{object: object} do
-      assert object["U2"] == %{"text" => "b"}
-      assert object["U9"] == nil
+      for {key, value} <- [{"U2", %{"text" => "b"}}, {"U9", nil}] do
+        assert object[key] == value
+      end
     end
 
     test "updates a value in place, keeping the order", %{object: object} do
@@ -245,10 +216,12 @@ defmodule Cite.WireTest do
     end
 
     test "pops a key, and nothing for a missing one", %{object: object} do
-      assert pop_in(object["U1"]) ==
-               {%{"text" => "a"}, %Object{pairs: [{"U2", %{"text" => "b"}}]}}
-
-      assert pop_in(object["U9"]) == {nil, object}
+      for {key, popped} <- [
+            {"U1", {%{"text" => "a"}, %Object{pairs: [{"U2", %{"text" => "b"}}]}}},
+            {"U9", {nil, %Object{pairs: [{"U1", %{"text" => "a"}}, {"U2", %{"text" => "b"}}]}}}
+          ] do
+        assert pop_in(object[key]) == popped
+      end
     end
 
     test "pops from inside an update", %{object: object} do

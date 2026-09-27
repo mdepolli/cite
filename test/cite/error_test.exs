@@ -36,14 +36,14 @@ defmodule Cite.ErrorTest do
     end
 
     test "inspects tuples and exception structs so dumps never crash" do
-      tuple = %Error{concern: nil, passage_ids: [], reason: {:bad_request, "max_tokens_exceeded"}}
-      exception = %Error{concern: nil, passage_ids: [], reason: %RuntimeError{message: "boom"}}
+      for {reason, inspected} <- [
+            {{:bad_request, "max_tokens_exceeded"}, ~s({:bad_request, "max_tokens_exceeded"})},
+            {%RuntimeError{message: "boom"}, ~s(%RuntimeError{message: "boom"})}
+          ] do
+        error = %Error{concern: nil, passage_ids: [], reason: reason}
 
-      assert Jason.decode!(Jason.encode!(tuple))["reason"] ==
-               ~s({:bad_request, "max_tokens_exceeded"})
-
-      assert Jason.decode!(Jason.encode!(exception))["reason"] ==
-               ~s(%RuntimeError{message: "boom"})
+        assert Jason.decode!(Jason.encode!(error))["reason"] == inspected
+      end
     end
 
     test "inspects tuples nested inside lists and maps" do

@@ -590,7 +590,6 @@ defmodule Cite.Policy.ChecksTest do
     end
 
     test "a score with ten levels compiles" do
-      # Arrange
       source = """
       defmodule Cite.Policy.ChecksTest.TenLevels do
         use Cite.Policy
@@ -610,7 +609,6 @@ defmodule Cite.Policy.ChecksTest do
       end
       """
 
-      # Act + Assert
       assert [{Cite.Policy.ChecksTest.TenLevels, _bytecode}] = Code.compile_string(source)
     end
 
@@ -635,7 +633,6 @@ defmodule Cite.Policy.ChecksTest do
 
   describe "error location" do
     test "points at a top-level declaration" do
-      # Arrange
       source = """
       defmodule Cite.Policy.ChecksTest.TopLevel do
         use Cite.Policy
@@ -648,10 +645,8 @@ defmodule Cite.Policy.ChecksTest do
       end
       """
 
-      # Act
       error = compile_error(source)
 
-      # Assert
       assert {:erl_anno.file(error.location), :erl_anno.line(error.location)} ==
                {~c"policy.ex", 4}
     end

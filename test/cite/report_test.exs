@@ -5,7 +5,6 @@ defmodule Cite.ReportTest do
 
   describe "new/1" do
     test "reports a judged run, usage totalled and models listed once" do
-      # Arrange
       run =
         TestRun.new(TestTerms.riddles(),
           screen: %{"P000" => %{riddle: 0.1}},
@@ -18,11 +17,7 @@ defmodule Cite.ReportTest do
           models: ["jev-1.13.0", "jev-1.13.0"]
         )
 
-      # Act
-      report = Report.new(run)
-
-      # Assert
-      assert report == %Report{
+      assert Report.new(run) == %Report{
                findings: [],
                screen: %{"P000" => %{riddle: 0.1}},
                errors: [],
@@ -39,7 +34,6 @@ defmodule Cite.ReportTest do
   end
 
   test "encodes with Jason" do
-    # Arrange
     report = %Report{
       findings: [],
       screen: %{"P000" => %{riddle: 0.1}},
@@ -48,7 +42,6 @@ defmodule Cite.ReportTest do
       models: ["jev-1.13.0"]
     }
 
-    # Act + Assert
     assert Jason.decode!(Jason.encode!(report)) == %{
              "findings" => [],
              "screen" => %{"P000" => %{"riddle" => 0.1}},

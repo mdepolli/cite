@@ -66,15 +66,10 @@ defmodule CiteTest do
     end
 
     test "screens, gathers, and judges a riddle end to end" do
-      # Arrange
       source = Cite.source(["Why is a raven like a writing-desk?", "Take some more tea."])
       client = client(%{"P000:riddle" => 0.94, "confirm:P000" => 0.9})
 
-      # Act
-      report = Cite.judge(client, source, Riddles)
-
-      # Assert
-      assert report == %Report{
+      assert Cite.judge(client, source, Riddles) == %Report{
                findings: [
                  %Finding{
                    concern: :riddle,
@@ -100,7 +95,6 @@ defmodule CiteTest do
     end
 
     test "builds the household finding from factors" do
-      # Arrange
       source =
         Cite.source(
           [
@@ -121,10 +115,8 @@ defmodule CiteTest do
           "concentrated_income" => 0.9
         })
 
-      # Act
       %Report{findings: findings} = Cite.judge(client, source, Household)
 
-      # Assert
       assert Enum.map(
                findings,
                &{&1.concern, &1.verdict, Enum.map(&1.evidence, fn c -> c.passage.id end)}
@@ -133,7 +125,6 @@ defmodule CiteTest do
     end
 
     test "screens a concern directly through a filter, confirms it, and describes it" do
-      # Arrange
       source =
         Cite.source([%{id: "U1", text: "We're behind on the mortgage.", meta: %{speaker: "B"}}],
           as: "utterances",
@@ -143,11 +134,7 @@ defmodule CiteTest do
       client =
         client(%{"U1:client_speaking" => 0.9, "U1:cashflow_stress" => 0.9, "confirm:U1" => 0.9})
 
-      # Act
-      report = Cite.judge(client, source, Household)
-
-      # Assert
-      assert report == %Report{
+      assert Cite.judge(client, source, Household) == %Report{
                findings: [
                  %Finding{
                    concern: :cashflow_stress,
@@ -188,13 +175,9 @@ defmodule CiteTest do
     end
 
     test "screens in windows of the requested size, in source order" do
-      # Arrange
       source = Cite.source(["a", "b", "c", "d", "e"])
-
-      # Act
       Cite.judge(window_client(fn _window -> false end), source, Riddles, window: 2)
 
-      # Assert
       assert windows_sent() == [["P000", "P001"], ["P002", "P003"], ["P004"]]
     end
 
@@ -306,7 +289,6 @@ defmodule CiteTest do
 
   describe "judge/4 reading replies" do
     test "reports each model that answered once, in order of first answer, across rounds" do
-      # Arrange
       source = Cite.source(["Why is a raven like a writing-desk?", "Take some more tea."])
       screening = client(%{"P000:riddle" => 0.94})
 
@@ -319,22 +301,16 @@ defmodule CiteTest do
           screening.(request)
       end
 
-      # Act
       report = Cite.judge(client, source, Riddles, window: 1)
 
-      # Assert
       assert report.models == ["jev-1.13.0", "jev-1.14.0"]
     end
 
     test "a reply missing an answer fails its whole request" do
-      # Arrange
       source = Cite.source(["Why is a raven like a writing-desk?"])
       client = fn _request -> {:ok, %{answers: %{}, usage: nil}} end
-
-      # Act
       report = Cite.judge(client, source, Riddles)
 
-      # Assert
       assert {report.screen, report.errors} ==
                {%{},
                 [
