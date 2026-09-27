@@ -4,9 +4,10 @@
 [![Documentation](https://img.shields.io/badge/docs-hexdocs-blue)](https://hexdocs.pm/cite)
 [![CI](https://github.com/mdepolli/cite/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mdepolli/cite/actions/workflows/ci.yml)
 
-Cite finds what you describe in a document, such as kernel crashes in a
-log, sponsor reads in a video's captions, or allergens in a recipe, and
-cites the exact passages behind each one.
+Cite finds what you describe in a document, such as failures in a log,
+sponsor reads in a video's captions, or allergens in a recipe, and cites
+the exact passages behind each one. It does this without a generative LLM:
+no prompts, no generated text, only typed answers to your questions.
 
 You write down what to look for as yes-or-no questions, and hand over the
 document in the passages you already have: log lines, caption chunks,
@@ -14,9 +15,9 @@ turns of a conversation. A model answers the questions about each passage,
 and Cite groups what matched and returns each match with its passages,
 unchanged.
 
-The model only answers questions: yes or no, a level, or one of a few
-choices. It never writes text, so it cannot misquote. Every citation is a
-passage you gave it.
+The model answers yes or no, a level, or one of a few choices. It never
+writes text, so it cannot misquote: every citation is a passage you gave
+it.
 
 ## Installation
 
