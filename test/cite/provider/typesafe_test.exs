@@ -283,6 +283,41 @@ defmodule Cite.Provider.TypeSafeTest do
       assert Agent.get(calls, & &1) == 2
     end
 
+    test "backs off by the retry count Req keeps in the private :req_retry_count" do
+      # The backoff reads a private Req field; if Req renames it, every
+      # attempt reads :unset here and the backoff silently stops growing.
+      {:ok, calls} = Agent.start_link(fn -> 0 end)
+      test_pid = self()
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        if Agent.get_and_update(calls, &{&1, &1 + 1}) < 2,
+          do: Plug.Conn.send_resp(conn, 503, ""),
+          else: Req.Test.json(conn, %{"answers" => %{}})
+      end)
+
+      record = fn request ->
+        send(test_pid, {:attempt, Req.Request.get_private(request, :req_retry_count, :unset)})
+        request
+      end
+
+      client =
+        TypeSafe.new(
+          api_key: "k",
+          max_retry_delay: 0,
+          req_options: [plug: {Req.Test, __MODULE__}, retry_log_level: false]
+        )
+
+      client = %{
+        client
+        | http_client: Req.Request.append_request_steps(client.http_client, record: record)
+      }
+
+      reply = TypeSafe.judge(client, @request)
+      attempts = for _ <- 1..3, do: receive(do: ({:attempt, count} -> count), after: (0 -> :none))
+
+      assert {match?({:ok, _}, reply), attempts} == {true, [:unset, 1, 2]}
+    end
+
     test "retries a connection failure, then succeeds" do
       # Arrange
       calls = stub_failing_once(&Req.Test.transport_error(&1, :econnrefused))
