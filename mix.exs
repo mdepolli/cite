@@ -63,7 +63,11 @@ defmodule Cite.MixProject do
         CHANGELOG.md
       ),
       licenses: ["MIT"],
-      links: %{"GitHub" => @source_url},
+      links: %{
+        "GitHub" => @source_url,
+        "Docs" => "https://hexdocs.pm/cite",
+        "Changelog" => "https://hexdocs.pm/cite/changelog.html"
+      },
       maintainers: ["Marcelo De Polli"]
     ]
   end
