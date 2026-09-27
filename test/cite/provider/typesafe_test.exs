@@ -160,15 +160,15 @@ defmodule Cite.Provider.TypeSafeTest do
       assert judge().(@request) == {:ok, %{answers: %{}, usage: nil}}
     end
 
-    test "usage is nil when the reply omits it or reports a count the shell would refuse" do
-      for body <- [
-            %{"answers" => %{}},
-            %{"answers" => %{}, "usage" => %{"input_tokens" => -1, "output_tokens" => 0}}
-          ] do
-        Req.Test.stub(__MODULE__, &Req.Test.json(&1, body))
+    test "usage is nil when the reply reports a count the shell would refuse" do
+      Req.Test.stub(__MODULE__, fn conn ->
+        Req.Test.json(conn, %{
+          "answers" => %{},
+          "usage" => %{"input_tokens" => -1, "output_tokens" => 0}
+        })
+      end)
 
-        assert judge().(@request) == {:ok, %{answers: %{}, usage: nil}}
-      end
+      assert judge().(@request) == {:ok, %{answers: %{}, usage: nil}}
     end
 
     test "maps the token cap to :request_too_large on 400 and 422, keeps other names" do

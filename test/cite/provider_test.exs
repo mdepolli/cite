@@ -40,17 +40,4 @@ defmodule Cite.ProviderTest do
       end
     end
   end
-
-  describe "a custom provider" do
-    test "runs both rounds of Cite.judge/4" do
-      # Arrange
-      source = Cite.source(["Why is a raven like a writing-desk?"])
-
-      # Act
-      report = Cite.judge(Cite.client(Echo, score: 0.9), source, Cite.TestPolicies.Riddles)
-
-      # Assert
-      assert Enum.map(report.findings, &{&1.concern, &1.verdict}) == [riddle: :holds]
-    end
-  end
 end

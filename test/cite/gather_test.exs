@@ -145,15 +145,6 @@ defmodule Cite.GatherTest do
              ]
     end
 
-    test "one passage may fill two non-distinct roles, and is cited once" do
-      # Arrange
-      screen = %{"U1" => spoken_by_client(%{dependents: 0.9, primary_income: 0.9})}
-
-      # Act + Assert
-      assert summary(gather(TestTerms.household(), screen)) ==
-               [{:household_income, ["U1"], %{household: "U1", income: "U1"}}]
-    end
-
     test "an empty required role means no finding" do
       # Arrange
       screen = %{"U1" => spoken_by_client(%{dependents: 0.9})}

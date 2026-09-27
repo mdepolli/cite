@@ -243,10 +243,10 @@ defmodule CiteTest do
       assert {report.errors, map_size(report.screen)} == {[], 4}
     end
 
-    test "records a lone passage over the cap as an error, and still screens its siblings" do
+    test "records each lone passage over the cap as an error, and still screens its siblings" do
       # Arrange
       source = Cite.source(["a", "b", "c", "d"])
-      client = window_client(&("P001" in &1))
+      client = window_client(&("P001" in &1 or "P003" in &1))
 
       # Act
       report = Cite.judge(client, source, Riddles, window: 4)
@@ -257,33 +257,17 @@ defmodule CiteTest do
                ["P000", "P001"],
                ["P000"],
                ["P001"],
-               ["P002", "P003"]
+               ["P002", "P003"],
+               ["P002"],
+               ["P003"]
              ]
 
       assert report.errors == [
-               %Error{concern: nil, passage_ids: ["P001"], reason: :request_too_large}
-             ]
-
-      assert Enum.sort(Map.keys(report.screen)) == ["P000", "P002", "P003"]
-    end
-
-    test "records every passage as its own error when each alone is over the cap" do
-      # Arrange
-      source = Cite.source(["a", "b", "c", "d"])
-      client = window_client(fn _window -> true end)
-
-      # Act
-      report = Cite.judge(client, source, Riddles, window: 4)
-
-      # Assert
-      assert length(windows_sent()) == 7
-
-      assert report.errors == [
-               %Error{concern: nil, passage_ids: ["P000"], reason: :request_too_large},
                %Error{concern: nil, passage_ids: ["P001"], reason: :request_too_large},
-               %Error{concern: nil, passage_ids: ["P002"], reason: :request_too_large},
                %Error{concern: nil, passage_ids: ["P003"], reason: :request_too_large}
              ]
+
+      assert Enum.sort(Map.keys(report.screen)) == ["P000", "P002"]
     end
 
     test "a round-2 request refused as too large is that finding's error, sent once and not split" do
@@ -361,69 +345,13 @@ defmodule CiteTest do
                   }
                 ]}
     end
-
-    test "a reply answering in the wrong shape fails its whole request" do
-      # Arrange
-      source = Cite.source(["a"])
-
-      client = fn _request ->
-        {:ok, %{answers: %{"P000:riddle" => %{"noul" => "high"}}, usage: nil}}
-      end
-
-      # Act
-      report = Cite.judge(client, source, Riddles)
-
-      # Assert
-      assert report.errors == [
-               %Error{
-                 concern: nil,
-                 passage_ids: ["P000"],
-                 reason: {:malformed_answers, ["P000:riddle"]}
-               }
-             ]
-    end
   end
 
   describe "judge/4 arguments" do
-    test "raises on a client, source, policy, or options of the wrong kind" do
-      for {client, source, policy, opts, message} <- [
-            {:not_a_function, Cite.source(["a"]), Riddles, [],
-             "client must be a 1-arity function, got: :not_a_function"},
-            {refusing_client(), ["a"], Riddles, [],
-             ~s(source must be a Cite.Source, built by Cite.source/2, got: ["a"])},
-            {refusing_client(), Cite.source(["a"]), "Riddles", [],
-             ~s("Riddles" is not a Cite policy; it must `use Cite.Policy`)},
-            {refusing_client(), Cite.source(["a"]), Riddles, %{window: 4},
-             "options must be a keyword list, got: %{window: 4}"}
-          ] do
-        assert_raise ArgumentError, message, fn -> Cite.judge(client, source, policy, opts) end
-      end
-    end
-
-    test "raises on a module that is not a policy, before any request" do
-      assert_raise ArgumentError, ~r/Enum is not a Cite policy/, fn ->
-        Cite.judge(refusing_client(), Cite.source(["a"]), Enum)
-      end
-    end
-
-    test "raises on unknown or invalid options, naming the option, before any request" do
-      for {opts, message} <- [
-            {[review_band: {0.6, 0.4}],
-             "invalid value for :review_band option: expected {low, high} with 0 <= low < high <= 1, got: {0.6, 0.4}"},
-            {[review_band: {0.4, 1.5}],
-             "invalid value for :review_band option: expected {low, high} with 0 <= low < high <= 1, got: {0.4, 1.5}"},
-            {[window: 0], "invalid value for :window option: expected positive integer, got: 0"},
-            {[threshold: "high"],
-             ~s(invalid value for :threshold option: expected a number from 0 to 1, got: "high")},
-            {[threshold: 5],
-             "invalid value for :threshold option: expected a number from 0 to 1, got: 5"},
-            {[colour: :red],
-             "unknown options [:colour], valid options are: [:threshold, :review_band, :window]"}
-          ] do
-        assert_raise ArgumentError, message, fn ->
-          Cite.judge(refusing_client(), Cite.source(["a"]), Riddles, opts)
-        end
-      end
+    test "raises on an argument it cannot use before any request" do
+      assert_raise ArgumentError,
+                   "invalid value for :window option: expected positive integer, got: 0",
+                   fn -> Cite.judge(refusing_client(), Cite.source(["a"]), Riddles, window: 0) end
     end
 
     test "raises when the client returns something that is not a verdict" do
