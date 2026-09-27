@@ -7,9 +7,9 @@ text it came from, ready for a skip button, an ad-disclosure check, or a
 review queue.
 
 It assumes you know a sponsor read when you hear one and have not used Cite
-before. The caption lines below are invented, since real captions are the
-creators' words, and modelled on real sponsor reads: lowercase and without
-punctuation, the way YouTube's automatic captions come out.
+before. The caption lines below are invented, because real captions are
+the creators' own words. They are modelled on real sponsor reads: lowercase
+and without punctuation, the way YouTube's automatic captions come out.
 
 ## What you will build
 
@@ -119,8 +119,8 @@ client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API
 report = Cite.judge(client, source, MyApp.Sponsors)
 ```
 
-Cite screens every chunk in windows of 40 per request, then judges the
-chunks that matched together, in one request. A 20-minute video is about 60
+Cite screens every chunk in windows of 40 per request, then judges all the
+chunks that matched in a single request. A 20-minute video is about 60
 chunks: two screening requests and one judging request.
 
 Keep `threshold` at its default of 0.5. Lowering it gathers more chunks
@@ -198,8 +198,8 @@ method.
 
 A keyword rule ("sponsored by", "use code", "link in the description") is
 cheap and usually right when it fires, about six times in seven. It misses
-most reads, which do not
-announce themselves: a lead-in, a pitch that never says "sponsor", a code
-read out without the word. If you only need to flag videos that disclose
-a sponsorship in so many words, the rule is enough. Cite is for finding
-the whole read, and the reads that do not say what they are.
+most reads, which do not announce themselves: a lead-in, a pitch that never
+says "sponsor", a code read out without the word. If you only need to flag
+videos that disclose a sponsorship in so many words, the rule is enough.
+Cite is for finding the whole read, and the reads that do not say what
+they are.

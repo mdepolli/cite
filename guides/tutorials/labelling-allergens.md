@@ -27,9 +27,9 @@ this:
 | egg | "1 egg, beaten", "Whisk the flour and the egg into a smooth batter." |
 
 Most of it a lookup table could do. The reason to use a model is the lines
-a table gets wrong: "2 tbsp gluten-free soy sauce" carries soy and no
-gluten, where a word match on "soy sauce" would add gluten; "a splash of
-Worcestershire sauce" carries fish; "coconut milk" carries no milk.
+a table gets wrong. "2 tbsp gluten-free soy sauce" carries soy and no
+gluten, though a word match on "soy sauce" would add gluten. "A splash of
+Worcestershire sauce" carries fish. "Coconut milk" carries no milk.
 
 ## 1. Decide what counts
 
@@ -58,16 +58,15 @@ depending on your choice".
 milk. So does "scatter over the nuts" when the nuts the recipe lists are
 walnuts: a general word for one listed ingredient still names it. "Add the
 sauce" or "roll out the dough" names something made from several
-ingredients: its allergens are already on the lines that made it, so the
-step carries nothing, and each allergen is cited where it enters the
-recipe.
+ingredients. Its allergens are already on the lines that made it, so the
+step carries nothing; each allergen is cited where it enters the recipe.
 
 **Composite products.** Barbecue sauce, curry paste, a salad dressing, a
 soup mix: what they contain depends on the brand. This guide counts a
 prepared food only when its usual recipe settles it (pesto, Worcestershire
-sauce, ordinary soy sauce). The rest are lines a reader cannot settle from
-the text, and neither can a model; decide who checks them, usually against
-the product's own label.
+sauce, ordinary soy sauce). For the rest, neither a reader nor a model can
+tell from the text; decide who checks them, usually against the product's
+own label.
 
 Leave out "may contain", cross-contamination, and shared equipment: the
 recipe text does not say, and a label that guesses is worse than none.
@@ -224,8 +223,8 @@ reason a user trusts the label.
 
 Mark the lines your rules leave open, such as composite products and
 alternatives, as borderline, and score them apart. Most of what both the
-policy and the table miss is on these lines; mixed into the clear lines,
-they hide how well the clear lines are read.
+policy and the table miss is on these lines; mixed in, they hide how well
+the clear lines are read.
 
 Keep some recipes aside that you never read while rewording.
 [Tuning against labels](../writing-policies.md#tuning-against-labels) has the

@@ -1,12 +1,12 @@
 # Writing policies
 
-A policy is what the source is judged against: the caller's own rules for
-what counts. It is declared once, in a module, and checked when the module
+A policy is what the source is judged against: your own rules for what
+counts. You declare it in a module, and Cite checks it when the module
 compiles.
 
-This guide explains the language. Every declaration's arguments, options,
-and defaults are listed in the reference in `Cite.Policy`'s docs, generated
-from the DSL itself.
+This guide explains the language. `Cite.Policy`'s docs list every
+declaration's arguments, options, and defaults, generated from the DSL
+itself.
 
 ```elixir
 defmodule Vuln.Policy do
@@ -30,9 +30,9 @@ end
     its own detect, or built from factors.
   - **Factor**: never a finding alone; fills a role in a concern built from
     factors.
-- **Confirm**: a directly screened concern's second question, asked in round 2
-  of each passage it matched, with its siblings. It decides which passages
-  are cited.
+- **Confirm**: a directly screened concern's second question, asked in round
+  2 of each passage the detect matched, read beside the concern's other
+  matches. It decides which passages are cited.
 - **Check**: a question across a concern's roles, asked in round 2. It
   decides whether the finding holds.
 - **Category**: what a concern is reported as.
@@ -133,10 +133,9 @@ end
   factor's strongest match. `optional: true` lets the finding stand without
   it; `distinct: true` requires a passage no other role holds.
 - A check is asked only when every role it names, in its question or its
-  focus, is filled. `distinct true`
-  also requires those roles to be different passages: a line cannot
-  corroborate itself. It sits inside the block because a Spark entity takes
-  options or a `do` block, not both.
+  focus, is filled. `distinct true` also requires those roles to be
+  different passages: a line cannot corroborate itself. It sits inside the
+  block because a Spark entity takes options or a `do` block, not both.
 - At least one check must name only required roles and not be distinct, so
   every finding is judged by something.
 
@@ -175,7 +174,7 @@ evidence. A Score has 2 to 10 unique levels; a Choice at least one option.
 
 A passage is evidence for every directly screened concern it matches. When
 two concerns claim the same ground (say, redundancy listed as both a life
-event and a threat to the job), the overlap is the policy's: give one of
+event and a threat to the job), the policy must settle it: give one of
 them a `not_for` that sends the case to the other. Cite does not choose
 between concerns for you; their scores come from differently worded
 questions and cannot be compared. If your readers should see a passage once,
@@ -183,7 +182,8 @@ decide which finding shows it when you present the report.
 
 ## Placeholders
 
-Questions name what they read, and Cite writes the backticked path.
+A question names what it reads with a placeholder. Cite replaces each one
+with a backticked path to that text in the request.
 
 - `{passage}` is the passage a detect or confirm is asked about; `{household}`
   names a role. A placeholder means the passage's text.
@@ -192,9 +192,9 @@ Questions name what they read, and Cite writes the backticked path.
   and name it in the question. A check uses its concern's roles and nothing
   else, and names at least one in the question; its focus may name more.
   Descriptors use none: they read all of the finding's evidence.
-- The placeholders of the question and focus together, in order of first
-  use, are what the model reads: one becomes `inspect`, several become
-  `compare`, TypeSafe's field for "a list of things to check or to compare".
+- The model reads what the question and focus name, in order of first use.
+  One placeholder becomes TypeSafe's `inspect` field; several become
+  `compare`.
 - Any `{word}` is a placeholder, so a question cannot contain literal braces
   around a word.
 
@@ -254,17 +254,17 @@ otherwise.
 With passages labelled by hand, you can tune the wording the way you would
 tune any model. These held up in practice.
 
-**Hold some labels out.** Read the misses on part of your labelled sources
-only, and score the rest once the wording settles. Wording written while
+**Hold some labels out.** Read the misses on only part of your labelled
+sources, and score the rest once the wording settles. Wording written while
 reading a passage catches that passage; only passages you never read tell
-you whether it generalises. A held-out part that has checked a tuned policy
-once is spent.
+you whether it generalises. Once a held-out part has scored a tuned policy,
+it is spent.
 
 **Find where each miss happens.** The report keeps every round-1 score. A
 labelled passage that was never gathered scored below `threshold` at the
-screen, and the lever is the detect's wording, not the threshold (see
-[How judging works](how-judging-works.md)). One gathered and then dropped is
-the confirm's.
+screen: fix the detect's wording, not the threshold (see
+[How judging works](how-judging-works.md)). A passage gathered and then
+dropped is the confirm's to fix.
 
 **Match the unit your labels mark.** Labels often mark a whole provision,
 section, or episode, and tag some of its passages and not others. A detect

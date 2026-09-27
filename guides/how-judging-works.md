@@ -49,13 +49,13 @@ source's `as`, keyed by id, in source order:
 ```
 
 Question keys are `"<passage id>:<detect>"`. A score above `threshold` is
-a match. A match decides what is gathered, and so what every confirm
-reads: `threshold` changes verdicts, not only recall (see How a finding is
-read).
+a match. Matches decide what is gathered, and so what every confirm reads.
+That is why `threshold` changes verdicts, not only recall (see
+[How a finding is read](#how-a-finding-is-read)).
 
 A request the provider refuses as `:request_too_large` is halved and both
-halves sent. Only a lone passage over the cap becomes an error; its
-siblings are still screened.
+halves sent. Only a lone passage over the cap becomes an error; the rest of
+its window is still screened.
 
 ## Between rounds: gather
 
@@ -74,9 +74,9 @@ Fixed rules, no model call:
 
 One request per finding.
 
-A directly screened concern puts its passages under `as`, so siblings give
-each other context. Confirms are keyed `confirm:<passage id>`; descriptors compare
-every passage:
+A directly screened concern puts its passages under `as`, so they give each
+other context. Confirms are keyed `confirm:<passage id>`; descriptors
+compare every passage:
 
 ```json
 {
@@ -119,7 +119,8 @@ checks that apply:
 
 A round-2 request refused as too large is that finding's error; it is not
 split, because each confirm reads its passage beside all the others, and a
-split would judge a different finding (see How a finding is read).
+split would judge a different finding (see
+[How a finding is read](#how-a-finding-is-read)).
 
 ## Verdict rules
 
@@ -137,20 +138,20 @@ With `{low, high}` as the review band:
 
 ## How a finding is read
 
-A confirm does not judge its passage alone. It reads the passage's part in
-the whole finding, beside every other passage gathered with it, so a line
-that refers back to another ("I kind of resent it") can hold beside the line
-it refers to and fail alone. That was measured on conversation transcripts,
-where lines lean on turns far away; a source of self-contained passages may
-behave differently. Three things follow:
+A confirm does not judge its passage alone. It reads the passage for its
+part in the whole finding, beside every other passage gathered with it, so
+a line that refers back to another ("I kind of resent it") can hold beside
+the line it refers to and fail alone. This was measured on conversation
+transcripts, where lines lean on turns far away; a source of self-contained
+passages may behave differently. Three things follow:
 
 - **A finding's evidence is judged as a set.** Show a finding's citations
   together. One citation shown alone is something the model never judged
   alone.
 - **Gathering shapes judgment.** `threshold` decides which passages are
   gathered, and so what every confirm reads. A passage near the threshold
-  can move a sibling's verdict across the review band from run to run:
-  round-1 noise reaches round 2.
+  can move another passage's verdict across the review band from run to
+  run: round-1 noise reaches round 2.
 - **A finding is one request.** Round 2 never splits a finding, so a larger
   finding is a larger request, not more of them.
 

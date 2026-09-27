@@ -72,10 +72,10 @@ source = Cite.source(lines, as: "lines", show: [:component])
 - `show: [:component]` lets the model see which component logged each
   line, as an operator would glance at it. Every other `meta` key stays
   with you.
-- Leave the timestamp unshown. Each line is judged on what it says; a time
-  beside it adds nothing to that and gives the model something to
-  over-read. Keep it in `meta` for your own use, such as grouping a burst
-  of alerts afterwards.
+- Leave the timestamp unshown. Each line is judged on what it says; a
+  timestamp adds nothing and gives the model something to over-read. Keep
+  it in `meta` for your own use, such as grouping a burst of alerts
+  afterwards.
 - Give each line an id you can trace back, such as its line number in the
   file. Text is kept byte for byte.
 
@@ -189,9 +189,9 @@ per kind. A thousand lines under seven concerns cost about 25 screening
 requests and at most 7 judging requests.
 
 Keep the defaults at first. `window` sets lines per screening request.
-Leave `threshold` at 0.5: lowering it gathers more lines into each
-judgment, which changes verdicts and invents alerts, it does not simply
-catch more (see [How judging works](../how-judging-works.md)).
+Leave `threshold` at 0.5. Lowering it does not simply catch more: it
+gathers more lines into each judgment, which changes verdicts and invents
+alerts (see [How judging works](../how-judging-works.md)).
 
 ## 6. Read the report as a classification
 
@@ -244,8 +244,8 @@ Three things to handle deliberately:
   `report.errors` with the ids of the lines it covered. Those lines were not
   judged; retry them or show them as unjudged.
 
-`report.screen` keeps every line's round-one score for every question. It
-is how you find out why a line was or was not considered.
+`report.screen` keeps every line's round-1 score for every question. Use
+it to find out why a line was or was not considered.
 
 ## 7. Check it against lines you have triaged
 

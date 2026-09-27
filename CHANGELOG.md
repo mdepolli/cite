@@ -14,8 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   confirm, or built from factors with roles and checks), factors, and Score
   or Choice descriptors. A passage is evidence for every concern it matches.
   Questions name what they read by placeholder (`{passage}`, `{household}`)
-  and Cite writes the path. Any question may add a one-line `focus`. Every
-  mistake in a policy is a compile error.
+  and Cite replaces each with a path in the request. Any question may add
+  a one-line `focus`. Every mistake in a policy is a compile error.
 - A DSL reference in `Cite.Policy`'s docs, generated from the DSL by Spark.
 - `Cite.source/2`: the caller's passages, kept byte for byte, with `as:` for
   the word they sit under and `show:` for the meta the model sees.
@@ -36,9 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   TypeSafe System One; `Cite.client/2` builds the client function
   `judge/4` takes. A request's `"state"` may hold `Cite.Wire.Object`
   values, JSON objects that keep their key order. The TypeSafe client takes
-  `api_key`, `model`, `base_url`, `max_retry_delay`, and `req_options`. It retries 429,
-  529, 500–504, and connection failures up to three times, honouring
-  `Retry-After`, delays capped at 30 seconds; timeouts are not retried.
+  `api_key`, `model`, `base_url`, `max_retry_delay`, and `req_options`. It
+  retries 429, 529, 500–504, and connection failures up to three times,
+  honouring `Retry-After`, with delays capped at 30 seconds; timeouts are
+  not retried.
 - Round-1 windows over the provider's size cap (`{:error,
   :request_too_large}`) are halved and retried; only a lone passage still
   over the cap becomes an error. A round-2 request refused as too large is
