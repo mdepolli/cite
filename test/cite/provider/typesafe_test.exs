@@ -100,6 +100,7 @@ defmodule Cite.Provider.TypeSafeTest do
       # Arrange
       Req.Test.expect(__MODULE__, fn conn ->
         assert conn.method == "POST"
+        assert conn.host == "api.typesafe.ai"
         assert conn.request_path == "/v1/systemone"
         assert Plug.Conn.get_req_header(conn, "authorization") == ["Bearer k"]
 
@@ -107,8 +108,8 @@ defmodule Cite.Provider.TypeSafeTest do
 
         assert Jason.decode!(body) == %{
                  "model" => "jev-test",
-                 "state" => @request["state"],
-                 "questions" => @request["questions"]
+                 "state" => %{"passages" => %{"U0" => %{"text" => "hi"}}},
+                 "questions" => %{"U0:d" => %{"type" => "noul"}}
                }
 
         Req.Test.json(conn, %{"answers" => %{}})
@@ -116,6 +117,19 @@ defmodule Cite.Provider.TypeSafeTest do
 
       # Act + Assert
       assert {:ok, _} = judge(model: "jev-test").(@request)
+    end
+
+    test "sends jev-1.13.0 when no model is given" do
+      # Arrange
+      Req.Test.expect(__MODULE__, fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+        assert Jason.decode!(body)["model"] == "jev-1.13.0"
+
+        Req.Test.json(conn, %{"answers" => %{}})
+      end)
+
+      # Act + Assert
+      assert {:ok, _} = judge().(@request)
     end
   end
 
@@ -245,6 +259,18 @@ defmodule Cite.Provider.TypeSafeTest do
       # Act + Assert
       assert retrying_judge().(@request) == {:error, {:rate_limited, 0}}
       assert Agent.get(calls, & &1) == 4
+    end
+
+    test "honours Retry-After, capped at max_retry_delay: a minute asked, none waited" do
+      # Arrange
+      calls = stub_failing_once(&send_with_retry_after(&1, 429, "60"))
+
+      # Act
+      {elapsed_us, reply} = :timer.tc(fn -> retrying_judge(max_retry_delay: 0).(@request) end)
+
+      # Assert
+      assert {match?({:ok, _}, reply), Agent.get(calls, & &1), elapsed_us < 500_000} ==
+               {true, 2, true}
     end
 
     test "falls back to backoff when Retry-After is missing, unparseable, negative, or fractional" do

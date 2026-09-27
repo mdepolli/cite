@@ -101,6 +101,26 @@ defmodule Cite.WireTest do
              }
     end
 
+    test "leaves braces in criteria as written: placeholders expand only in question and focus" do
+      # Arrange
+      question = %Question{
+        type: :noul,
+        text: "Does {passage} say money is short?",
+        focus: nil,
+        criteria: %{true: %{what: "Says {passage} is short."}, false: %{what: "No strain."}}
+      }
+
+      # Act
+      %{"criteria" => criteria} =
+        Wire.question(question, %{"passage" => "utterances.U014.text"}, [])
+
+      # Assert
+      assert criteria == %{
+               "true" => %{"what" => "Says {passage} is short."},
+               "false" => %{"what" => "No strain."}
+             }
+    end
+
     test "encodes a Score with its focus and compare over the fallback paths" do
       # Arrange
       question = %Question{

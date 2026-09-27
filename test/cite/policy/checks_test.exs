@@ -90,6 +90,15 @@ defmodule Cite.Policy.ChecksTest do
         end
       end
     end
+
+    test "a filter missing question" do
+      assert_policy_error ~r/required :question option not found/ do
+        filter :f do
+          yes "y"
+          no "n"
+        end
+      end
+    end
   end
 
   describe "concerns" do
@@ -539,11 +548,28 @@ defmodule Cite.Policy.ChecksTest do
       end
     end
 
-    test "a descriptor with a placeholder" do
+    test "a score with a placeholder" do
       assert_policy_error ~r/descriptor :severity must not use placeholders/ do
         score :severity do
           question "How bad is {passage}?"
           levels ["a", "b"]
+        end
+      end
+    end
+
+    test "a choice with a placeholder" do
+      assert_policy_error ~r/descriptor :temporal must not use placeholders/ do
+        choice :temporal do
+          question "Is {passage} lasting?"
+          option :a, "first"
+        end
+      end
+    end
+
+    test "a score missing levels" do
+      assert_policy_error ~r/required :levels option not found/ do
+        score :severity do
+          question "How bad?"
         end
       end
     end

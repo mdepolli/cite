@@ -76,6 +76,17 @@ defmodule Cite.GatherTest do
                 %{}}
              ]
     end
+
+    test "reads the threshold from the run: a score above the default but below it is no match" do
+      screen = %{
+        "U1" => spoken_by_client(%{cashflow_stress: 0.7}),
+        "U2" => spoken_by_client(%{cashflow_stress: 0.9})
+      }
+
+      assert summary(gather(TestTerms.household(), screen, threshold: 0.8)) == [
+               {:cashflow_stress, ["U2"], %{}}
+             ]
+    end
   end
 
   describe "a passage matching several concerns" do

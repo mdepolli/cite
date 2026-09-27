@@ -415,6 +415,26 @@ defmodule Cite.JudgeTest do
              }
     end
 
+    test "reads the review band from the run: confirms the default band settles are review in a wider one",
+         ctx do
+      # Arrange
+      run = TestRun.new(ctx.run.terms, source: ctx.source, review_band: {0.2, 0.8})
+      gathered = %Gathered{concern: ctx.cashflow, passages: [@u1, @u2]}
+
+      answers =
+        descriptors(%{
+          "confirm:U1" => %{"noul" => 0.3},
+          "confirm:U2" => %{"noul" => 0.7}
+        })
+
+      # Act
+      finding = judged(run, gathered, answers)
+
+      # Assert
+      assert {Enum.map(finding.evidence, & &1.verdict), finding.dropped, finding.verdict} ==
+               {[:review, :review], [], :review}
+    end
+
     test "is review when no citation holds", ctx do
       # Arrange
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1]}

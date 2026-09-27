@@ -125,6 +125,37 @@ defmodule Cite.TestPolicies.TwoConcerns do
   end
 end
 
+defmodule Cite.TestPolicies.SharedFactor do
+  @moduledoc false
+  use Cite.Policy
+
+  concern :one do
+    role :household, factor: :dependents
+
+    check :is_one do
+      question "Is {household} the one?"
+      yes "y"
+      no "n"
+    end
+  end
+
+  concern :two do
+    role :household, factor: :dependents
+
+    check :is_two do
+      question "Is {household} the two?"
+      yes "y"
+      no "n"
+    end
+  end
+
+  factor :dependents do
+    question "Does {passage} mention dependents?"
+    yes "Mentions dependents."
+    no "No dependents."
+  end
+end
+
 defmodule Cite.TestPolicies.FocusRole do
   @moduledoc false
   use Cite.Policy

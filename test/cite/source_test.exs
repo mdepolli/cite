@@ -84,9 +84,11 @@ defmodule Cite.SourceTest do
       end
     end
 
-    test "raises on an id that is not a binary" do
-      assert_raise ArgumentError, ~r/passage id must be a non-empty binary/, fn ->
-        Source.new([%{id: 7, text: "a"}])
+    test "raises on an id that is not a non-empty binary" do
+      for id <- [7, ""] do
+        assert_raise ArgumentError, ~r/passage id must be a non-empty binary/, fn ->
+          Source.new([%{id: id, text: "a"}])
+        end
       end
     end
 
@@ -165,13 +167,15 @@ defmodule Cite.SourceTest do
     end
 
     test "raises on a blank as or a show that is not a list of keys" do
-      assert_raise ArgumentError,
-                   ~s(invalid value for :as option: expected a non-empty binary, got: ""),
-                   fn -> Source.new(["a"], as: "") end
-
-      assert_raise ArgumentError,
-                   "invalid value for :show option: expected a list of atom or binary keys, got: :speaker",
-                   fn -> Source.new(["a"], show: :speaker) end
+      for {opts, message} <- [
+            {[as: ""], ~s(invalid value for :as option: expected a non-empty binary, got: "")},
+            {[show: :speaker],
+             "invalid value for :show option: expected a list of atom or binary keys, got: :speaker"},
+            {[show: [1]],
+             "invalid value for :show option: expected a list of atom or binary keys, got: [1]"}
+          ] do
+        assert_raise ArgumentError, message, fn -> Source.new(["a"], opts) end
+      end
     end
 
     test "raises on unknown options" do

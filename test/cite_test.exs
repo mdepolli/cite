@@ -187,6 +187,17 @@ defmodule CiteTest do
              }
     end
 
+    test "screens in windows of the requested size, in source order" do
+      # Arrange
+      source = Cite.source(["a", "b", "c", "d", "e"])
+
+      # Act
+      Cite.judge(window_client(fn _window -> false end), source, Riddles, window: 2)
+
+      # Assert
+      assert windows_sent() == [["P000", "P001"], ["P002", "P003"], ["P004"]]
+    end
+
     test "judges every match in one round-2 request, however many" do
       # Arrange
       source = Cite.source(Enum.map(1..25, &"Riddle number #{&1}?"))
@@ -416,8 +427,19 @@ defmodule CiteTest do
     end
 
     test "raises when the client returns something that is not a verdict" do
-      assert_raise ArgumentError, ~r/client must return/, fn ->
-        Cite.judge(fn _request -> :ok end, Cite.source(["a"]), Riddles)
+      for {reply, message} <- [
+            {:ok,
+             ~r/client must return \{:ok, %\{answers: map, usage: map \| nil\}\} or \{:error, reason\}, got: :ok/},
+            {{:ok, %{answers: %{}, usage: :lots}},
+             ~r/client usage must be nil or %\{input_tokens: n, output_tokens: n\}, got: :lots/},
+            {{:ok, %{answers: %{}, usage: nil, model: 123}},
+             ~r/client model must be a non-empty binary when given, got: 123/},
+            {{:ok, %{answers: %{}, usage: nil, model: ""}},
+             ~r/client model must be a non-empty binary when given, got: ""/}
+          ] do
+        assert_raise ArgumentError, message, fn ->
+          Cite.judge(fn _request -> reply end, Cite.source(["a"]), Riddles)
+        end
       end
     end
   end
