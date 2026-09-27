@@ -7,8 +7,9 @@ text it came from, ready for a skip button, an ad-disclosure check, or a
 review queue.
 
 It assumes you know a sponsor read when you hear one and have not used Cite
-before. The caption lines below are invented, written the way YouTube's
-automatic captions come out: lowercase, no punctuation.
+before. The caption lines below are invented, since real captions are the
+creators' words, and modelled on real sponsor reads: lowercase and without
+punctuation, the way YouTube's automatic captions come out.
 
 ## What you will build
 
@@ -196,7 +197,8 @@ method.
 ## 7. When not to use Cite
 
 A keyword rule ("sponsored by", "use code", "link in the description") is
-cheap and rarely wrong when it fires. It misses most reads, which do not
+cheap and usually right when it fires, about six times in seven. It misses
+most reads, which do not
 announce themselves: a lead-in, a pitch that never says "sponsor", a code
 read out without the word. If you only need to flag videos that disclose
 a sponsorship in so many words, the rule is enough. Cite is for finding
