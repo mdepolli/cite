@@ -47,6 +47,16 @@ defmodule Cite.Provider.TypeSafe do
   For `Cite.client/2`:
 
   #{Spark.Options.docs(@schema)}
+
+  ## The size cap
+
+  A request over the model's token cap comes back as a 400 whose body names
+  the failure, `{"detail": {"error_type": "max_tokens_exceeded"}}`, and this
+  provider reports it as `:request_too_large`, the error `Cite.judge/4`
+  halves round-1 windows on. That name is observed behaviour, checked against
+  the live API on 2026-09-26; TypeSafe's docs do not list it. Should it
+  change, oversized windows would be recorded as bad requests instead of
+  halved.
   """
 
   @behaviour Cite.Provider
@@ -181,10 +191,10 @@ defmodule Cite.Provider.TypeSafe do
   # TypeSafe names the failure in the 400 body. Its token cap is the
   # provider-neutral :request_too_large the pipeline halves windows on;
   # other names pass through as-is. The "max_tokens_exceeded" name is not in
-  # TypeSafe's published docs: it is what the API returned on oversized
-  # windows during the prototype, and the halving behaviour was built on it.
-  # The docs list validation failures as 422; the prototype saw 400. Both
-  # are matched by the error type so a status change does not lose halving.
+  # TypeSafe's published docs: it is what the live API returns on an
+  # oversized request (see "The size cap" in the moduledoc). The docs list
+  # validation failures as 422; the API answers 400. Both are matched by the
+  # error type so a status change does not lose halving.
   defp decode({:ok, %Req.Response{status: status, body: %{"detail" => %{"error_type" => type}}}})
        when status in [400, 422] and type == "max_tokens_exceeded",
        do: {:error, :request_too_large}
