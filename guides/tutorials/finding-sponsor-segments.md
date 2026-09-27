@@ -109,7 +109,7 @@ Three choices in that wording carry most of the result:
 - **The `no` names every lookalike from step 1.** "A product the video is
   about" is the one that matters most: without it, every review is an ad.
 
-More on the language in [Writing policies](writing-policies.md).
+More on the language in [Writing policies](../writing-policies.md).
 
 ## 4. Run it
 
@@ -124,7 +124,7 @@ chunks: two screening requests and one judging request.
 
 Keep `threshold` at its default of 0.5. Lowering it gathers more chunks
 into the one judgment, which changes how every chunk in it is read (see
-[How judging works](how-judging-works.md)).
+[How judging works](../how-judging-works.md)).
 
 ## 5. From citations to segments
 
@@ -190,7 +190,7 @@ and they have two traps:
 
 Change one thing at a time, and keep some videos aside that you never read
 while rewording, from channels you did not tune on.
-[Tuning against labels](writing-policies.md#tuning-against-labels) has the
+[Tuning against labels](../writing-policies.md#tuning-against-labels) has the
 method.
 
 ## 7. When not to use Cite

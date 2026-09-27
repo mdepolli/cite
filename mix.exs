@@ -81,9 +81,15 @@ defmodule Cite.MixProject do
         "README.md",
         "guides/writing-policies.md",
         "guides/how-judging-works.md",
-        "guides/triaging-logs.md",
-        "guides/finding-sponsor-segments.md",
+        "guides/tutorials/triaging-logs.md",
+        "guides/tutorials/finding-sponsor-segments.md",
         "CHANGELOG.md"
+      ],
+      # The language and the rounds first; then tutorials, each building a
+      # policy from scratch for one kind of data.
+      groups_for_extras: [
+        Guides: ["guides/writing-policies.md", "guides/how-judging-works.md"],
+        Tutorials: ~r"guides/tutorials/"
       ],
       # Groups mirror the stability tiers (see README "Stability"): Core API
       # is the SemVer contract; Providers is implementable but best-effort;

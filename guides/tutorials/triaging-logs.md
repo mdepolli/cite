@@ -174,7 +174,7 @@ A few rules from practice:
   `:rts_terminated`: a new message for the same event should still land.
 
 The full policy is at the end of this guide. More on the language in
-[Writing policies](writing-policies.md).
+[Writing policies](../writing-policies.md).
 
 ## 5. Run it
 
@@ -191,7 +191,7 @@ requests and at most 7 judging requests.
 Keep the defaults at first. `window` sets lines per screening request.
 Leave `threshold` at 0.5: lowering it gathers more lines into each
 judgment, which changes verdicts and invents alerts, it does not simply
-catch more (see [How judging works](how-judging-works.md)).
+catch more (see [How judging works](../how-judging-works.md)).
 
 ## 6. Read the report as a classification
 
@@ -258,7 +258,7 @@ policy on them and compare:
 
 Change one thing at a time, and keep some labelled lines aside that you
 never read while rewording; check them once you stop.
-[Tuning against labels](writing-policies.md#tuning-against-labels) has the
+[Tuning against labels](../writing-policies.md#tuning-against-labels) has the
 method.
 
 ## 8. When not to use Cite
