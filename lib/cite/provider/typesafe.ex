@@ -79,7 +79,7 @@ defmodule Cite.Provider.TypeSafe do
 
   @impl Cite.Provider
   @spec new(keyword()) :: t()
-  def new(opts \\ []) do
+  def new(opts) do
     opts = options(opts)
     api_key = opts[:api_key]
     model = opts[:model]
