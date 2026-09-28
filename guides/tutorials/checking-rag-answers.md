@@ -114,7 +114,7 @@ end
   sentence splitter if your answers are full of abbreviations.
 
 The question and the retrieved documents go in each sentence's `meta`, as
-one string:
+one string. `answer` is the text being checked:
 
 ```elixir
 input = """
@@ -125,6 +125,14 @@ document 1: The Kestrel K2 comes with a two-year warranty on the frame and motor
 document 2: Warranty claims must go through an authorised dealer and need proof of purchase. Kestrel may repair or replace a faulty battery, at its discretion.
 
 document 3: Kestrel offers an extended warranty for the frame, adding three years, for $79.
+"""
+
+answer = """
+The K2's battery is covered for 500 charge cycles or 18 months, whichever comes first.
+The frame and motor are covered for three years.
+Kestrel will replace a faulty battery.
+Claims are usually settled within five working days.
+That makes the K2 one of the best-covered e-bikes you can buy.
 """
 
 sentences =

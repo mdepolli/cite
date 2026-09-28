@@ -60,6 +60,12 @@ in each candidate's `meta`:
 ```elixir
 query = "how long does a sourdough starter keep in the fridge"
 
+retrieved = [
+  %{text: "A fed starter keeps in the fridge for about a week before it needs feeding again.", url: "https://example.com/starter-care"},
+  %{text: "Sourdough starter is flour and water fermented by wild yeast and bacteria.", url: "https://example.com/what-is-a-starter"},
+  # ...
+]
+
 candidates =
   retrieved
   |> Enum.with_index(1)
@@ -105,9 +111,9 @@ end
 This first wording held up. Every change tried after it did not. These
 rules came out of those tries:
 
-- **Judge a query's candidates together.** At the default `window`, all of
-  a query's candidates go in one request. Judging each alone was no more
-  precise, found fewer answers, and cost more.
+- **Judge a query's candidates together.** At the default `window`, up to
+  40 of a query's candidates go in one request. Judging each alone was no
+  more precise, found fewer answers, and cost more.
 - **Measure a rerun before crediting a change.** Two runs of the same
   policy differ by a few false alarms. A rewording that changes fewer than
   that has changed nothing.
