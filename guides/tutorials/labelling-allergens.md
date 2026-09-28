@@ -23,7 +23,7 @@ this:
 |---|---|
 | gluten | "1 cup plain flour", "Whisk the flour and the egg into a smooth batter." |
 | soy | "2 tbsp gluten-free soy sauce" |
-| milk | "30 g butter or margarine" (borderline), "Fry in the butter and finish with the sauce." |
+| milk | "30 g butter or margarine" (depending on your choice), "Fry in the butter and serve." |
 | egg | "1 egg, beaten", "Whisk the flour and the egg into a smooth batter." |
 
 Most of it a lookup table could do. The reason to use a model is the lines
@@ -87,7 +87,7 @@ lines = [
   %{id: "i3", text: "30 g butter or margarine", meta: %{section: "ingredients"}},
   %{id: "i4", text: "1 egg, beaten", meta: %{section: "ingredients"}},
   %{id: "s1", text: "Whisk the flour and the egg into a smooth batter.", meta: %{section: "method"}},
-  %{id: "s2", text: "Fry in the butter and finish with the sauce.", meta: %{section: "method"}}
+  %{id: "s2", text: "Fry in the butter and serve.", meta: %{section: "method"}}
 ]
 
 source = Cite.source(lines, as: "lines", show: [:section])

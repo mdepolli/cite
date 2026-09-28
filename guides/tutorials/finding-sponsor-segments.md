@@ -141,8 +141,13 @@ defmodule MyApp.Segments do
   alias Cite.{Citation, Finding, Passage, Report}
 
   # Held chunks merged into {start, finish} ranges, where a gap of at most
-  # `gap` seconds joins two chunks into one segment.
-  def sponsor_segments(%Report{findings: findings}, gap \\ 1.0) do
+  # `gap` seconds joins two chunks into one segment; :unchecked when a
+  # request failed.
+  def sponsor_segments(report, gap \\ 1.0)
+
+  def sponsor_segments(%Report{errors: [_ | _]}, _gap), do: :unchecked
+
+  def sponsor_segments(%Report{findings: findings}, gap) do
     findings
     |> Enum.flat_map(&held_times/1)
     |> Enum.sort()
@@ -167,8 +172,8 @@ end
 - **`:review` is a question for a person,** not a no. Show those chunks
   with a few seconds around them.
 - **A failed request is not "no sponsor".** It lands in `report.errors` with
-  the ids it covered; those chunks were not judged. Retry them, or mark the
-  video as not checked.
+  the ids it covered. Those chunks were not judged, so `sponsor_segments/2`
+  returns `:unchecked`. Retry them, or mark the video as not checked.
 - **Segments are as precise as your chunks.** A range starts at the first
   cited chunk's start, which may be a few seconds before the read begins.
   If you need tighter edges, look inside the first and last chunk with the
@@ -202,8 +207,7 @@ method.
 
 A keyword rule ("sponsored by", "use code", "link in the description") is
 cheap and usually right when it fires. It misses most reads, which do not
-announce themselves: a lead-in, a pitch that never
-says "sponsor", a code read out without the word. If you only need to flag
-videos that disclose a sponsorship in so many words, the rule is enough.
-Cite is for finding the whole read, and the reads that do not say what
-they are.
+announce themselves: a lead-in, a pitch that never says "sponsor", a code
+read out without the word. If you only need to flag videos that disclose a
+sponsorship in so many words, the rule is enough. Cite is for finding the
+whole read, and the reads that do not say what they are.

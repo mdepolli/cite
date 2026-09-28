@@ -114,7 +114,7 @@ end
   sentence splitter if your answers are full of abbreviations.
 
 The question and the retrieved documents go in each sentence's `meta`, as
-one string. `answer` is the text being checked:
+one string. The `answer` variable holds the text being checked:
 
 ```elixir
 input = """
@@ -152,10 +152,23 @@ source = Cite.source(sentences, as: "sentences", show: [:input])
 
 ## 3. Write the policy
 
-A filter sets aside sentences that assert nothing. Then each kind of
-problem is a concern with a detect: a yes/no question asked of every
-sentence left. A placeholder cannot name meta, so each question names the
-sentence as `{passage}` and the input in words:
+A filter sets aside sentences that assert nothing:
+
+```elixir
+filter :makes_a_claim do
+  question "Does {passage} assert anything, about the subject of the answer or about what the input shown with it contains?"
+
+  yes do
+    what "The sentence states a fact, figure, event, step, description, judgment, or piece of advice about the subject, even behind framing such as 'Based on the passages, …'. So does a statement about what the input says or does not say, such as 'The passages do not mention the cost': it is wrong when the input does say it."
+  end
+
+  no "The sentence asserts nothing: a greeting or pleasantry ('I hope this helps!'), framing with nothing after it ('Here is my answer based on the given passages:'), a heading or list lead-in with no content ('The steps are:'), or a citation on its own."
+end
+```
+
+Then each kind of problem is a concern with a detect: a yes/no question
+asked of every sentence left. A placeholder cannot name meta, so each
+question names the sentence as `{passage}` and the input in words:
 
 ```elixir
 concern :conflict do
@@ -216,6 +229,10 @@ send it 40 times in one request. At `window: 1`, each request holds one
 sentence and one copy. A five-sentence answer is five screening requests,
 each asking the filter and both concerns, then one judging request per
 kind of problem found.
+
+`window: 1` also means round 1 reads each sentence without its neighbours,
+so a sentence that leans on the one before ("That makes the K2…") is read
+alone. Such sentences were no more often false alarms than the rest.
 
 ## 5. From findings to a table
 
@@ -296,6 +313,11 @@ you: it reads only what you give it.
 
 Mind the cost when the input is long. Every sentence carries it, so an
 answer's cost grows with its sentence count times the length of its input.
+Round 2 adds to that. Each kind of problem is one request, holding every
+sentence cited under it with its own copy of the input. Round 2 never
+splits a request, so a long answer with many problems against long
+documents can grow past the provider's limit. That finding then becomes an
+error.
 
 ## The whole policy
 

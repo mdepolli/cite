@@ -98,6 +98,11 @@ With the speaker shown, this is an easy question, and a cheap one: one
 answer per turn. On real support conversations it sorted every turn
 correctly.
 
+The speaker is already in `meta`, so why ask the model? Because the
+customer's turns must stay in the source. They are what the agent's turns
+are read beside in round 1. Cite has no way to mark a passage as context
+only, so the filter keeps those turns from being cited instead.
+
 ## 4. Write one concern per step
 
 Each step is a concern with a detect: a yes/no question asked of every
@@ -127,8 +132,10 @@ A few rules from practice:
 - **Say when a confirmation counts.** The three steps that change
   something say that a turn which only reports it done counts, when the
   turns before make clear which step it is. Short confirmations are still
-  the weakest point: read on their own, "all done" says little, so check
-  them in review.
+  the weakest point. Round 1 reads each turn beside the turns around it.
+  Round 2 reads only the turns gathered for the step, so the question that
+  came before "all done" is gone. Expect such turns to drop or land in
+  review.
 - **Keep neighbouring steps apart.** The account step's `no` names the
   order step and the order step's names the account, since "change the
   address" can mean either.
@@ -202,7 +209,9 @@ end
 
 Pass it the checklist and the conversation's turn ids in order
 (`Enum.map(turns, & &1.id)`). A refund with no verification cited at all
-comes back `false`, which is the case you most want to see.
+comes back `false`, which is the case you most want to see. Call it only
+on a checked call. Given `:unchecked`, it also returns `false`, and an
+unchecked call is not a breach.
 
 ## 7. Check it against your records
 

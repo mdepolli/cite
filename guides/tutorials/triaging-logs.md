@@ -257,8 +257,11 @@ Take a few hundred lines you or your team have already sorted, including
 plenty of lookalikes, and label each with its kind or "none". Run the
 policy on them and compare:
 
-- A line you called an alert that Cite did not cite: find its score in
-  `report.screen`. Below 0.5 means the detect's wording missed it.
+- A line you called an alert that Cite did not cite: find its scores in
+  `report.screen`. Below 0.5 on the detect means the detect's wording
+  missed it. Below 0.5 on `:reports_event` means the filter set it aside.
+  If both passed, the line was gathered and then dropped in round 2, and it
+  sits in the finding's `dropped`.
 - A line Cite cited that you did not: read the `no` of that concern. The
   explanation you would give is usually the missing part.
 
