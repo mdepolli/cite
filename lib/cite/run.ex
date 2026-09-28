@@ -33,7 +33,10 @@ defmodule Cite.Run do
             window: [
               type: :pos_integer,
               default: 40,
-              doc: "Passages per round-1 request."
+              doc: """
+              Passages per round-1 request, a positive integer. At `1`, each \
+              request holds one passage.\
+              """
             ]
           )
 

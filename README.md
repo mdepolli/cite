@@ -140,8 +140,8 @@ Three options tune a run:
   passage joins a finding.
 - `review_band`, default `{0.4, 0.6}`: answers between these two values go
   to `:review`.
-- `window`, default `40`: how many passages go in each first-round
-  request.
+- `window`, a positive integer, default `40`: how many passages go in each
+  first-round request. At `1`, each request holds one passage.
 
 Leave `threshold` alone at first. Lowering it does more than find more
 passages: each one it adds is read together with the rest of its finding,

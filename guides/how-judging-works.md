@@ -24,8 +24,10 @@ see the client.
 ## Round 1: screen
 
 Every detect — filters, directly screened concerns, factors — is asked of
-every passage, `window` passages per request. The window sits under the
-source's `as`, keyed by id, in source order:
+every passage, up to `window` passages per request. The request's state is
+the window, under the source's `as`, keyed by id, in source order, because
+the model reads neighbours. Every question in the request shares that
+state; its `inspect` names one passage's text:
 
 ```json
 {
