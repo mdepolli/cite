@@ -57,6 +57,7 @@ defmodule Cite.MixProject do
         README.md
         LICENSE
         CHANGELOG.md
+        assets/logo.svg
       ),
       licenses: ["MIT"],
       links: %{

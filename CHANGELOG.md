@@ -14,8 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or never state, with a filter for sentences that assert nothing.
 - Tutorial: Filtering RAG retrieval results. It keeps the retrieved
   passages that answer a query, judging each query's candidates together.
-- A roadmap for 0.2.0, marking each item planned, exploring, or not
-  planned.
+- A [roadmap](https://github.com/mdepolli/cite/blob/main/ROADMAP.md) for
+  0.2.0, marking each item planned, exploring, or not planned.
 - A logo, shown in the docs sidebar, as the favicon, and beside the README
   heading.
 
