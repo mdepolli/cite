@@ -9,7 +9,7 @@ declaration's arguments, options, and defaults, generated from the DSL
 itself.
 
 ```elixir
-defmodule Vuln.Policy do
+defmodule MyApp.Policy do
   use Cite.Policy
 
   filter :client_speaking do ... end
