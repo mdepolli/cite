@@ -1,6 +1,6 @@
 # Roadmap
 
-Where Cite is heading after 0.1.0. Plans change; the
+Where Cite is heading next. Plans change; the
 [changelog](CHANGELOG.md) records what shipped.
 
 - **Planned**: the direction is set, and the work is scheduled for 0.2.0.

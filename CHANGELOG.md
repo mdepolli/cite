@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-28
+
 ### Added
 
 - Tutorial: Checking RAG answers against their sources. It finds the
@@ -30,6 +32,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   can go in a `no` block as well as a `yes`.
 - Each tutorial opens by saying what you write and build, and what Cite
   does in between.
+
+### Security
+
+- Mint, the HTTP client under Req, has three advisories fixed in 1.11.0
+  (EEF-CVE-2026-91043, EEF-CVE-2026-92103, EEF-CVE-2026-94194). Cite's own
+  lockfile now pins 1.11.0. Hex packages do not ship a lockfile, so run
+  `mix deps.update mint` in your project.
 
 ## [0.1.0] - 2026-09-27
 
@@ -78,5 +87,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (the SemVer contract), Providers, and Internal.
 - Requires Elixir `~> 1.18`.
 
-[Unreleased]: https://github.com/mdepolli/cite/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/mdepolli/cite/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/mdepolli/cite/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mdepolli/cite/releases/tag/v0.1.0
