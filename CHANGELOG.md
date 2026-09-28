@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tutorial: Checking RAG answers against their sources. It finds the
   sentences of a generated answer that its retrieved documents contradict
   or never state, with a filter for sentences that assert nothing.
+- Tutorial: Filtering RAG retrieval results. It keeps the retrieved
+  passages that answer a query, judging each query's candidates together.
 - A roadmap for 0.2.0, marking each item planned, exploring, or not
   planned.
 - A logo, shown in the docs sidebar, as the favicon, and beside the README

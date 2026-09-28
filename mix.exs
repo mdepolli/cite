@@ -83,6 +83,7 @@ defmodule Cite.MixProject do
         "guides/writing-policies.md",
         "guides/how-judging-works.md",
         "guides/tutorials/checking-rag-answers.md",
+        "guides/tutorials/filtering-rag-results.md",
         "guides/tutorials/triaging-logs.md",
         "guides/tutorials/checking-support-calls.md",
         "guides/tutorials/finding-sponsor-segments.md",
