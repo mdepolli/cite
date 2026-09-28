@@ -77,10 +77,11 @@ defmodule Cite.MixProject do
         "README.md",
         "guides/writing-policies.md",
         "guides/how-judging-works.md",
+        "guides/tutorials/checking-rag-answers.md",
         "guides/tutorials/triaging-logs.md",
+        "guides/tutorials/checking-support-calls.md",
         "guides/tutorials/finding-sponsor-segments.md",
         "guides/tutorials/labelling-allergens.md",
-        "guides/tutorials/checking-support-calls.md",
         "CHANGELOG.md"
       ],
       # The language and the rounds first; then tutorials, each building a
