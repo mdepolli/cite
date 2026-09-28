@@ -17,10 +17,10 @@ this:
 | Sentence | Problem |
 |---|---|
 | "The K2's battery is covered for 500 charge cycles or 18 months, whichever comes first." | none found |
-| "The frame and motor are covered for three years." | evident conflict |
-| "Kestrel will replace a faulty battery." | subtle conflict |
-| "Claims are usually settled within five working days." | evident baseless info |
-| "That makes the K2 one of the best-covered e-bikes you can buy." | subtle baseless info |
+| "The frame and motor are covered for three years." | conflict |
+| "Kestrel will replace a faulty battery." | conflict |
+| "Claims are usually settled within five working days." | baseless info |
+| "That makes the K2 one of the best-covered e-bikes you can buy." | baseless info |
 
 All five sentences read well. Four of them are wrong about the documents
 the answer came from, which you will see in step 2. Spotting them takes
@@ -34,25 +34,21 @@ ones that fit.
 ## 1. Decide what counts
 
 The input is what the answering model was given: the question and the
-retrieved documents. Two questions sort the problems in an answer: does the
-input say otherwise, or say nothing? And can you see the problem by putting
-the two side by side, or does it take a judgement call?
+retrieved documents. One question sorts the problems in an answer: does the
+input say otherwise, or say nothing?
 
-- **Evident conflict**: a fact the input states differently. A wrong or
-  misspelled name, a wrong number, date, or place, the wrong person acting,
-  or the opposite of what the input says. "Covered for three years", where
-  the documents say two.
-- **Subtle conflict**: a restatement whose word or framing changes the
-  implication or severity. A suspicion stated as a finding, a possibility
-  as a certainty, one side's claim as fact, a milder or harsher term. The
-  documents say Kestrel "may" replace a faulty battery; the answer says it
-  "will".
-- **Evident baseless info**: a concrete fact the input never mentions. A
-  name, number, date, event, quotation, or feature. "Settled within five
-  working days", when no document mentions timing.
-- **Subtle baseless info**: what a writer might infer or assume. A judgement
-  or sentiment, a motive, a consequence, a general norm, or background
-  knowledge. "One of the best-covered e-bikes you can buy."
+- **Conflict**: the answer changes something the input says. A wrong name,
+  number, date, or place, or the wrong person acting; the opposite of what
+  the input says; or a word that changes its meaning, such as a possibility
+  stated as a certainty, a reported claim stated as fact, a dropped hedge,
+  or a changed bound. "Covered for three years", where the documents say
+  two. Kestrel "will" replace a faulty battery, where the documents say it
+  "may".
+- **Baseless info**: the answer adds what the input does not say. A
+  concrete fact it never mentions, or an inference, opinion, or piece of
+  background knowledge beyond it. "Settled within five working days", when
+  no document mentions timing. "One of the best-covered e-bikes you can
+  buy."
 
 Then settle the boundaries:
 
@@ -60,7 +56,13 @@ Then settle the boundaries:
   absent from the input is baseless. You are checking whether the answer
   came from its sources, not whether it is correct.
 - **A faithful paraphrase is not a problem.** Only a changed meaning is.
-- **A sentence can hold two problems.** "The frame is covered for three
+- **A wrong statement about the input is a conflict.** "The documents do
+  not say how long claims take" is fine when they don't, and a conflict
+  when they do. "I cannot answer from these documents" is a conflict too,
+  when they do answer the question.
+- **A sentence that asserts nothing is not checked.** "I hope this helps!"
+  and "Here is my answer:" make no claim that could be wrong.
+- **A sentence can hold both problems.** "The frame is covered for three
   years, and claims settle in a week" is a conflict and baseless info. It
   counts under both.
 
@@ -140,41 +142,56 @@ source = Cite.source(sentences, as: "sentences", show: [:input])
   shared by the whole run. Each sentence carries its own copy, and `show:`
   lets the model see it.
 
-## 3. Write one concern per kind of problem
+## 3. Write the policy
 
-Each kind is a concern with a detect: a yes/no question asked of every
-sentence. A placeholder cannot name meta, so the question names the
+A filter sets aside sentences that assert nothing. Then each kind of
+problem is a concern with a detect: a yes/no question asked of every
+sentence left. A placeholder cannot name meta, so each question names the
 sentence as `{passage}` and the input in words:
 
 ```elixir
-concern :evident_conflict do
+concern :conflict do
   detect do
-    question "Does {passage} contain any claim that the input shown with it plainly contradicts?"
+    question "Does {passage} contain any claim that the input shown with it states differently?"
+
+    focus "Check every number, date, qualifier, and attribution in {passage} against the input's own words: a dropped 'perhaps', 'reportedly', or 'as many as' changes the claim."
 
     yes do
-      what "Some part of the sentence, however small, states a fact the input states differently: a wrong or misspelled name, a wrong number, date, place, or who did what, or the opposite of what the input says. Comparing the two shows the error without interpretation. The rest of the sentence may be accurate."
+      what "Some part of the sentence, however small, changes something the input says: a wrong or misspelled name, a wrong number, date, place, or who did what; the opposite of what the input says; a word or framing that changes its meaning or severity, such as a suspicion stated as a finding, a possibility as a certainty, a reported claim ('he reportedly said he spent') stated as fact, a hedge dropped ('perhaps best known' as 'best known'), or a bound changed ('as many as 900' as 'over 900', 'almost 22,000' as 'over 22,000'); or a wrong statement about what the input or one of its passages says, including 'unable to answer' or 'the passages do not say' when they do. The rest of the sentence may be accurate."
 
-      not_for "A claim that shifts the input's meaning only by implication, emphasis, or severity (a subtle conflict); a claim the input neither states nor contradicts, whether a concrete fact or an inference (baseless information)."
+      not_for "A restatement in other words that keeps the input's meaning: a paraphrase, a shortened summary, or facts in another order; a claim about something the input does not mention at all (baseless information)."
     end
 
-    no "No claim in the sentence contradicts the input plainly."
+    no "No claim in the sentence states differently what the input says."
   end
 end
 ```
 
-Three choices shape all four concerns:
+These rules held up in practice:
 
+- **Split a kind only where two readers agree.** RAGTruth, a public set of
+  labelled answers, splits each kind into evident and subtle. Two careful
+  readings of the same answers barely agreed on that split, and a policy
+  that asked it cited sentences twice or under the wrong kind. With two
+  concerns it was more precise, and cheaper.
+- **Point the model at the words that change a claim.** The criteria
+  already named a dropped hedge and a changed bound, and the model still
+  passed "reportedly said he spent" restated as "spent". A `focus` on
+  every number, date, qualifier, and attribution caught many of those.
 - **Ask whether the sentence contains a problem, not whether it is one.**
   A sentence with one wrong figure among three right ones is mostly
   accurate. Asked "is this sentence contradicted?", a model can fairly say
   no. Asked "does it contain any claim that is?", it has to find the one.
   "However small" and "the rest of the sentence may be accurate" say the
   same in the criteria.
-- **Keep neighbouring kinds apart in the `yes`.** Each `yes` names the
-  other three kinds in its `not_for`. It excludes claims, not sentences,
-  so a sentence with two kinds of problem is still cited under both.
-- **Keep the `no` to one line.** It covers the sentence with no such
-  claim. The boundaries are already in the `yes`.
+- **Rule out restatement in both concerns.** Each `not_for` opens with a
+  restatement that keeps the input's meaning, then sends the other
+  concern's cases away. It excludes claims, not sentences, so a sentence
+  with both kinds of problem is cited under both.
+- **Name what the filter must keep.** Its `yes` keeps "the passages do not
+  mention the cost", which is a conflict when they do. Few false alarms
+  came from sentences that assert nothing. The filter is there to keep
+  "Sure!" away from your reviewers.
 
 The full policy is at the end of this guide. More on the language in
 [Writing policies](../writing-policies.md).
@@ -189,7 +206,8 @@ report = Cite.judge(client, source, MyApp.Grounding, window: 1)
 Every sentence carries the full input, so a window of 40 sentences would
 send it 40 times in one request. At `window: 1`, each request holds one
 sentence and one copy. A five-sentence answer is five screening requests,
-then one judging request per kind of problem found.
+each asking the filter and both concerns, then one judging request per
+kind of problem found.
 
 ## 5. From findings to a table
 
@@ -219,9 +237,9 @@ end
 - **"None found" is relative to the input.** If retrieval missed the
   document that answers the question, a grounded answer can still be
   wrong. Cite checks the answer against what it was given.
-- **Decide what each kind costs you.** You might block an answer on an
-  evident conflict and only flag subtle baseless info. That call lives in
-  your code; Cite reports all four the same way.
+- **Decide what each kind costs you.** You might block an answer on a
+  conflict and only flag baseless info. That call lives in your code; Cite
+  reports both the same way.
 - **Review goes to a person.** Show a `:review` sentence beside the input
   it was checked against.
 
@@ -229,8 +247,9 @@ end
 
 RAGTruth holds answers from several models, each with the input it was
 written from. Annotators marked every problem as a span of the answer, with
-one of the four kinds above. Its code and labels are MIT; its documents
-come from MS MARCO and news articles, under their own terms.
+one of four kinds: conflict and baseless info, each evident or subtle. Read
+them as the two kinds above. Its code and labels are MIT; its documents come
+from MS MARCO and news articles, under their own terms.
 
 - **Your label rule must ask your question.** Spans do not follow
   sentences, so turn them into sentence labels by a rule. A sentence gets
@@ -238,17 +257,23 @@ come from MS MARCO and news articles, under their own terms.
   none, so false alarms count. The rule marks a long sentence with a
   three-word problem, which is why the questions ask whether a sentence
   *contains* one.
-- **Watch sentences cited under two kinds but labelled with one.** They
-  show where neighbouring kinds bleed into each other; the fix is in the
-  `yes`'s `not_for`.
-- **Score the axes apart.** Whether a sentence has any problem, and whether
-  its kind is right, are two scores. A policy can be good at the first and
-  still confuse evident with subtle.
+- **Check the negatives before you trust precision.** Against RAGTruth,
+  most sentences the policy cited looked like false alarms. A second
+  reading, blind to the results and against the full input, found most of
+  them were real problems the annotators left unlabelled. Keep such a
+  reading as a reference of its own, score against both, and never merge
+  the two.
+- **Score any problem and the right kind apart.** A policy can find the
+  problem sentences and still name the wrong kind. Sentences cited under
+  both kinds but labelled with one show where; the fix is in the
+  `not_for`.
 
 Score a word-overlap check beside the policy: cite a sentence when enough
-of its words are missing from the input. Citing any unseen word flags
-almost every sentence, because answers paraphrase. Tune the share on your
-training labels, not on the ones you hold out.
+of its words are missing from the input. It only sees new words, so it
+misses every conflict built from the input's own words ("as many as 900"
+restated as "over 900", "unable to answer" when the documents answer). And
+it flags faithful paraphrases, which use words the input does not. Tune
+its share on your training labels, not on the ones you hold out.
 
 Keep some answers aside that you never read while rewording.
 [Tuning against labels](../writing-policies.md#tuning-against-labels) has
@@ -270,59 +295,43 @@ answer's cost grows with its sentence count times the length of its input.
 defmodule MyApp.Grounding do
   use Cite.Policy
 
-  concern :evident_conflict do
+  filter :makes_a_claim do
+    question "Does {passage} assert anything, about the subject of the answer or about what the input shown with it contains?"
+
+    yes do
+      what "The sentence states a fact, figure, event, step, description, judgment, or piece of advice about the subject, even behind framing such as 'Based on the passages, …'. So does a statement about what the input says or does not say, such as 'The passages do not mention the cost': it is wrong when the input does say it."
+    end
+
+    no "The sentence asserts nothing: a greeting or pleasantry ('I hope this helps!'), framing with nothing after it ('Here is my answer based on the given passages:'), a heading or list lead-in with no content ('The steps are:'), or a citation on its own."
+  end
+
+  concern :conflict do
     detect do
-      question "Does {passage} contain any claim that the input shown with it plainly contradicts?"
+      question "Does {passage} contain any claim that the input shown with it states differently?"
+
+      focus "Check every number, date, qualifier, and attribution in {passage} against the input's own words: a dropped 'perhaps', 'reportedly', or 'as many as' changes the claim."
 
       yes do
-        what "Some part of the sentence, however small, states a fact the input states differently: a wrong or misspelled name, a wrong number, date, place, or who did what, or the opposite of what the input says. Comparing the two shows the error without interpretation. The rest of the sentence may be accurate."
+        what "Some part of the sentence, however small, changes something the input says: a wrong or misspelled name, a wrong number, date, place, or who did what; the opposite of what the input says; a word or framing that changes its meaning or severity, such as a suspicion stated as a finding, a possibility as a certainty, a reported claim ('he reportedly said he spent') stated as fact, a hedge dropped ('perhaps best known' as 'best known'), or a bound changed ('as many as 900' as 'over 900', 'almost 22,000' as 'over 22,000'); or a wrong statement about what the input or one of its passages says, including 'unable to answer' or 'the passages do not say' when they do. The rest of the sentence may be accurate."
 
-        not_for "A claim that shifts the input's meaning only by implication, emphasis, or severity (a subtle conflict); a claim the input neither states nor contradicts, whether a concrete fact or an inference (baseless information)."
+        not_for "A restatement in other words that keeps the input's meaning: a paraphrase, a shortened summary, or facts in another order; a claim about something the input does not mention at all (baseless information)."
       end
 
-      no "No claim in the sentence contradicts the input plainly."
+      no "No claim in the sentence states differently what the input says."
     end
   end
 
-  concern :subtle_conflict do
+  concern :baseless_info do
     detect do
-      question "Does {passage} contain any claim that changes the meaning of something the input shown with it says, without plainly contradicting it?"
+      question "Does {passage} contain anything that the input shown with it does not say?"
 
       yes do
-        what "Some part of the sentence, however small, restates the input with a word or framing that carries a different implication or severity: a suspicion stated as a finding, a possibility as a certainty, one side's claim as fact, a milder or harsher term than the input's. The rest of the sentence may be accurate."
+        what "Some part of the sentence, however small, adds what the input does not contain: a concrete name, number, date, event, quotation, feature, or step it never mentions; or an inference, opinion, judgment, motive, consequence, piece of advice, or background knowledge that goes beyond it, whether or not it is true in the world. The rest of the sentence may be supported."
 
-        not_for "A claim with a plainly wrong name, number, date, or fact (an evident conflict); a claim about something the input does not mention at all (baseless information)."
+        not_for "A restatement in other words that keeps the input's meaning: a paraphrase, a shortened summary, or facts in another order; a claim about something the input covers but gets wrong (a conflict)."
       end
 
-      no "No claim in the sentence restates the input with a changed meaning."
-    end
-  end
-
-  concern :evident_baseless_info do
-    detect do
-      question "Does {passage} contain any specific fact or detail that the input shown with it does not contain?"
-
-      yes do
-        what "Some part of the sentence, however small, adds a concrete claim with no support in the input: a name, number, date, event, quotation, feature, or other fact the input never mentions, whether or not it is true in the world. The rest of the sentence may be supported."
-
-        not_for "A claim the input states differently, plainly or by implication (a conflict); an inference, opinion, or piece of general knowledge drawn from what the input says (subtle baseless information)."
-      end
-
-      no "Every concrete fact in the sentence is in the input."
-    end
-  end
-
-  concern :subtle_baseless_info do
-    detect do
-      question "Does {passage} contain any inference, opinion, or assumption that goes beyond what the input shown with it says?"
-
-      yes do
-        what "Some part of the sentence, however small, adds what the input does not state but a writer might infer or assume: a judgment or sentiment, a motive, a consequence, a general norm, or background knowledge, such as describing a place as popular or explaining why something happened. The rest of the sentence may be supported."
-
-        not_for "A concrete name, number, date, or event the input never mentions (evident baseless information); a claim the input states differently, plainly or by implication (a conflict)."
-      end
-
-      no "The sentence adds no inference, opinion, or assumption to what the input says."
+      no "Everything in the sentence is stated or paraphrased in the input, or contradicted by it."
     end
   end
 end
