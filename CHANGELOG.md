@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Tutorial: Checking RAG answers against their sources. It finds the
+  sentences of a generated answer that its retrieved documents contradict
+  or never state, with a filter for sentences that assert nothing.
+- A roadmap for 0.2.0, marking each item planned, exploring, or not
+  planned.
+- A logo, shown in the docs sidebar, as the favicon, and beside the README
+  heading.
+
+### Changed
+
+- The guides say what one round-1 request holds, and that shown meta is
+  the only context a passage carries besides its text: a value every
+  passage shares, such as the question they are judged against, goes on
+  each passage. The `window` docs say it takes any positive integer,
+  including 1.
+- Writing policies defines `not_for` against its own block's `what`, so it
+  can go in a `no` block as well as a `yes`.
+- Each tutorial opens by saying what you write and build, and what Cite
+  does in between.
+
 ## [0.1.0] - 2026-09-27
 
 ### Added
