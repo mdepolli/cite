@@ -1,4 +1,4 @@
-# Cite
+# ![](assets/logo.svg) Cite
 
 [![Hex.pm](https://img.shields.io/hexpm/v/cite)](https://hex.pm/packages/cite)
 [![Documentation](https://img.shields.io/badge/docs-hexdocs-blue)](https://hexdocs.pm/cite)

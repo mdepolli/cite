@@ -73,6 +73,11 @@ defmodule Cite.MixProject do
       main: "readme",
       source_ref: "v#{@version}",
       source_url: @source_url,
+      logo: "assets/logo.svg",
+      favicon: "assets/logo.svg",
+      # Copied as is, so the README's relative path to the logo resolves on
+      # HexDocs as it does on GitHub.
+      assets: %{"assets" => "assets"},
       extras: [
         "README.md",
         "guides/writing-policies.md",

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30" viewBox="3 10 59 44" role="img" aria-label="Cite">
+  <style>
+    .ink { fill: #3B2F0B; }
+    .line { fill: #A6ACB9; }
+    @media (prefers-color-scheme: dark) {
+      .line { fill: #5C6272; }
+    }
+  </style>
+  <rect class="line" x="10" y="12" width="44" height="6" rx="3"/>
+  <path fill="#FFD43B" d="M9 26 C22 24.4 30 25.6 42 23.8 C50 22.8 55 23.2 61 22 L57 38 C48 38.9 42 38.2 33 39.6 C22 41.2 14 40.6 5 42 Z"/>
+  <path fill="#E9B800" opacity="0.55" d="M9 26 L13.5 25.6 L9.6 41.6 L5 42 Z"/>
+  <path fill="#E9B800" opacity="0.55" d="M56.5 22.4 L61 22 L57 38 L52.6 38.4 Z"/>
+  <rect class="ink" x="10" y="30" width="40" height="6" rx="3"/>
+  <rect class="line" x="10" y="46" width="30" height="6" rx="3"/>
+</svg>
