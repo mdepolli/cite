@@ -192,6 +192,9 @@ with a backticked path to that text in the request.
   and name it in the question. A check uses its concern's roles and nothing
   else, and names at least one in the question; its focus may name more.
   Descriptors use none: they read all of the finding's evidence.
+- A placeholder cannot name meta. Refer to shown meta in words: with
+  `show: [:speaker]`, ask about "the speaker of {passage}", as the filter
+  above does.
 - The model reads what the question and focus name, in order of first use.
   One placeholder becomes TypeSafe's `inspect` field; several become
   `compare`.
