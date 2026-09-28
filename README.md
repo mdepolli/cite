@@ -224,6 +224,9 @@ structs, the Spark extension, `Run`, `Screen`, `Gather`, `Judge`,
 `Placeholder`, `Wire`, and `Answer`. Their docs stay published because they
 explain how Cite works.
 
+The [roadmap](https://github.com/mdepolli/cite/blob/main/ROADMAP.md) lists
+what is planned for the next release and what is still being explored.
+
 ## License
 
 MIT. See the
