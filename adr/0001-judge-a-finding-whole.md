@@ -12,7 +12,7 @@ Round 2 asks a confirm of every passage a finding gathered. A confirm could
 read its passage alone, beside a window of the finding's passages, or beside
 all of them.
 
-Measured on a private caller's benchmark of financial-advice transcripts:
+Measured on an internal benchmark of conversation transcripts:
 
 - Judged alone or in chunks of 1, 2, or 4, passages that carry a finding lost
   their reading. A line that refers back to an earlier turn ("I kind of

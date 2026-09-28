@@ -143,9 +143,10 @@ With `{low, high}` as the review band:
 A confirm does not judge its passage alone. It reads the passage for its
 part in the whole finding, beside every other passage gathered with it, so
 a line that refers back to another ("I kind of resent it") can hold beside
-the line it refers to and fail alone. This was measured on conversation
-transcripts, where lines lean on turns far away; a source of self-contained
-passages may behave differently. Three things follow:
+the line it refers to and fail alone. This was measured in an internal
+benchmark of conversation transcripts, where lines lean on turns far away.
+A source of self-contained passages may behave differently. Three things
+follow:
 
 - **A finding's evidence is judged as a set.** Show a finding's citations
   together. One citation shown alone is something the model never judged
