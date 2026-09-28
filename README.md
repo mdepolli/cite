@@ -114,6 +114,15 @@ passages together.
 [How judging works](https://hexdocs.pm/cite/how-judging-works.html) has
 the details.
 
+```mermaid
+flowchart LR
+    P["Policy"] --> R1
+    S["Source"] --> R1
+    R1["Round 1<br/>every question,<br/>every passage"] --> G["Gather<br/>fixed rules,<br/>no model"]
+    G --> R2["Round 2<br/>one request<br/>per finding"]
+    R2 --> Rep["Report<br/>findings and<br/>citations"]
+```
+
 Each finding has a **verdict**: `:holds`, `:review` (a person should
 decide), or `:fails`. Each citation has its own verdict too. The model's
 answers come back untouched, a citation's in `answer` and a finding's in
