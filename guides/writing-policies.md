@@ -63,8 +63,10 @@ yes do
 end
 ```
 
-On the wire they are the Noul's `"true"` and `"false"` criteria; the DSL
-says `yes`/`no` because `true` and `false` are Elixir literals.
+`not_for` is what a reading of its own block's `what` might wrongly include.
+
+On the wire `yes` and `no` are the Noul's `"true"` and `"false"` criteria;
+the DSL says `yes`/`no` because `true` and `false` are Elixir literals.
 
 ## Filters
 
