@@ -102,10 +102,10 @@ them all.
 A **source** is your text, split into passages. `Cite.source/2` keeps each
 passage exactly as you gave it. `as:` names the passages ("lines",
 "utterances"). `show:` lets the model see fields from each passage's
-`meta`, such as who said a line. Besides its id and text, the model sees
-only those fields of a passage, and a request has no place for context about
-the whole run. A value every passage shares, such as the question they are
-judged against, goes in each passage's `meta` and in `show:`.
+`meta`, such as who said a line. Beyond a passage's id and text, the model
+sees only those fields. A request has no place for context about the whole
+run. Put a value every passage shares, such as the question they are judged
+against, in each passage's `meta` and name it in `show:`.
 
 `Cite.judge/4` runs the policy over the source in two rounds. First it asks
 every question about every passage. Then it groups the passages that
