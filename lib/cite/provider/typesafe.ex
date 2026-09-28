@@ -95,16 +95,22 @@ defmodule Cite.Provider.TypeSafe do
     max_retry_delay = opts[:max_retry_delay]
     req_overrides = opts[:req_options]
 
+    # A request past the pool's size waits its turn instead of raising. The
+    # wait restarts at every checkout and the pool is shared node-wide, so
+    # any finite limit is eventually reached under load.
+    finch = Keyword.merge([pool_timeout: :infinity], Keyword.get(req_overrides, :finch, []))
+
     req_options =
       [
         base_url: base_url,
         auth: {:bearer, api_key},
         receive_timeout: 120_000,
+        finch: finch,
         retry: &retry/2,
         max_retries: @max_retries,
         redirect: false
       ]
-      |> Keyword.merge(req_overrides)
+      |> Keyword.merge(Keyword.delete(req_overrides, :finch))
 
     http_client =
       req_options
@@ -126,7 +132,8 @@ defmodule Cite.Provider.TypeSafe do
   def validate_api_key(key), do: {:error, "expected a non-empty string, got: #{inspect(key)}"}
 
   # Req forbids :retry_delay next to a retry function that returns its own
-  # delays; better to say so here than inside the first call.
+  # delays, and :connect_options next to the :finch options new/1 always
+  # sets; it says so only inside the first call, so say it here.
   @doc false
   def validate_req_options(req_options) do
     cond do
@@ -135,6 +142,14 @@ defmodule Cite.Provider.TypeSafe do
 
       Keyword.has_key?(req_options, :retry_delay) and not Keyword.has_key?(req_options, :retry) ->
         {:error, ":retry_delay needs its own :retry; the adapter's retry sets delays itself"}
+
+      Keyword.has_key?(req_options, :connect_options) ->
+        {:error,
+         ":connect_options can't be combined with the adapter's :finch options; set Finch pool options under finch: instead, such as finch: [conn_opts: ...]"}
+
+      not Keyword.keyword?(Keyword.get(req_options, :finch, [])) ->
+        {:error,
+         "finch: must be a keyword list, such as finch: [name: MyFinch], got: #{inspect(req_options[:finch])}"}
 
       true ->
         {:ok, req_options}

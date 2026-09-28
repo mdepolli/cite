@@ -93,6 +93,33 @@ defmodule Cite.Provider.TypeSafeTest do
         TypeSafe.new(api_key: "k", modle: "x")
       end
     end
+
+    test "waits for a pooled connection with no time limit" do
+      assert TypeSafe.new(api_key: "k").http_client.options.finch == [pool_timeout: :infinity]
+    end
+
+    test "merges a caller's finch options into the wait" do
+      # Arrange / Act
+      named = TypeSafe.new(api_key: "k", req_options: [finch: [name: MyFinch]])
+      overridden = TypeSafe.new(api_key: "k", req_options: [finch: [pool_timeout: 1_000]])
+
+      # Assert
+      assert named.http_client.options.finch == [pool_timeout: :infinity, name: MyFinch]
+      assert overridden.http_client.options.finch == [pool_timeout: 1_000]
+    end
+
+    test "refuses connect_options and a bare finch pool name" do
+      for {req_options, message} <- [
+            {[connect_options: [timeout: 1_000]],
+             "invalid value for :req_options option: :connect_options can't be combined with the adapter's :finch options; set Finch pool options under finch: instead, such as finch: [conn_opts: ...]"},
+            {[finch: MyFinch],
+             "invalid value for :req_options option: finch: must be a keyword list, such as finch: [name: MyFinch], got: MyFinch"}
+          ] do
+        assert_raise ArgumentError, message, fn ->
+          TypeSafe.new(api_key: "k", req_options: req_options)
+        end
+      end
+    end
   end
 
   describe "judge/2 request" do
@@ -226,6 +253,19 @@ defmodule Cite.Provider.TypeSafeTest do
 
       assert {:error, {:request_error, %Req.TransportError{reason: :econnrefused}}} =
                judge().(@request)
+    end
+
+    # The plug tests never reach Finch; this one sends through the real adapter.
+    test "reaches Finch without a plug and reports a refused connection as an error" do
+      client =
+        Cite.client(TypeSafe,
+          api_key: "k",
+          base_url: "http://127.0.0.1:1",
+          req_options: [retry: false]
+        )
+
+      assert {:error, {:request_error, %Req.TransportError{reason: :econnrefused}}} =
+               client.(@request)
     end
   end
 
