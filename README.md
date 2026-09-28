@@ -5,9 +5,9 @@
 [![CI](https://github.com/mdepolli/cite/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mdepolli/cite/actions/workflows/ci.yml)
 
 Cite finds what you describe in a document, such as failures in a log,
-sponsor reads in a video's captions, or allergens in a recipe, and cites
-the exact passages behind each one. It judges with a decision model, not a
-generative LLM: no prompts, and no generated text.
+sponsor reads in a video's captions, or hallucinations in a RAG answer, and
+cites the exact passages behind each one. It judges with a decision model,
+not a generative LLM: no prompts, and no generated text.
 
 You declare the questions in a small DSL and pass the document as the
 passages it already has: log lines, caption chunks, conversation turns.
