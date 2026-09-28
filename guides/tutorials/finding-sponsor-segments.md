@@ -25,6 +25,10 @@ everything around it: the lead-in that does not name the sponsor yet, the
 hand-back to the video, and the products a video mentions without being
 paid to.
 
+You write down what counts as a sponsor read, split the captions into
+chunks, and merge the cited chunks into time ranges. Cite asks your
+questions of every chunk and cites the ones that fit.
+
 ## 1. Decide what counts
 
 Before any code, write down what you would mark, in your own words.

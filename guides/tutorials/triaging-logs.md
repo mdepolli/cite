@@ -25,6 +25,10 @@ The last two are the reason to use a model here. Both contain words that
 page people ("failed", "machine check"), and neither is an alert: one is a
 user's wrong path, the other a field printed in a register dump.
 
+You write down what counts as each kind of alert, split the log into lines,
+and turn the findings into the table. Cite asks your questions of every
+line and cites the ones that fit.
+
 ## 1. Write down the decisions you already make
 
 Before any code, list the kinds of alert you would page someone for, in

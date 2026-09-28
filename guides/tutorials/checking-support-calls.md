@@ -24,6 +24,10 @@ checklist like this:
 A person reading that checklist sees at once what the agent did, and what
 to look for in the rest of the call.
 
+You write down what counts as each step, split the call into turns, build
+the checklist from the findings, and check the order of steps. Cite asks
+your questions of every turn and cites the ones that fit.
+
 ## 1. Decide what counts as each step
 
 Take the steps from your written procedure, and for each one write down

@@ -31,6 +31,10 @@ a table gets wrong. "2 tbsp gluten-free soy sauce" carries soy and no
 gluten, though a word match on "soy sauce" would add gluten. "A splash of
 Worcestershire sauce" carries fish. "Coconut milk" carries no milk.
 
+You write down which allergens count and what carries them, split the
+recipe into lines, and build the table from the findings. Cite asks your
+questions of every line and cites the ones that fit.
+
 ## 1. Decide what counts
 
 Before any code, settle these. They decide your labels more than any
