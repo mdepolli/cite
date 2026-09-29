@@ -26,8 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Cite.Provider.TypeSafe` waits for a pooled connection with no time
   limit, instead of raising after 5 seconds.
 - `Cite.Provider.TypeSafe` refuses `:connect_options` and `finch:` as a
-  bare pool name in `req_options`. Set Finch options under `finch: [...]`
-  instead.
+  bare pool name, in `req_options` or in the app's `Req.default_options/0`.
+  Set Finch options under `finch: [...]` instead. A default `finch:` list
+  still applies, beneath the client's own.
 
 ## [0.1.1] - 2026-09-28
 

@@ -37,7 +37,8 @@ defmodule Cite.Provider.TypeSafe do
               because the adapter's retry sets delays itself. `:connect_options` \
               is refused, since Req can't combine it with the adapter's `:finch` \
               options; set Finch pool options under `finch:` instead. `finch:` \
-              must be a keyword list.\
+              must be a keyword list. The same rules hold for the app's \
+              `Req.default_options/0`, whose `finch:` list applies beneath this one.\
               """
             ]
           )
@@ -106,11 +107,16 @@ defmodule Cite.Provider.TypeSafe do
     base_url = opts[:base_url]
     max_retry_delay = opts[:max_retry_delay]
     req_overrides = opts[:req_options]
+    req_defaults = req_defaults()
 
     # A request past the pool's size waits its turn instead of raising. The
     # wait restarts at every checkout and the pool is shared node-wide, so
-    # any finite limit is eventually reached under load.
-    finch = Keyword.merge([pool_timeout: :infinity], Keyword.get(req_overrides, :finch, []))
+    # any finite limit is eventually reached under load. Req.new/1 would
+    # replace the app's default :finch with this one, so it merges in here.
+    finch =
+      [pool_timeout: :infinity]
+      |> Keyword.merge(Keyword.get(req_defaults, :finch, []))
+      |> Keyword.merge(Keyword.get(req_overrides, :finch, []))
 
     req_options =
       Keyword.merge(
@@ -132,6 +138,15 @@ defmodule Cite.Provider.TypeSafe do
       |> Req.Request.put_private(:cite_max_retry_delay, max_retry_delay)
 
     %__MODULE__{http_client: http_client, model: model}
+  end
+
+  # Req.new/1 merges the app's Req.default_options/0 beneath the options
+  # given, so they must pass the same checks as req_options.
+  defp req_defaults do
+    case validate_req_options(Req.default_options()) do
+      {:ok, defaults} -> defaults
+      {:error, message} -> raise ArgumentError, "invalid Req.default_options/0: " <> message
+    end
   end
 
   defp options(opts) do
