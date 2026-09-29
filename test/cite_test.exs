@@ -1,7 +1,7 @@
 defmodule CiteTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Citation, Error, Finding, Passage, Report}
+  alias Cite.{Citation, ClientError, Error, Finding, Passage, Report}
   alias Cite.TestPolicies.{Household, Riddles, TwoConcerns}
 
   # A stub client that answers every question: Nouls from `nouls` by key
@@ -383,7 +383,7 @@ defmodule CiteTest do
             {{:ok, %{answers: %{}, usage: nil, model: ""}},
              ~r/client model must be a non-empty binary when given, got: ""/}
           ] do
-        assert_raise ArgumentError, message, fn ->
+        assert_raise ClientError, message, fn ->
           Cite.judge(fn _request -> reply end, Cite.source(["a"]), Riddles,
             concurrency: concurrency
           )
@@ -404,7 +404,7 @@ defmodule CiteTest do
       end
 
       # Act + Assert
-      assert_raise ArgumentError, ~r/got: :not_a_verdict/, fn ->
+      assert_raise ClientError, ~r/got: :not_a_verdict/, fn ->
         Cite.judge(client, source, Riddles, window: 1)
       end
 

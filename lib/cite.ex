@@ -48,7 +48,7 @@ defmodule Cite do
   that traps exits, such as a GenServer.
   """
 
-  alias Cite.{Answer, Gather, Judge, Report, Run, Screen, Source}
+  alias Cite.{Answer, ClientError, Gather, Judge, Report, Run, Screen, Source}
 
   @type usage :: Report.usage()
   @type verdict :: %{
@@ -95,12 +95,13 @@ defmodule Cite do
 
   @doc """
   Judges `source` against `policy_module`, a module that uses `Cite.Policy`.
-  Raises `ArgumentError` before any request on an option it cannot use or a
-  module that is not a policy, and mid-run when the client returns
-  something outside its contract. The raise comes once the requests before
-  it have answered; requests started meanwhile are stopped, but the
-  provider may already have received, and billed, them. Nothing is sent
-  after it.
+  Raises `ArgumentError` before any request on an argument it cannot use: a
+  client that is not a 1-arity function, a source not built by `source/2`,
+  a module that is not a policy, or a bad option. Raises `Cite.ClientError`
+  mid-run when the client returns something outside its contract. That
+  raise comes once the requests before it have answered; requests started
+  meanwhile are stopped, but the provider may already have received, and
+  billed, them. Nothing is sent after it.
 
   ## Options
 
@@ -211,7 +212,7 @@ defmodule Cite do
         error
 
       other ->
-        raise ArgumentError, """
+        raise ClientError, """
         client must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, \
         got: #{inspect(other)}
         """
@@ -225,7 +226,7 @@ defmodule Cite do
        do: :ok
 
   defp check_usage(other) do
-    raise ArgumentError,
+    raise ClientError,
           "client usage must be nil or %{input_tokens: n, output_tokens: n}, got: #{inspect(other)}"
   end
 
@@ -233,7 +234,7 @@ defmodule Cite do
   defp check_model(model) when is_binary(model) and model != "", do: :ok
 
   defp check_model(other) do
-    raise ArgumentError,
+    raise ClientError,
           "client model must be a non-empty binary when given, got: #{inspect(other)}"
   end
 end

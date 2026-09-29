@@ -166,7 +166,9 @@ so it can change verdicts. It also makes the second round cost more.
 ## Errors
 
 A mistake in a policy stops it from compiling. A mistake in the source or
-the options raises `ArgumentError`, before any request is sent.
+the options raises `ArgumentError`, before any request is sent. A client
+that returns something outside its contract raises `Cite.ClientError` and
+ends the run: that's a bug in the client, not in your arguments.
 
 A failed request never counts as a "no". If the model or the network fails,
 Cite reports an error and leaves the passages it covered without a verdict,

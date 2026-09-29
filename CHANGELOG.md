@@ -11,9 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `concurrency` on `Cite.judge/4`: the most requests in flight at once
   within a round. The report is the same at any setting.
+- `Cite.ClientError`, raised mid-run when a client returns something
+  outside its contract.
 
 ### Changed
 
+- A client that returns something outside its contract raises
+  `Cite.ClientError` instead of `ArgumentError`, which now means only a bad
+  argument to `Cite.judge/4`, raised before any request.
 - The client runs in a task process, at every `concurrency`. Logger
   metadata and process level carry over; the rest of the caller's process
   dictionary, OpenTelemetry context included, does not.
