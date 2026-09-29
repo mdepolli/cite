@@ -143,10 +143,14 @@ defmodule Cite do
 
   # Round 2: one request per gathered finding.
   defp judge_findings(%Run{gathered: gathered} = run) when is_list(gathered) do
-    outcomes = concurrently(gathered, run, &{&1, call(run.client, Judge.request(run, &1))})
+    outcomes = concurrently(gathered, run, &judge_finding(run, &1))
 
     Judge.resolve(run, outcomes)
   end
+
+  # One gathered finding, judged in one request.
+  defp judge_finding(%Run{} = run, gathered),
+    do: {gathered, call(run.client, Judge.request(run, gathered))}
 
   # Runs `fun` on every item, up to `concurrency` at once, and returns the
   # results in item order. A raise in a task reaches the caller, with the
