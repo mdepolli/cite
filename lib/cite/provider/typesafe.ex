@@ -64,8 +64,9 @@ defmodule Cite.Provider.TypeSafe do
   Requests go through Req's default Finch pool, 50 connections per host.
   Past that, a request waits for a connection with no time limit, so
   `concurrency` above 50 queues inside Finch instead of sending more at
-  once. For more in flight, start a Finch with a larger pool and pass
-  `req_options: [finch: [name: MyFinch]]`.
+  once. For more in flight, pass a larger size, `req_options: [finch: [size:
+  100]]`, and Req starts and supervises that pool. To run the pool yourself,
+  start a Finch and pass `req_options: [finch: [name: MyFinch]]`.
 
   ## The size cap
 
@@ -112,16 +113,18 @@ defmodule Cite.Provider.TypeSafe do
     finch = Keyword.merge([pool_timeout: :infinity], Keyword.get(req_overrides, :finch, []))
 
     req_options =
-      [
-        base_url: base_url,
-        auth: {:bearer, api_key},
-        receive_timeout: 120_000,
-        finch: finch,
-        retry: &retry/2,
-        max_retries: @max_retries,
-        redirect: false
-      ]
-      |> Keyword.merge(Keyword.delete(req_overrides, :finch))
+      Keyword.merge(
+        [
+          base_url: base_url,
+          auth: {:bearer, api_key},
+          receive_timeout: 120_000,
+          finch: finch,
+          retry: &retry/2,
+          max_retries: @max_retries,
+          redirect: false
+        ],
+        Keyword.delete(req_overrides, :finch)
+      )
 
     http_client =
       req_options

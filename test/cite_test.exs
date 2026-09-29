@@ -642,7 +642,6 @@ defmodule CiteTest do
     end
 
     test "carries the caller's Logger metadata and process level into the client" do
-      # Arrange
       test_pid = self()
       answering = client(%{})
 
@@ -659,11 +658,8 @@ defmodule CiteTest do
       # credo:disable-for-next-line Credo.Check.Warning.MissedMetadataKeyInLoggerConfig
       Logger.metadata(request_id: "req-1")
       Logger.put_process_level(self(), :error)
-
-      # Act
       Cite.judge(client, Cite.source(["a"]), Riddles)
 
-      # Assert
       assert_received {:logger, "req-1", :error}
     end
   end

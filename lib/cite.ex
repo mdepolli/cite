@@ -41,7 +41,11 @@ defmodule Cite do
   once, so it must be safe to call concurrently. Each task starts with the
   caller's Logger metadata and process level. Nothing else from the
   caller's process dictionary carries over, OpenTelemetry context included:
-  a client that needs it attaches it itself. Tasks don't trap exits.
+  a client that needs it attaches it itself.
+
+  Tasks don't trap exits. A crash in a process the client links to ends that
+  request's task, and `judge/4` exits with the same reason, even in a caller
+  that traps exits, such as a GenServer.
   """
 
   alias Cite.{Answer, Gather, Judge, Report, Run, Screen, Source}
@@ -93,7 +97,8 @@ defmodule Cite do
   Judges `source` against `policy_module`, a module that uses `Cite.Policy`.
   Raises `ArgumentError` before any request on an option it cannot use or a
   module that is not a policy, and mid-run when the client returns
-  something outside its contract.
+  something outside its contract. A raise stops the requests still in
+  flight; the provider may already have received, and billed, them.
 
   ## Options
 

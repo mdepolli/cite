@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The client runs in a task process, at every `concurrency`. Logger
   metadata and process level carry over; the rest of the caller's process
   dictionary, OpenTelemetry context included, does not.
+- A crash in a process the client links to now exits `Cite.judge/4` with
+  the same reason, even in a caller that traps exits. Before, such a
+  caller, a GenServer for instance, received an `:EXIT` message and the
+  run carried on.
+- A raise mid-run stops the requests still in flight. The provider may
+  already have received, and billed, them.
 - `Cite.Provider.TypeSafe` waits for a pooled connection with no time
   limit, instead of raising after 5 seconds.
 - `Cite.Provider.TypeSafe` refuses `:connect_options` and `finch:` as a
