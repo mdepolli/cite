@@ -11,17 +11,20 @@ defmodule Cite.TestTypeSafe do
   # stopping it at the adapter, and returns the Finch options it carried.
   @spec finch_options_sent(keyword()) :: keyword()
   def finch_options_sent(req_options) do
-    test_pid = self()
-
-    adapter = fn request ->
-      send(test_pid, {:finch, request.options[:finch]})
-      {request, Req.Response.new(status: 200, body: %{"answers" => %{}})}
-    end
-
-    client = Cite.client(TypeSafe, api_key: "k", req_options: [adapter: adapter] ++ req_options)
+    client =
+      Cite.client(TypeSafe, api_key: "k", req_options: [adapter: __MODULE__] ++ req_options)
 
     assert {:ok, _verdict} = client.(@request)
     assert_received {:finch, finch}
     finch
+  end
+
+  # The adapter: Req calls it in the process that sent the request, so the
+  # Finch options go back to that process's mailbox.
+  @doc false
+  @spec run(Req.Request.t()) :: {Req.Request.t(), Req.Response.t()}
+  def run(%Req.Request{} = request) do
+    send(self(), {:finch, request.options[:finch]})
+    {request, Req.Response.new(status: 200, body: %{"answers" => %{}})}
   end
 end
