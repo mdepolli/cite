@@ -131,7 +131,7 @@ defmodule Cite do
   # one after the other in the window's own task; only a single passage that
   # still exceeds it is an error.
   defp screen_window(%Run{} = run, window) do
-    case call(run.client, Screen.request(run, window)) do
+    case fetch_verdict(run.client, Screen.request(run, window)) do
       {:error, :request_too_large} when length(window) > 1 ->
         {left, right} = Enum.split(window, div(length(window), 2))
         screen_window(run, left) ++ screen_window(run, right)
@@ -150,7 +150,7 @@ defmodule Cite do
 
   # One gathered finding, judged in one request.
   defp judge_finding(%Run{} = run, gathered),
-    do: {gathered, call(run.client, Judge.request(run, gathered))}
+    do: {gathered, fetch_verdict(run.client, Judge.request(run, gathered))}
 
   # Runs `fun` on every item, up to `concurrency` at once, and returns the
   # results in item order. A raise in a task reaches the caller, with the
@@ -191,8 +191,8 @@ defmodule Cite do
   # A reply must answer every question with a value it can have; a reply that
   # skips one or answers it out of range is not a verdict on it, so the whole
   # request becomes an error rather than a "no".
-  defp call(client, request) do
-    with {:ok, verdict} <- reply(client, request),
+  defp fetch_verdict(client, request) do
+    with {:ok, verdict} <- run_client(client, request),
          :ok <- Answer.check(request["questions"], verdict.answers) do
       {:ok, verdict}
     end
@@ -200,7 +200,7 @@ defmodule Cite do
 
   # The client is the caller's function; its return is checked here, once,
   # and trusted everywhere after.
-  defp reply(client, request) do
+  defp run_client(client, request) do
     case client.(request) do
       {:ok, %{answers: answers, usage: usage} = verdict} when is_map(answers) ->
         check_usage(usage)
