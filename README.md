@@ -147,7 +147,7 @@ To build a policy of your own, start with a tutorial:
 
 ## Options
 
-Three options tune a run:
+Four options tune a run:
 
 - `threshold`, default `0.5`: how sure the first round must be before a
   passage joins a finding.
@@ -155,6 +155,9 @@ Three options tune a run:
   to `:review`.
 - `window`, a positive integer, default `40`: how many passages go in each
   first-round request. At `1`, each request holds one passage.
+- `concurrency`, a positive integer, default `1`: how many requests a round
+  sends at once. The report is the same at any setting; set it within your
+  provider's rate limits.
 
 Leave `threshold` alone at first. Lowering it does more than find more
 passages: each one it adds is read together with the rest of its finding,
