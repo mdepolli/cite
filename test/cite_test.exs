@@ -2,7 +2,7 @@ defmodule CiteTest do
   use ExUnit.Case, async: true
 
   alias Cite.{Citation, Error, Finding, Passage, Report}
-  alias Cite.TestPolicies.{Household, Riddles}
+  alias Cite.TestPolicies.{Household, Riddles, TwoConcerns}
 
   # A stub client that answers every question: Nouls from `nouls` by key
   # (0.1 otherwise), Scores and Choices with fixed confident answers.
@@ -21,20 +21,25 @@ defmodule CiteTest do
   defp answer(_key, %{"type" => "choice"}, _nouls),
     do: %{"choice" => "persistent", "confidence" => 0.9}
 
-  # A client that reports each screening window it is sent, read off the
-  # question keys ("<id>:riddle"), refuses the windows `too_large?` picks as
-  # too large, and answers the rest with 0.1, so nothing matches.
+  # The ids of the passages a round-1 request screens, read off its question
+  # keys ("<id>:riddle").
+  defp window_ids(%{"questions" => questions}) do
+    questions
+    |> Map.keys()
+    |> Enum.map(&hd(String.split(&1, ":")))
+    |> Enum.uniq()
+    |> Enum.sort()
+  end
+
+  # A client that reports each screening window it is sent, refuses the
+  # windows `too_large?` picks as too large, and answers the rest with 0.1,
+  # so nothing matches.
   defp window_client(too_large?) do
     test_pid = self()
     answering = client(%{})
 
-    fn %{"questions" => questions} = request ->
-      window =
-        questions
-        |> Map.keys()
-        |> Enum.map(&hd(String.split(&1, ":")))
-        |> Enum.sort()
-
+    fn request ->
+      window = window_ids(request)
       send(test_pid, {:window, window})
 
       if too_large?.(window), do: {:error, :request_too_large}, else: answering.(request)
@@ -52,6 +57,56 @@ defmodule CiteTest do
 
   defp refusing_client do
     fn _request -> flunk("no request should be sent") end
+  end
+
+  # A client that reports each request it holds to the test process as
+  # {:arrive, label, pid} and answers only when the test sends pid :go.
+  # Requests `label` maps to nil are answered at once.
+  defp held_client(label, answering) do
+    test_pid = self()
+
+    fn request ->
+      case label.(request) do
+        nil ->
+          answering.(request)
+
+        held ->
+          send(test_pid, {:arrive, held, self()})
+
+          receive do
+            :go -> answering.(request)
+          end
+      end
+    end
+  end
+
+  # Runs Cite.judge/4 in a task so the test process is free to pace the
+  # client; a raise, throw, or exit comes back as {kind, value}.
+  defp judge_async(client, source, policy, opts) do
+    Task.async(fn ->
+      try do
+        {:ok, Cite.judge(client, source, policy, opts)}
+      catch
+        kind, reason -> {kind, reason}
+      end
+    end)
+  end
+
+  defp arrivals(n) do
+    for _ <- 1..n//1 do
+      assert_receive {:arrive, label, pid}
+      {label, pid}
+    end
+  end
+
+  defp release(arrivals), do: Enum.each(arrivals, fn {_label, pid} -> send(pid, :go) end)
+
+  defp drain_mailbox do
+    receive do
+      message -> [message | drain_mailbox()]
+    after
+      0 -> []
+    end
   end
 
   describe "judge/4 end to end" do
@@ -331,7 +386,8 @@ defmodule CiteTest do
     end
 
     test "raises when the client returns something that is not a verdict" do
-      for {reply, message} <- [
+      for concurrency <- [1, 4],
+          {reply, message} <- [
             {:ok,
              ~r/client must return \{:ok, %\{answers: map, usage: map \| nil\}\} or \{:error, reason\}, got: :ok/},
             {{:ok, %{answers: %{}, usage: :lots}},
@@ -342,9 +398,247 @@ defmodule CiteTest do
              ~r/client model must be a non-empty binary when given, got: ""/}
           ] do
         assert_raise ArgumentError, message, fn ->
-          Cite.judge(fn _request -> reply end, Cite.source(["a"]), Riddles)
+          Cite.judge(fn _request -> reply end, Cite.source(["a"]), Riddles,
+            concurrency: concurrency
+          )
         end
       end
+    end
+
+    test "refuses a concurrency that is not a positive integer" do
+      for {bad, message} <- [
+            {0, "invalid value for :concurrency option: expected positive integer, got: 0"},
+            {:many,
+             "invalid value for :concurrency option: expected positive integer, got: :many"}
+          ] do
+        assert_raise ArgumentError, message, fn ->
+          Cite.judge(refusing_client(), Cite.source(["a"]), Riddles, concurrency: bad)
+        end
+      end
+    end
+  end
+
+  describe "judge/4 with concurrency" do
+    test "sends up to `concurrency` requests at once" do
+      # Arrange
+      source = Cite.source(["a", "b", "c", "d"])
+      client = held_client(&window_ids/1, client(%{}))
+      task = judge_async(client, source, Riddles, window: 1, concurrency: 4)
+
+      # Act
+      held = arrivals(4)
+      release(held)
+
+      # Assert
+      assert Enum.sort(Enum.map(held, &elem(&1, 0))) == [["P000"], ["P001"], ["P002"], ["P003"]]
+      assert {:ok, %Report{errors: []}} = Task.await(task)
+    end
+
+    test "never has more than `concurrency` requests in flight" do
+      # Arrange
+      source = Cite.source(["a", "b", "c", "d", "e", "f"])
+      client = held_client(&window_ids/1, client(%{}))
+      task = judge_async(client, source, Riddles, window: 1, concurrency: 4)
+
+      # Act
+      [first | others] = arrivals(4)
+      refute_receive {:arrive, _, _}
+      release([first])
+      fifth = arrivals(1)
+      refute_receive {:arrive, _, _}
+      release(others ++ fifth)
+      release(arrivals(1))
+
+      # Assert
+      assert {:ok, %Report{errors: []}} = Task.await(task)
+    end
+
+    test "sends one request at a time by default" do
+      # Arrange
+      source = Cite.source(["a", "b"])
+      client = held_client(&window_ids/1, client(%{}))
+      task = judge_async(client, source, Riddles, window: 1)
+
+      # Act
+      first = arrivals(1)
+      refute_receive {:arrive, _, _}
+      release(first)
+      release(arrivals(1))
+
+      # Assert
+      assert {:ok, %Report{errors: []}} = Task.await(task)
+    end
+
+    test "keeps round-1 errors and models in window order whatever order replies arrive in" do
+      # Arrange
+      source = Cite.source(["a", "b", "c", "d"])
+      answering = client(%{})
+
+      reply = fn request ->
+        case window_ids(request) do
+          [id] when id in ["P000", "P002"] ->
+            {:error, {:window, id}}
+
+          [id] ->
+            {:ok, verdict} = answering.(request)
+            {:ok, %{verdict | model: "jev-" <> id}}
+        end
+      end
+
+      client = held_client(&window_ids/1, reply)
+      task = judge_async(client, source, Riddles, window: 1, concurrency: 4)
+
+      # Act
+      arrivals(4)
+      |> Enum.sort_by(&elem(&1, 0), :desc)
+      |> Enum.each(fn {_label, pid} = arrival ->
+        ref = Process.monitor(pid)
+        release([arrival])
+        assert_receive {:DOWN, ^ref, :process, ^pid, _}
+      end)
+
+      {:ok, report} = Task.await(task)
+
+      # Assert
+      assert report.errors == [
+               %Error{concern: nil, passage_ids: ["P000"], reason: {:window, "P000"}},
+               %Error{concern: nil, passage_ids: ["P002"], reason: {:window, "P002"}}
+             ]
+
+      assert report.models == ["jev-P001", "jev-P003"]
+    end
+
+    test "keeps round-2 errors in the policy's concern order whatever order replies arrive in" do
+      # Arrange
+      source =
+        Cite.source([%{id: "U1", text: "I was diagnosed, then we moved.", meta: %{speaker: "B"}}],
+          as: "utterances",
+          show: [:speaker]
+        )
+
+      screening =
+        client(%{"U1:client_speaking" => 0.9, "U1:health" => 0.9, "U1:life_event" => 0.9})
+
+      label = fn
+        %{"questions" => %{"confirm:U1" => _}} = request ->
+          if Jason.encode!(request) =~ "health condition", do: :health, else: :life_event
+
+        _round_1 ->
+          nil
+      end
+
+      reply = fn
+        %{"questions" => %{"confirm:U1" => _}} -> {:error, :held}
+        request -> screening.(request)
+      end
+
+      task = judge_async(held_client(label, reply), source, TwoConcerns, concurrency: 4)
+
+      # Act
+      held = Map.new(arrivals(2))
+
+      for concern <- [:life_event, :health] do
+        pid = held[concern]
+        ref = Process.monitor(pid)
+        send(pid, :go)
+        assert_receive {:DOWN, ^ref, :process, ^pid, _}
+      end
+
+      {:ok, report} = Task.await(task)
+
+      # Assert
+      assert report.errors == [
+               %Error{concern: :health, passage_ids: ["U1"], reason: :held},
+               %Error{concern: :life_event, passage_ids: ["U1"], reason: :held}
+             ]
+    end
+
+    test "halves refused windows and screens their siblings at concurrency above 1" do
+      # Arrange
+      source = Cite.source(["a", "b", "c", "d", "e", "f", "g", "h"])
+      client = window_client(&(length(&1) > 2))
+
+      # Act
+      report = Cite.judge(client, source, Riddles, window: 4, concurrency: 4)
+
+      # Assert
+      assert Enum.sort(windows_sent()) == [
+               ["P000", "P001"],
+               ["P000", "P001", "P002", "P003"],
+               ["P002", "P003"],
+               ["P004", "P005"],
+               ["P004", "P005", "P006", "P007"],
+               ["P006", "P007"]
+             ]
+
+      assert {report.errors, map_size(report.screen)} == {[], 8}
+    end
+
+    test "re-raises, re-throws, and re-exits what the client did, with its stacktrace" do
+      # Arrange
+      source = Cite.source(["a", "b"])
+      judge = &Cite.judge(&1, source, Riddles, window: 1, concurrency: 4)
+
+      # Act
+      {error, stacktrace} =
+        try do
+          judge.(fn _request -> raise "boom" end)
+        rescue
+          error -> {error, __STACKTRACE__}
+        end
+
+      # Assert
+      assert error == %RuntimeError{message: "boom"}
+      assert [{CiteTest, _fun, _arity, _location} | _] = stacktrace
+      assert catch_throw(judge.(fn _request -> throw(:thrown) end)) == :thrown
+      assert catch_exit(judge.(fn _request -> exit(:gone) end)) == :gone
+    end
+
+    test "exits a caller that traps exits with the reason a client's linked process crashed with" do
+      task =
+        Task.async(fn ->
+          Process.flag(:trap_exit, true)
+
+          client = fn _request ->
+            spawn_link(fn -> exit(:helper_crashed) end)
+
+            receive do
+              :never -> :ok
+            end
+          end
+
+          catch_exit(Cite.judge(client, Cite.source(["a"]), Riddles, concurrency: 4))
+        end)
+
+      assert Task.await(task) == :helper_crashed
+    end
+
+    test "stops starting requests as soon as one raises" do
+      # Arrange
+      test_pid = self()
+      source = Cite.source(["a", "b", "c", "d", "e", "f", "g", "h"])
+
+      client = fn request ->
+        [id] = window_ids(request)
+        send(test_pid, {:arrive, id, self()})
+
+        if id == "P002" do
+          :not_a_verdict
+        else
+          receive do
+            :go -> :ok
+          end
+        end
+      end
+
+      # Act
+      result = Task.await(judge_async(client, source, Riddles, window: 1, concurrency: 4))
+      arrived = for {:arrive, id, _pid} <- drain_mailbox(), do: id
+
+      # Assert
+      assert {:error, %ArgumentError{}} = result
+      assert "P002" in arrived
+      assert Enum.reject(arrived, &(&1 in ["P000", "P001", "P002", "P003"])) == []
     end
   end
 end

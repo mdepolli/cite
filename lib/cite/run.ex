@@ -37,6 +37,15 @@ defmodule Cite.Run do
               Passages per round-1 request, a positive integer. At `1`, each \
               request holds one passage.\
               """
+            ],
+            concurrency: [
+              type: :pos_integer,
+              default: 1,
+              doc: """
+              The most requests in flight at once within a round. The rounds run \
+              one after the other, and the report is the same at any setting. Set \
+              it within the provider's rate limits.\
+              """
             ]
           )
 
@@ -47,6 +56,7 @@ defmodule Cite.Run do
           threshold: number(),
           review_band: {number(), number()},
           window: pos_integer(),
+          concurrency: pos_integer(),
           screen: Screen.screen() | nil,
           gathered: [Gathered.t()] | nil,
           findings: [Finding.t()] | nil,
@@ -58,7 +68,7 @@ defmodule Cite.Run do
   # A stage's output is nil until its step runs, and the next step matches
   # on it, so steps run out of order fail loudly instead of reading an empty
   # result. Errors, usages, and models start empty: both rounds add to them.
-  @enforce_keys [:client, :source, :terms, :threshold, :review_band, :window]
+  @enforce_keys [:client, :source, :terms, :threshold, :review_band, :window, :concurrency]
   defstruct @enforce_keys ++
               [screen: nil, gathered: nil, findings: nil, errors: [], usages: [], models: []]
 

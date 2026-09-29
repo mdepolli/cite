@@ -108,13 +108,15 @@ defmodule Cite do
     outcomes =
       run.source.passages
       |> Enum.chunk_every(run.window)
-      |> Enum.flat_map(&screen_window(run, &1))
+      |> concurrently(run, &screen_window(run, &1))
+      |> Enum.concat()
 
     Screen.resolve(run, outcomes)
   end
 
-  # A window over the request cap is split in half and both halves screened;
-  # only a single passage that still exceeds it is an error.
+  # A window over the request cap is split in half and both halves screened,
+  # one after the other in the window's own task; only a single passage that
+  # still exceeds it is an error.
   defp screen_window(%Run{} = run, window) do
     case call(run.client, Screen.request(run, window)) do
       {:error, :request_too_large} when length(window) > 1 ->
@@ -128,10 +130,41 @@ defmodule Cite do
 
   # Round 2: one request per gathered finding.
   defp judge_findings(%Run{gathered: gathered} = run) when is_list(gathered) do
-    outcomes = Enum.map(gathered, &{&1, call(run.client, Judge.request(run, &1))})
+    outcomes = concurrently(gathered, run, &{&1, call(run.client, Judge.request(run, &1))})
 
     Judge.resolve(run, outcomes)
   end
+
+  # Runs `fun` on every item, up to `concurrency` at once, and returns the
+  # results in item order. Tasks finish in any order, so a raise reaches the
+  # caller as soon as its task returns, with the client's own stacktrace.
+  defp concurrently(items, %Run{concurrency: concurrency}, fun) do
+    items
+    |> Enum.with_index()
+    |> Task.async_stream(&attempt(fun, &1),
+      max_concurrency: concurrency,
+      ordered: false,
+      timeout: :infinity
+    )
+    |> Enum.map(&outcome/1)
+    |> Enum.sort_by(&elem(&1, 0))
+    |> Enum.map(&elem(&1, 1))
+  end
+
+  defp attempt(fun, {item, index}) do
+    {index, fun.(item)}
+  catch
+    kind, reason -> {:raised, kind, reason, __STACKTRACE__}
+  end
+
+  defp outcome({:ok, {:raised, kind, reason, stacktrace}}),
+    do: :erlang.raise(kind, reason, stacktrace)
+
+  defp outcome({:ok, indexed}), do: indexed
+
+  # A task killed by a linked process's exit; the stream reports it only to a
+  # caller that traps exits.
+  defp outcome({:exit, reason}), do: exit(reason)
 
   # A reply must answer every question with a value it can have; a reply that
   # skips one or answers it out of range is not a verdict on it, so the whole

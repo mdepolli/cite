@@ -34,7 +34,7 @@ defmodule Cite.RunTest do
             {[threshold: 5],
              "invalid value for :threshold option: expected a number from 0 to 1, got: 5"},
             {[colour: :red],
-             "unknown options [:colour], valid options are: [:threshold, :review_band, :window]"}
+             "unknown options [:colour], valid options are: [:threshold, :review_band, :window, :concurrency]"}
           ] do
         assert_raise ArgumentError, message, fn ->
           Run.new(client(), Cite.source(["a"]), Riddles, opts)
