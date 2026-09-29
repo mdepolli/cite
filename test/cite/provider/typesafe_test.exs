@@ -74,7 +74,7 @@ defmodule Cite.Provider.TypeSafeTest do
 
     test "refuses retry_delay without a retry of its own" do
       assert_raise ArgumentError,
-                   "invalid value for :req_options option: :retry_delay needs its own :retry; the adapter's retry sets delays itself",
+                   ":retry_delay needs a :retry in req_options, because the adapter's retry sets delays itself",
                    fn ->
                      TypeSafe.new(api_key: "k", req_options: [retry_delay: fn _ -> 0 end])
                    end
@@ -112,14 +112,22 @@ defmodule Cite.Provider.TypeSafeTest do
     test "refuses connect_options and a bare finch pool name" do
       for {req_options, message} <- [
             {[connect_options: [timeout: 1_000]],
-             "invalid value for :req_options option: :connect_options can't be combined with the adapter's :finch options; set Finch pool options under finch: instead, such as finch: [conn_opts: ...]"},
+             ":connect_options can't be combined with the adapter's :finch options; set Finch pool options under finch: instead, such as finch: [conn_opts: ...]"},
             {[finch: MyFinch],
-             "invalid value for :req_options option: finch: must be a keyword list, such as finch: [name: MyFinch], got: MyFinch"}
+             "finch: in req_options must be a keyword list, such as finch: [name: MyFinch], got: MyFinch"}
           ] do
         assert_raise ArgumentError, message, fn ->
           TypeSafe.new(api_key: "k", req_options: req_options)
         end
       end
+    end
+
+    test "refuses a finch pool name beside pool options" do
+      assert_raise ArgumentError,
+                   "finch: can't set pool options beside name: MyFinch, got: [size: 100]; configure the pool when starting MyFinch instead",
+                   fn ->
+                     TypeSafe.new(api_key: "k", req_options: [finch: [name: MyFinch, size: 100]])
+                   end
     end
   end
 

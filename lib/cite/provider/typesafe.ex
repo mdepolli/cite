@@ -32,13 +32,16 @@ defmodule Cite.Provider.TypeSafe do
               type: {:custom, __MODULE__, :validate_req_options, []},
               default: [],
               doc: """
-              Merged into the Req client last; a test passes \
-              `plug: {Req.Test, name}`. A `:retry_delay` needs its own `:retry`, \
-              because the adapter's retry sets delays itself. `:connect_options` \
-              is refused, since Req can't combine it with the adapter's `:finch` \
-              options; set Finch pool options under `finch:` instead. `finch:` \
-              must be a keyword list. The same rules hold for the app's \
-              `Req.default_options/0`, whose `finch:` list applies beneath this one.\
+              Merged into the Req client last, over the adapter's options and \
+              the app's `Req.default_options/0`; a test passes \
+              `plug: {Req.Test, name}`. `finch:` must be a keyword list, here and \
+              in the defaults, and merges key by key: the defaults' list, then \
+              the adapter's pool wait, then this one. Req refuses some options \
+              only once a request is sent, so the merged options are checked \
+              when the client is built: `:connect_options` (set Finch pool \
+              options under `finch:` instead), `finch:` pool options beside a \
+              `name:`, and a `:retry_delay` without a `:retry` here, since the \
+              adapter's retry sets delays itself.\
               """
             ]
           )
@@ -66,8 +69,10 @@ defmodule Cite.Provider.TypeSafe do
   Past that, a request waits for a connection with no time limit, so
   `concurrency` above 50 queues inside Finch instead of sending more at
   once. For more in flight, pass a larger size, `req_options: [finch: [size:
-  100]]`, and Req starts and supervises that pool. To run the pool yourself,
-  start a Finch and pass `req_options: [finch: [name: MyFinch]]`.
+  100]]`, and Req starts and supervises that pool; this needs no pool
+  `name:` set, here or in `Req.default_options/0`. To run the pool yourself,
+  start a Finch with the size you want and pass `req_options: [finch: [name:
+  MyFinch]]`.
 
   ## The size cap
 
@@ -107,30 +112,36 @@ defmodule Cite.Provider.TypeSafe do
     base_url = opts[:base_url]
     max_retry_delay = opts[:max_retry_delay]
     req_overrides = opts[:req_options]
-    req_defaults = req_defaults()
+    req_defaults = Req.default_options()
+    adapter_retry = &retry/2
 
     # A request past the pool's size waits its turn instead of raising. The
     # wait restarts at every checkout and the pool is shared node-wide, so
-    # any finite limit is eventually reached under load. Req.new/1 would
-    # replace the app's default :finch with this one, so it merges in here.
+    # any finite limit is eventually reached under load; an app-wide default
+    # doesn't override it, a caller's own finch: does. The lists merge key
+    # by key, where Req's own merge would replace one list with the next.
     finch =
-      [pool_timeout: :infinity]
-      |> Keyword.merge(Keyword.get(req_defaults, :finch, []))
-      |> Keyword.merge(Keyword.get(req_overrides, :finch, []))
+      req_defaults
+      |> finch_list("Req.default_options/0")
+      |> Keyword.merge(pool_timeout: :infinity)
+      |> Keyword.merge(finch_list(req_overrides, "req_options"))
 
+    # The options Req will get, in the order Req.new/1 would merge them.
     req_options =
-      Keyword.merge(
-        [
-          base_url: base_url,
-          auth: {:bearer, api_key},
-          receive_timeout: 120_000,
-          finch: finch,
-          retry: &retry/2,
-          max_retries: @max_retries,
-          redirect: false
-        ],
-        Keyword.delete(req_overrides, :finch)
+      req_defaults
+      |> Keyword.merge(
+        base_url: base_url,
+        auth: {:bearer, api_key},
+        receive_timeout: 120_000,
+        retry: adapter_retry,
+        max_retries: @max_retries,
+        redirect: false
       )
+      |> Keyword.merge(req_overrides)
+      |> Keyword.put(:finch, finch)
+
+    check_req_options(req_options, adapter_retry)
+    check_finch(finch)
 
     http_client =
       req_options
@@ -140,12 +151,56 @@ defmodule Cite.Provider.TypeSafe do
     %__MODULE__{http_client: http_client, model: model}
   end
 
-  # Req.new/1 merges the app's Req.default_options/0 beneath the options
-  # given, so they must pass the same checks as req_options.
-  defp req_defaults do
-    case validate_req_options(Req.default_options()) do
-      {:ok, defaults} -> defaults
-      {:error, message} -> raise ArgumentError, "invalid Req.default_options/0: " <> message
+  # One source's finch: list. Req still takes a bare pool name there, but a
+  # name can't merge with the adapter's pool wait.
+  defp finch_list(options, source) do
+    finch = Keyword.get(options, :finch, [])
+
+    if Keyword.keyword?(finch) do
+      finch
+    else
+      raise ArgumentError,
+            "finch: in #{source} must be a keyword list, such as finch: [name: MyFinch], got: #{inspect(finch)}"
+    end
+  end
+
+  # Req refuses these only once a request is sent, so they're checked on the
+  # options it will get. A key may come from req_options or the app's
+  # Req.default_options/0; the check can't tell which.
+  defp check_req_options(req_options, adapter_retry) do
+    cond do
+      Keyword.has_key?(req_options, :retry_delay) and req_options[:retry] == adapter_retry ->
+        raise ArgumentError,
+              ":retry_delay needs a :retry in req_options, because the adapter's retry sets delays itself"
+
+      Keyword.has_key?(req_options, :connect_options) ->
+        raise ArgumentError,
+              ":connect_options can't be combined with the adapter's :finch options; set Finch pool options under finch: instead, such as finch: [conn_opts: ...]"
+
+      true ->
+        :ok
+    end
+  end
+
+  # Req refuses a pool name beside pool options, again only once a request
+  # is sent; the two may come from different sources.
+  @finch_per_request [
+    :name,
+    :pool_tag,
+    :unix_socket,
+    :pool_timeout,
+    :receive_timeout,
+    :request_timeout,
+    :pool_strategy
+  ]
+
+  defp check_finch(finch) do
+    name = finch[:name]
+    pool_options = Keyword.drop(finch, @finch_per_request)
+
+    if name && pool_options != [] do
+      raise ArgumentError,
+            "finch: can't set pool options beside name: #{inspect(name)}, got: #{inspect(pool_options)}; configure the pool when starting #{inspect(name)} instead"
     end
   end
 
@@ -160,29 +215,11 @@ defmodule Cite.Provider.TypeSafe do
   def validate_api_key(key) when is_binary(key) and key != "", do: {:ok, key}
   def validate_api_key(key), do: {:error, "expected a non-empty string, got: #{inspect(key)}"}
 
-  # Req forbids :retry_delay next to a retry function that returns its own
-  # delays, and :connect_options next to the :finch options new/1 always
-  # sets; it says so only inside the first call, so say it here.
   @doc false
   def validate_req_options(req_options) do
-    cond do
-      not Keyword.keyword?(req_options) ->
-        {:error, "expected a keyword list, got: #{inspect(req_options)}"}
-
-      Keyword.has_key?(req_options, :retry_delay) and not Keyword.has_key?(req_options, :retry) ->
-        {:error, ":retry_delay needs its own :retry; the adapter's retry sets delays itself"}
-
-      Keyword.has_key?(req_options, :connect_options) ->
-        {:error,
-         ":connect_options can't be combined with the adapter's :finch options; set Finch pool options under finch: instead, such as finch: [conn_opts: ...]"}
-
-      not Keyword.keyword?(Keyword.get(req_options, :finch, [])) ->
-        {:error,
-         "finch: must be a keyword list, such as finch: [name: MyFinch], got: #{inspect(req_options[:finch])}"}
-
-      true ->
-        {:ok, req_options}
-    end
+    if Keyword.keyword?(req_options),
+      do: {:ok, req_options},
+      else: {:error, "expected a keyword list, got: #{inspect(req_options)}"}
   end
 
   @impl Cite.Provider
