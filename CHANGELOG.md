@@ -20,8 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Cite.ClientError` instead of `ArgumentError`, which now means only a bad
   argument to `Cite.judge/4`, raised before any request.
 - The client runs in a task process, at every `concurrency`. Logger
-  metadata and process level carry over; the rest of the caller's process
-  dictionary, OpenTelemetry context included, does not.
+  metadata and process level carry over, and so does `$callers`, which
+  Mox and `Req.Test` rely on; the rest of the caller's process dictionary,
+  OpenTelemetry context included, does not.
 - A crash in a process the client links to now exits `Cite.judge/4` with
   the same reason, even in a caller that traps exits. Before, such a
   caller, a GenServer for instance, received an `:EXIT` message and the
