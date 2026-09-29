@@ -1,6 +1,8 @@
 defmodule Cite.Provider.TypeSafeTest do
   use ExUnit.Case, async: true
 
+  import Cite.TestTypeSafe, only: [finch_options_sent: 1]
+
   alias Cite.Provider.TypeSafe
 
   @request %{
@@ -95,17 +97,16 @@ defmodule Cite.Provider.TypeSafeTest do
     end
 
     test "waits for a pooled connection with no time limit" do
-      assert TypeSafe.new(api_key: "k").http_client.options.finch == [pool_timeout: :infinity]
+      assert finch_options_sent([]) == [pool_timeout: :infinity]
     end
 
     test "merges a caller's finch options into the wait" do
-      # Arrange / Act
-      named = TypeSafe.new(api_key: "k", req_options: [finch: [name: MyFinch]])
-      overridden = TypeSafe.new(api_key: "k", req_options: [finch: [pool_timeout: 1_000]])
+      assert finch_options_sent(finch: [name: MyFinch]) == [
+               pool_timeout: :infinity,
+               name: MyFinch
+             ]
 
-      # Assert
-      assert named.http_client.options.finch == [pool_timeout: :infinity, name: MyFinch]
-      assert overridden.http_client.options.finch == [pool_timeout: 1_000]
+      assert finch_options_sent(finch: [pool_timeout: 1_000]) == [pool_timeout: 1_000]
     end
 
     test "refuses connect_options and a bare finch pool name" do

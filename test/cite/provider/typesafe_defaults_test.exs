@@ -3,6 +3,8 @@ defmodule Cite.Provider.TypeSafeDefaultsTest do
   # builds a TypeSafe client, so these run apart from them.
   use ExUnit.Case, async: false
 
+  import Cite.TestTypeSafe, only: [finch_options_sent: 1]
+
   alias Cite.Provider.TypeSafe
 
   setup do
@@ -11,16 +13,10 @@ defmodule Cite.Provider.TypeSafeDefaultsTest do
   end
 
   test "keeps the app's default finch options beneath the wait and the caller's own" do
-    # Arrange
     Req.default_options(finch: [name: MyApp.Finch])
 
-    # Act
-    plain = TypeSafe.new(api_key: "k")
-    overridden = TypeSafe.new(api_key: "k", req_options: [finch: [name: MyFinch]])
-
-    # Assert
-    assert plain.http_client.options.finch == [pool_timeout: :infinity, name: MyApp.Finch]
-    assert overridden.http_client.options.finch == [pool_timeout: :infinity, name: MyFinch]
+    assert finch_options_sent([]) == [pool_timeout: :infinity, name: MyApp.Finch]
+    assert finch_options_sent(finch: [name: MyFinch]) == [pool_timeout: :infinity, name: MyFinch]
   end
 
   test "refuses app defaults that can't sit beside the adapter's finch options" do
