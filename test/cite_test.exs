@@ -640,5 +640,31 @@ defmodule CiteTest do
       assert "P002" in arrived
       assert Enum.reject(arrived, &(&1 in ["P000", "P001", "P002", "P003"])) == []
     end
+
+    test "carries the caller's Logger metadata and process level into the client" do
+      # Arrange
+      test_pid = self()
+      answering = client(%{})
+
+      client = fn request ->
+        send(
+          test_pid,
+          {:logger, Logger.metadata()[:request_id], Logger.get_process_level(self())}
+        )
+
+        answering.(request)
+      end
+
+      # The key is test data, not metadata a log formatter prints.
+      # credo:disable-for-next-line Credo.Check.Warning.MissedMetadataKeyInLoggerConfig
+      Logger.metadata(request_id: "req-1")
+      Logger.put_process_level(self(), :error)
+
+      # Act
+      Cite.judge(client, Cite.source(["a"]), Riddles)
+
+      # Assert
+      assert_received {:logger, "req-1", :error}
+    end
   end
 end

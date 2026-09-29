@@ -139,9 +139,11 @@ defmodule Cite do
   # results in item order. Tasks finish in any order, so a raise reaches the
   # caller as soon as its task returns, with the client's own stacktrace.
   defp concurrently(items, %Run{concurrency: concurrency}, fun) do
+    logger = {Logger.metadata(), Logger.get_process_level(self())}
+
     items
     |> Enum.with_index()
-    |> Task.async_stream(&attempt(fun, &1),
+    |> Task.async_stream(&attempt(fun, &1, logger),
       max_concurrency: concurrency,
       ordered: false,
       timeout: :infinity
@@ -151,11 +153,18 @@ defmodule Cite do
     |> Enum.map(&elem(&1, 1))
   end
 
-  defp attempt(fun, {item, index}) do
+  # A task starts with an empty process dictionary; the caller's Logger
+  # state goes with it, so the client logs as the caller would.
+  defp attempt(fun, {item, index}, {metadata, level}) do
+    Logger.metadata(metadata)
+    put_process_level(level)
     {index, fun.(item)}
   catch
     kind, reason -> {:raised, kind, reason, __STACKTRACE__}
   end
+
+  defp put_process_level(nil), do: :ok
+  defp put_process_level(level), do: Logger.put_process_level(self(), level)
 
   defp outcome({:ok, {:raised, kind, reason, stacktrace}}),
     do: :erlang.raise(kind, reason, stacktrace)
