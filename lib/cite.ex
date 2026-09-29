@@ -36,6 +36,12 @@ defmodule Cite do
   `"state"` may be a `Cite.Wire.Object`, a JSON object that keeps its keys
   in order. `verdict` is `%{answers: map(), usage: usage | nil}`, plus
   `:model`, the versioned id that answered, when the provider reports it.
+
+  `judge/4` calls the client from task processes, up to `concurrency` at
+  once, so it must be safe to call concurrently. Each task starts with the
+  caller's Logger metadata and process level. Nothing else from the
+  caller's process dictionary carries over, OpenTelemetry context included:
+  a client that needs it attaches it itself. Tasks don't trap exits.
   """
 
   alias Cite.{Answer, Gather, Judge, Report, Run, Screen, Source}

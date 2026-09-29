@@ -1,11 +1,12 @@
 defmodule Cite.Provider do
   @moduledoc """
   A decision-model provider: builds a handle, then answers one wire-shaped
-  request at a time.
+  request per call.
 
   `Cite.client/2` turns a provider into the client, the 1-arity function
   `Cite.judge/4` takes, so the rounds never see the provider's own handle.
-  Implementations: `Cite.Provider.TypeSafe`.
+  `Cite.judge/4` may call `judge/2` from several processes at once with the
+  same handle. Implementations: `Cite.Provider.TypeSafe`.
 
   ## Requests
 
@@ -24,7 +25,9 @@ defmodule Cite.Provider do
 
   A provider raises on caller error (bad options) and returns `{:error,
   reason}` for anything the network did — a failed call, a reply Cite cannot
-  read. `Cite.judge/4` records those as `Cite.Error`s and carries on.
+  read. `Cite.judge/4` records those as `Cite.Error`s and carries on. A
+  provider must not raise on a condition that concurrency makes routine,
+  such as waiting for a connection.
 
   One reason is shared across providers: `:request_too_large`, meaning the
   request exceeded the provider's size cap. Round 1 halves its window and

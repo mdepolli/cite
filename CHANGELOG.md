@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `concurrency` on `Cite.judge/4`: the most requests in flight at once
+  within a round. The report is the same at any setting.
+
+### Changed
+
+- The client runs in a task process, at every `concurrency`. Logger
+  metadata and process level carry over; the rest of the caller's process
+  dictionary, OpenTelemetry context included, does not.
+- `Cite.Provider.TypeSafe` waits for a pooled connection with no time
+  limit, instead of raising after 5 seconds.
+- `Cite.Provider.TypeSafe` refuses `:connect_options` and `finch:` as a
+  bare pool name in `req_options`. Set Finch options under `finch: [...]`
+  instead.
+
 ## [0.1.1] - 2026-09-28
 
 ### Added

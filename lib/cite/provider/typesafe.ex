@@ -34,7 +34,10 @@ defmodule Cite.Provider.TypeSafe do
               doc: """
               Merged into the Req client last; a test passes \
               `plug: {Req.Test, name}`. A `:retry_delay` needs its own `:retry`, \
-              because the adapter's retry sets delays itself.\
+              because the adapter's retry sets delays itself. `:connect_options` \
+              is refused, since Req can't combine it with the adapter's `:finch` \
+              options; set Finch pool options under `finch:` instead. `finch:` \
+              must be a keyword list.\
               """
             ]
           )
@@ -55,6 +58,14 @@ defmodule Cite.Provider.TypeSafe do
   wait capped at `max_retry_delay` (30 seconds by default). Timeouts are not
   retried: a 120-second call retried is eight minutes, and a slow success would
   be billed twice.
+
+  ## Connections
+
+  Requests go through Req's default Finch pool, 50 connections per host.
+  Past that, a request waits for a connection with no time limit, so
+  `concurrency` above 50 queues inside Finch instead of sending more at
+  once. For more in flight, start a Finch with a larger pool and pass
+  `req_options: [finch: [name: MyFinch]]`.
 
   ## The size cap
 
