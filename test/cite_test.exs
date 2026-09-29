@@ -95,14 +95,6 @@ defmodule CiteTest do
 
   defp release(arrivals), do: Enum.each(arrivals, fn {_label, pid} -> send(pid, :go) end)
 
-  defp drain_mailbox do
-    receive do
-      message -> [message | drain_mailbox()]
-    after
-      0 -> []
-    end
-  end
-
   describe "judge/4 end to end" do
     test "an empty source sends no request and reports nothing" do
       assert Cite.judge(refusing_client(), Cite.source([]), Riddles) == %Report{
@@ -399,6 +391,27 @@ defmodule CiteTest do
       end
     end
 
+    test "ends the run at a client's raise, sending nothing after it" do
+      # Arrange
+      test_pid = self()
+      source = Cite.source(["Why is a raven like a writing-desk?", "b", "c"])
+      answering = client(%{"P000:riddle" => 0.9})
+
+      client = fn request ->
+        window = window_ids(request)
+        send(test_pid, {:window, window})
+        if window == ["P001"], do: :not_a_verdict, else: answering.(request)
+      end
+
+      # Act + Assert
+      assert_raise ArgumentError, ~r/got: :not_a_verdict/, fn ->
+        Cite.judge(client, source, Riddles, window: 1)
+      end
+
+      # P000's riddle would have been judged in round 2.
+      assert windows_sent() == [["P000"], ["P001"]]
+    end
+
     test "refuses a concurrency that is not a positive integer" do
       for {bad, message} <- [
             {0, "invalid value for :concurrency option: expected positive integer, got: 0"},
@@ -605,35 +618,6 @@ defmodule CiteTest do
         end)
 
       assert Task.await(task) == :helper_crashed
-    end
-
-    test "stops starting requests as soon as one raises" do
-      # Arrange
-      test_pid = self()
-      source = Cite.source(["a", "b", "c", "d", "e", "f", "g", "h"])
-
-      client = fn request ->
-        [id] = window_ids(request)
-        send(test_pid, {:arrive, id, self()})
-
-        if id == "P002" do
-          :not_a_verdict
-        else
-          receive do
-            :go -> :ok
-          end
-        end
-      end
-
-      # Act + Assert
-      assert_raise ArgumentError, ~r/got: :not_a_verdict/, fn ->
-        Cite.judge(client, source, Riddles, window: 1, concurrency: 4)
-      end
-
-      arrived = for {:arrive, id, _pid} <- drain_mailbox(), do: id
-
-      assert "P002" in arrived
-      assert Enum.reject(arrived, &(&1 in ["P000", "P001", "P002", "P003"])) == []
     end
 
     test "carries the caller's Logger metadata and process level into the client" do

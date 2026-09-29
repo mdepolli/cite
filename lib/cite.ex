@@ -97,8 +97,10 @@ defmodule Cite do
   Judges `source` against `policy_module`, a module that uses `Cite.Policy`.
   Raises `ArgumentError` before any request on an option it cannot use or a
   module that is not a policy, and mid-run when the client returns
-  something outside its contract. A raise stops the requests still in
-  flight; the provider may already have received, and billed, them.
+  something outside its contract. The raise comes once the requests before
+  it have answered; requests started meanwhile are stopped, but the
+  provider may already have received, and billed, them. Nothing is sent
+  after it.
 
   ## Options
 
@@ -147,29 +149,25 @@ defmodule Cite do
   end
 
   # Runs `fun` on every item, up to `concurrency` at once, and returns the
-  # results in item order. Tasks finish in any order, so a raise reaches the
-  # caller as soon as its task returns, with the client's own stacktrace.
+  # results in item order. A raise in a task reaches the caller, with the
+  # client's own stacktrace, once the results before it are in.
   defp concurrently(items, %Run{concurrency: concurrency}, fun) do
     logger = {Logger.metadata(), Logger.get_process_level(self())}
 
     items
-    |> Enum.with_index()
     |> Task.async_stream(&attempt(fun, &1, logger),
       max_concurrency: concurrency,
-      ordered: false,
       timeout: :infinity
     )
     |> Enum.map(&outcome/1)
-    |> Enum.sort_by(&elem(&1, 0))
-    |> Enum.map(&elem(&1, 1))
   end
 
   # A task starts with an empty process dictionary; the caller's Logger
   # state goes with it, so the client logs as the caller would.
-  defp attempt(fun, {item, index}, {metadata, level}) do
+  defp attempt(fun, item, {metadata, level}) do
     Logger.metadata(metadata)
     put_process_level(level)
-    {index, fun.(item)}
+    fun.(item)
   catch
     kind, reason -> {:raised, kind, reason, __STACKTRACE__}
   end
@@ -180,7 +178,7 @@ defmodule Cite do
   defp outcome({:ok, {:raised, kind, reason, stacktrace}}),
     do: :erlang.raise(kind, reason, stacktrace)
 
-  defp outcome({:ok, indexed}), do: indexed
+  defp outcome({:ok, result}), do: result
 
   # A task killed by a linked process's exit; the stream reports it only to a
   # caller that traps exits.
