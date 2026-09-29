@@ -81,15 +81,9 @@ defmodule CiteTest do
   end
 
   # Runs Cite.judge/4 in a task so the test process is free to pace the
-  # client; a raise, throw, or exit comes back as {kind, value}.
+  # client.
   defp judge_async(client, source, policy, opts) do
-    Task.async(fn ->
-      try do
-        {:ok, Cite.judge(client, source, policy, opts)}
-      catch
-        kind, reason -> {kind, reason}
-      end
-    end)
+    Task.async(fn -> Cite.judge(client, source, policy, opts) end)
   end
 
   defp arrivals(n) do
@@ -431,7 +425,7 @@ defmodule CiteTest do
 
       # Assert
       assert Enum.sort(Enum.map(held, &elem(&1, 0))) == [["P000"], ["P001"], ["P002"], ["P003"]]
-      assert {:ok, %Report{errors: []}} = Task.await(task)
+      assert %Report{errors: []} = Task.await(task)
     end
 
     test "never has more than `concurrency` requests in flight" do
@@ -450,7 +444,7 @@ defmodule CiteTest do
       release(arrivals(1))
 
       # Assert
-      assert {:ok, %Report{errors: []}} = Task.await(task)
+      assert %Report{errors: []} = Task.await(task)
     end
 
     test "sends one request at a time by default" do
@@ -466,7 +460,7 @@ defmodule CiteTest do
       release(arrivals(1))
 
       # Assert
-      assert {:ok, %Report{errors: []}} = Task.await(task)
+      assert %Report{errors: []} = Task.await(task)
     end
 
     test "keeps round-1 errors and models in window order whatever order replies arrive in" do
@@ -497,7 +491,7 @@ defmodule CiteTest do
         assert_receive {:DOWN, ^ref, :process, ^pid, _}
       end)
 
-      {:ok, report} = Task.await(task)
+      report = Task.await(task)
 
       # Assert
       assert report.errors == [
@@ -544,7 +538,7 @@ defmodule CiteTest do
         assert_receive {:DOWN, ^ref, :process, ^pid, _}
       end
 
-      {:ok, report} = Task.await(task)
+      report = Task.await(task)
 
       # Assert
       assert report.errors == [
@@ -631,12 +625,13 @@ defmodule CiteTest do
         end
       end
 
-      # Act
-      result = Task.await(judge_async(client, source, Riddles, window: 1, concurrency: 4))
+      # Act + Assert
+      assert_raise ArgumentError, ~r/got: :not_a_verdict/, fn ->
+        Cite.judge(client, source, Riddles, window: 1, concurrency: 4)
+      end
+
       arrived = for {:arrive, id, _pid} <- drain_mailbox(), do: id
 
-      # Assert
-      assert {:error, %ArgumentError{}} = result
       assert "P002" in arrived
       assert Enum.reject(arrived, &(&1 in ["P000", "P001", "P002", "P003"])) == []
     end
