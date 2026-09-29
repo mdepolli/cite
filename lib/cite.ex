@@ -120,7 +120,7 @@ defmodule Cite do
   defp screen(%Run{} = run) do
     outcomes =
       run.source.passages
-      |> Enum.chunk_every(run.window)
+      |> Stream.chunk_every(run.window)
       |> concurrently(run, &screen_window(run, &1))
       |> Enum.concat()
 
