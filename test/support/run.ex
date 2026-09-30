@@ -6,21 +6,15 @@ defmodule Cite.TestRun do
 
   alias Cite.Policy.Terms
   alias Cite.{Run, Source}
+  alias Cite.TestPolicies.Riddles
 
+  # Run.new/4 supplies the default options; its policy's terms give way to
+  # the ones given.
   @spec new(Terms.t(), keyword()) :: Run.t()
   def new(%Terms{} = terms, fields \\ []) do
-    struct!(
-      Run,
-      [
-        client: &no_client/1,
-        source: Source.new([]),
-        terms: terms,
-        threshold: 0.5,
-        review_band: {0.4, 0.6},
-        window: 40,
-        concurrency: 4
-      ] ++ fields
-    )
+    run = Run.new(&no_client/1, Source.new([]), Riddles, [])
+
+    struct!(run, [terms: terms] ++ fields)
   end
 
   defp no_client(request) do

@@ -1,25 +1,16 @@
 defmodule Cite.RunTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Run, TestRun, TestTerms}
+  alias Cite.Run
   alias Cite.TestPolicies.Riddles
 
   defp client, do: fn _request -> :unused end
 
   describe "new/4" do
-    test "defaults the options Cite.TestRun hard-codes for the pure steps" do
-      # Arrange
-      keys = [:threshold, :review_band, :window, :concurrency]
-
-      # Act
+    test "defaults the threshold, review band, window, and concurrency" do
       run = Run.new(client(), Cite.source(["a"]), Riddles, [])
-      test_run = TestRun.new(TestTerms.riddles())
 
-      # Assert
-      assert Map.take(run, keys) ==
-               %{threshold: 0.5, review_band: {0.4, 0.6}, window: 40, concurrency: 4}
-
-      assert Map.take(test_run, keys) ==
+      assert Map.take(run, [:threshold, :review_band, :window, :concurrency]) ==
                %{threshold: 0.5, review_band: {0.4, 0.6}, window: 40, concurrency: 4}
     end
 
