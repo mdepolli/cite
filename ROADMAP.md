@@ -69,6 +69,15 @@ The aim is to put context on the source, sent once per request beside the
 window. The benchmark must show that checking many passages against one
 copy holds up as well as checking them one at a time.
 
+Status: measured, and it holds up only in part. On answers to questions,
+one shared copy did as well as checking one at a time, with fewer input
+tokens. On summaries it did worse: framing lines such as "Here is the
+summary in 112 words:" passed as claims and were flagged, and borderline
+sentences shifted both ways. The questions must stay as they are: pointing
+them at the shared copy, or naming it by its path, lost precision
+everywhere. Batching passages with the context still copied onto each held
+up on both kinds.
+
 ## Not planned
 
 ### Separate cases in a directly screened concern
