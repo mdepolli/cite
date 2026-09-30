@@ -85,9 +85,10 @@ defmodule Cite.Round do
   defp wait_for_slot(state, _concurrency), do: await_one(state)
 
   # Each receive scans the caller's whole mailbox, since it matches any of
-  # the round's refs, not one made just before it. Task.async_stream's own
-  # receives scan it the same way, so this adds about one scan per item,
-  # which only counts when a caller, a GenServer say, has a backlog.
+  # the round's refs, not one made just before it. Besides the receive that
+  # takes each reply, as Task.async_stream's do, this receive, the demonitor
+  # flush, and drop_exit/1 each add a scan per item. They only count when a
+  # caller, a GenServer say, has a backlog.
   defp collect_ready(state) do
     case receive_one(state, 0) do
       {:ok, state} -> collect_ready(state)
