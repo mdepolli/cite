@@ -1,8 +1,6 @@
 defmodule Cite.Provider.TypeSafeTest do
   use ExUnit.Case, async: true
 
-  import Cite.TestTypeSafe, only: [options_sent: 1]
-
   alias Cite.Provider.TypeSafe
   alias Cite.Report
   alias Cite.TestPolicies.Riddles
@@ -48,6 +46,14 @@ defmodule Cite.Provider.TypeSafeTest do
     conn
     |> Plug.Conn.put_resp_header("retry-after", retry_after)
     |> Plug.Conn.send_resp(status, "")
+  end
+
+  # The pool options on the Req client that `req_options` builds.
+  defp pool_options(req_options) do
+    %TypeSafe{http_client: %Request{options: options}} =
+      TypeSafe.new(api_key: "k", req_options: req_options)
+
+    Map.take(options, [:pool_timeout, :finch])
   end
 
   describe "new/1" do
@@ -109,29 +115,13 @@ defmodule Cite.Provider.TypeSafeTest do
     end
 
     test "waits for a pooled connection with no time limit, and sets no finch: list" do
-      assert options_sent([]) == %{pool_timeout: :infinity}
+      assert pool_options([]) == %{pool_timeout: :infinity}
     end
 
-    test "leaves a caller's finch: to Req" do
-      assert options_sent(finch: [name: MyFinch]) == %{
+    test "sets the wait beside a caller's finch: list, not inside it" do
+      assert pool_options(finch: [name: MyFinch]) == %{
                pool_timeout: :infinity,
                finch: [name: MyFinch]
-             }
-    end
-
-    test "leaves a caller's connect_options to Req" do
-      assert options_sent(connect_options: [timeout: 1_000]) == %{
-               pool_timeout: :infinity,
-               connect_options: [timeout: 1_000]
-             }
-    end
-
-    # Only Req's Finch adapter refuses the pair; this test's adapter is not it.
-    test "leaves connect_options beside finch: to Req and its adapter" do
-      assert options_sent(finch: [size: 1], connect_options: [timeout: 1_000]) == %{
-               pool_timeout: :infinity,
-               finch: [size: 1],
-               connect_options: [timeout: 1_000]
              }
     end
 

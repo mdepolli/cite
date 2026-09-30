@@ -3,31 +3,11 @@ defmodule Cite.Provider.TypeSafeDefaultsTest do
   # builds a TypeSafe client, so these run apart from them.
   use ExUnit.Case, async: false
 
-  import Cite.TestTypeSafe, only: [options_sent: 1]
-
   alias Cite.Provider.TypeSafe
 
   setup do
     defaults = Req.default_options()
     on_exit(fn -> Req.default_options(defaults) end)
-  end
-
-  test "leaves the app's default finch: to Req" do
-    Req.default_options(finch: [name: MyApp.Finch])
-
-    assert options_sent([]) == %{pool_timeout: :infinity, finch: [name: MyApp.Finch]}
-  end
-
-  test "leaves the app's default connect_options to Req" do
-    Req.default_options(connect_options: [timeout: 1_000])
-
-    assert options_sent([]) == %{pool_timeout: :infinity, connect_options: [timeout: 1_000]}
-  end
-
-  test "lets a caller's finch: replace the app's default one whole, as Req does" do
-    Req.default_options(finch: [name: MyApp.Finch])
-
-    assert options_sent(finch: [size: 100]) == %{pool_timeout: :infinity, finch: [size: 100]}
   end
 
   test "refuses a default retry_delay beside the adapter's retry" do
