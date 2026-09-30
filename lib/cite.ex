@@ -199,7 +199,7 @@ defmodule Cite do
       other ->
         raise """
         client must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, \
-        got: #{inspect(other)}
+        got: #{inspect(other)}\
         """
     end
   end

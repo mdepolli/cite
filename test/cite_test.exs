@@ -410,13 +410,13 @@ defmodule CiteTest do
       for concurrency <- [1, 4],
           {reply, message} <- [
             {:ok,
-             ~r/client must return \{:ok, %\{answers: map, usage: map \| nil\}\} or \{:error, reason\}, got: :ok/},
+             "client must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, got: :ok"},
             {{:ok, %{answers: %{}, usage: :lots}},
-             ~r/client usage must be nil or %\{input_tokens: n, output_tokens: n\}, got: :lots/},
+             "client usage must be nil or %{input_tokens: n, output_tokens: n}, got: :lots"},
             {{:ok, %{answers: %{}, usage: nil, model: 123}},
-             ~r/client model must be a non-empty binary when given, got: 123/},
+             "client model must be a non-empty binary when given, got: 123"},
             {{:ok, %{answers: %{}, usage: nil, model: ""}},
-             ~r/client model must be a non-empty binary when given, got: ""/}
+             ~s(client model must be a non-empty binary when given, got: "")}
           ] do
         assert_raise RuntimeError, message, fn ->
           Cite.judge(fn _request -> reply end, Cite.source(["a"]), Riddles,

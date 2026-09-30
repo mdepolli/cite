@@ -174,7 +174,7 @@ defmodule Cite.Source do
         passage #{inspect(id)} shows meta #{inspect(key)}, so its value must be JSON: \
         nil, booleans, atoms, numbers, UTF-8 binaries, and lists and plain maps of \
         these with atom or binary keys, no key given as both an atom and a string; \
-        got: #{inspect(value)}
+        got: #{inspect(value)}\
         """
     end
   end
