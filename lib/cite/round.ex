@@ -13,8 +13,12 @@ defmodule Cite.Round do
   The caller's mailbox is left as it was, even when it traps exits.
   """
 
-  # Stream.transform/5 calls stop_the_rest/1 however the stream ends, a
-  # raise included, so no task outlives the round.
+  # Stream.transform/5 calls stop_the_rest/1 when the items run out, and on
+  # a raise in the items, with the state the last reducer call returned. A
+  # raise inside the reducer hands it the state from before that call, so a
+  # task started in that call would outlive the round. Nothing between
+  # Task.async and the reducer's return can raise; a step added there must
+  # keep it so.
   #
   # Task.async monitors the task and then sends it its job, both from the
   # caller, so the monitor lands first and a task that dies at once is
