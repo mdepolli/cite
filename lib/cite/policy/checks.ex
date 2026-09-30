@@ -150,7 +150,9 @@ defmodule Cite.Policy.Checks do
   defp check_roles(entities) do
     factors = for %Dsl.Factor{name: name} <- entities, do: name
 
-    first_error(for(concern <- concerns(entities), role <- concern.roles, do: {concern, role}), fn
+    roles = for concern <- concerns(entities), role <- concern.roles, do: {concern, role}
+
+    first_error(roles, fn
       {concern, %Dsl.Role{name: name, factor: factor} = role} ->
         cond do
           not Placeholder.name?(Atom.to_string(name)) ->
@@ -296,6 +298,10 @@ defmodule Cite.Policy.Checks do
   defp concern_nouls(%Dsl.Concern{name: name} = concern) do
     label = "concern #{inspect(name)}"
 
+    checks =
+      for check <- concern.checks,
+          do: {:check, "check #{inspect(check.name)}", check, [name, check.name]}
+
     Enum.reject(
       [
         concern.detect &&
@@ -303,11 +309,7 @@ defmodule Cite.Policy.Checks do
         concern.confirm && {:confirm, "#{label} confirm", concern.confirm, [name, :confirm]}
       ],
       &is_nil/1
-    ) ++
-      for(
-        check <- concern.checks,
-        do: {:check, "check #{inspect(check.name)}", check, [name, check.name]}
-      )
+    ) ++ checks
   end
 
   defp passage_only(label, noul, path) do
@@ -325,10 +327,13 @@ defmodule Cite.Policy.Checks do
     end
   end
 
-  defp concerns(entities), do: for(%Dsl.Concern{} = concern <- entities, do: concern)
+  defp concerns(entities) do
+    for %Dsl.Concern{} = concern <- entities, do: concern
+  end
 
-  defp checks(entities),
-    do: for(concern <- concerns(entities), check <- concern.checks, do: {concern, check})
+  defp checks(entities) do
+    for concern <- concerns(entities), check <- concern.checks, do: {concern, check}
+  end
 
   # Placeholders expand in the question and the focus, so both are read.
   defp placeholders(%{question: question, focus: focus}), do: Placeholder.names([question, focus])

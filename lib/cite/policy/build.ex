@@ -44,16 +44,20 @@ defmodule Cite.Policy.Build do
   def transform(dsl) do
     entities = Transformer.get_entities(dsl, [:policy])
 
-    terms = %Terms{
-      filters: for(%Dsl.Filter{} = filter <- entities, do: {filter.name, noul(filter)}),
-      concerns: for(%Dsl.Concern{} = concern <- entities, do: concern(concern)),
-      factors: for(%Dsl.Factor{} = factor <- entities, do: {factor.name, noul(factor)}),
-      descriptors:
-        for(
-          %struct{} = entity <- entities,
+    filters = for %Dsl.Filter{} = filter <- entities, do: {filter.name, noul(filter)}
+    concerns = for %Dsl.Concern{} = concern <- entities, do: concern(concern)
+    factors = for %Dsl.Factor{} = factor <- entities, do: {factor.name, noul(factor)}
+
+    descriptors =
+      for %struct{} = entity <- entities,
           struct in [Dsl.Score, Dsl.Choice],
           do: descriptor(entity)
-        )
+
+    terms = %Terms{
+      filters: filters,
+      concerns: concerns,
+      factors: factors,
+      descriptors: descriptors
     }
 
     {:ok, Transformer.persist(dsl, @key, terms)}
