@@ -1,8 +1,7 @@
 defmodule Cite.ScreenTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Error, Screen, Source}
-  alias Cite.{TestRun, TestTerms}
+  alias Cite.{Error, Screen, Source, TestRun, TestTerms}
   alias Cite.Wire.Object
 
   describe "request/2" do

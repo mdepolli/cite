@@ -1,8 +1,7 @@
 defmodule Cite.JudgeTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Citation, Error, Finding, Gathered, Judge, Passage, Source}
-  alias Cite.{TestRun, TestTerms}
+  alias Cite.{Citation, Error, Finding, Gathered, Judge, Passage, Source, TestRun, TestTerms}
   alias Cite.Wire.Object
 
   @band {0.4, 0.6}

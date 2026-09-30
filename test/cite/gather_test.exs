@@ -1,8 +1,7 @@
 defmodule Cite.GatherTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Gather, Source}
-  alias Cite.{TestRun, TestTerms}
+  alias Cite.{Gather, Source, TestRun, TestTerms}
 
   # Gathers from a run whose source holds one passage per screen row, in id
   # order; `fields` override the run's defaults.
