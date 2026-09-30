@@ -30,8 +30,8 @@ your questions of every turn and cites the ones that fit.
 
 ## 1. Decide what counts as each step
 
-Take the steps from your written procedure, and for each one write down
-what the agent says when they do it, and what sounds like it and is not.
+Take the steps from your written procedure. For each one, write down what
+the agent says when they do it, and what sounds like it and is not.
 
 - **Verifying identity** is asking for, or confirming, the details used to
   check who the customer is: an email and order ID, a zip code, a PIN or a
@@ -49,7 +49,7 @@ what the agent says when they do it, and what sounds like it and is not.
   update. Count it when the turns before make clear which step it is.
 
 Some steps leave no trace in the conversation. An agent may change an
-order's shipping in the back office and say nothing that ties to it. Cite
+order's shipping in the back office and say nothing about it. Cite
 reads what was said, so it cannot find those. Check the steps your agents
 do silently against your system's own records instead.
 
@@ -77,8 +77,8 @@ source = Cite.source(turns, as: "turns", show: [:speaker])
 - **Leave your system's action log out.** If your transcripts include rows
   such as "refund issued", drop them: they would answer the question for
   the model, and the point is to check what was said.
-- **Ids that keep the order,** such as `t1`, `t2`: you will use them to
-  check the order of steps.
+- **Give turns ids that keep the order,** such as `t1`, `t2`. You will
+  need them to check the order of steps.
 
 ## 3. Only the agent's turns count
 
@@ -99,9 +99,9 @@ answer per turn. On real support conversations it sorted every turn
 correctly.
 
 The speaker is already in `meta`, so why ask the model? Because the
-customer's turns must stay in the source. They are what the agent's turns
-are read beside in round 1. Cite has no way to mark a passage as context
-only, so the filter keeps those turns from being cited instead.
+customer's turns must stay in the source: round 1 reads the agent's turns
+beside them. Cite has no way to mark a passage as context only, so the
+filter keeps those turns from being cited instead.
 
 ## 4. Write one concern per step
 
@@ -110,7 +110,7 @@ agent turn. Word it as your QA reviewers would, not after the button names
 in your system.
 
 Verification is the step with the hard boundary, so its `no` names the
-lookup explicitly:
+lookup:
 
 ```elixir
 concern :identity_verified do
@@ -129,13 +129,13 @@ A few rules from practice:
   for "several details together" kept the lookup out and lost most real
   verifications, because agents ask for details one at a time. Naming the
   lookup itself in the `no` kept both right.
-- **Say when a confirmation counts.** The three steps that change
-  something say that a turn which only reports it done counts, when the
-  turns before make clear which step it is. Short confirmations are still
-  the weakest point. Round 1 reads each turn beside the turns around it.
-  Round 2 reads only the turns gathered for the step, so the question that
-  came before "all done" is gone. Expect such turns to drop or land in
-  review.
+- **Say when a confirmation counts.** In the three steps that change
+  something, the `yes` counts a turn that only reports the step done, when
+  the turns before make clear which step it is. Short confirmations are
+  still the weakest point. Round 1 reads each turn beside the turns around
+  it. Round 2 reads only the turns gathered for the step, so the question
+  that came before "all done" is gone. Expect such turns to drop or land
+  in review.
 - **Keep neighbouring steps apart.** The account step's `no` names the
   order step and the order step's names the account, since "change the
   address" can mean either.
@@ -182,7 +182,7 @@ end
 ```
 
 - **"Not found" is not "not done".** A step the agent performed without
-  saying so will show as not found. Before flagging a call, check that step
+  saying so shows as not found. Before flagging a call, check that step
   against your system's records.
 - **A failed request means the call was not checked.** Its turns land in
   `report.errors`; show the call as unchecked and retry it.
@@ -217,8 +217,8 @@ unchecked call is not a breach.
 
 Your system's action log says which steps happened in each conversation.
 Compare Cite's checklist with it, call by call. Expect a gap wherever
-agents do a step silently, and measure that gap separately: have a careful
-reader mark, blind to the log, which steps are visible in the text. Score
+agents do a step silently. Measure that gap separately: have a careful
+reader, blind to the log, mark which steps are visible in the text. Score
 Cite against what the text can show, and report the silent steps apart.
 
 Score a keyword list beside the policy too ("refund", "I've updated",

@@ -22,9 +22,9 @@ this:
 | "Claims are usually settled within five working days." | baseless info |
 | "That makes the K2 one of the best-covered e-bikes you can buy." | baseless info |
 
-All five sentences read well. Four of them are wrong about the documents
-the answer came from, which you will see in step 2. Spotting them takes
-reading each claim against those documents.
+All five sentences read well. Four are wrong about the retrieved
+documents, which step 2 lists. Spotting them takes reading each claim
+against those documents.
 
 You write down what counts as each kind of problem, split the answer into
 sentences, copy the question and documents onto each, and turn the findings
@@ -39,7 +39,7 @@ input say otherwise, or say nothing?
 
 - **Conflict**: the answer changes something the input says. A wrong name,
   number, date, or place, or the wrong person acting; the opposite of what
-  the input says; or a word that changes its meaning, such as a possibility
+  the input says; or a word that changes the meaning, such as a possibility
   stated as a certainty, a reported claim stated as fact, a dropped hedge,
   or a changed bound. "Covered for three years", where the documents say
   two. Kestrel "will" replace a faulty battery, where the documents say it
@@ -107,7 +107,7 @@ end
   rarely spans two, and a finding then cites the sentence to fix.
 - **Keep a citation with its claim.** "(document 2)" after a full stop
   belongs to the sentence before it. Cut on its own, it makes a sentence
-  with no claim. A concern may still cite it.
+  with no claim, which a concern may still cite.
 - **Join a list number to the sentence after it.** "1." on its own line is
   not a sentence.
 - **Know the rule's cost.** It splits "Dr. Smith" after "Dr.". Use a proper
@@ -192,9 +192,9 @@ These rules held up in practice:
 
 - **Split a kind only where two readers agree.** RAGTruth, a public set of
   labelled answers, splits each kind into evident and subtle. Two careful
-  readings of the same answers barely agreed on that split, and a policy
-  that asked it cited sentences twice or under the wrong kind. With two
-  concerns it was more precise, and cheaper.
+  readings of the same answers barely agreed on that split. A policy that
+  asked it cited sentences twice or under the wrong kind. With two
+  concerns, the policy was more precise and cheaper.
 - **Point the model at the words that change a claim.** The criteria
   already named a dropped hedge and a changed bound, and the model still
   passed "reportedly said he spent" restated as "spent". A `focus` on
@@ -225,11 +225,12 @@ report = Cite.judge(client, source, MyApp.Grounding)
 ```
 
 Each sentence carries its own copy of the input, whatever the window. At
-the default window, an answer's sentences are screened together: a
+the default window, an answer's sentences are screened together. A
 five-sentence answer is one screening request with five copies, asking the
-filter and both concerns of each sentence, then one judging request per
-kind of problem found. Screening one sentence per request sends the same
-copies in more requests, and repeats every question's criteria in each.
+filter and both concerns of each sentence. Then comes one judging request
+per kind of problem found. Screening one sentence per request sends the
+same copies in more requests, and repeats every question's criteria in
+each.
 
 Round 1 also reads each sentence beside the rest of its answer, so a
 framing line ("Here is an example of how it might look:") reads as part of
@@ -260,10 +261,10 @@ end
 
 - **A failed request leaves a sentence unchecked.** Its id lands in
   `report.errors`. An answer is grounded only if every sentence was read,
-  so retry it or treat the answer as unchecked.
+  so retry the answer or treat it as unchecked.
 - **"None found" is relative to the input.** If retrieval missed the
   document that answers the question, a grounded answer can still be
-  wrong. Cite checks the answer against what it was given.
+  wrong.
 - **Decide what each kind costs you.** You might block an answer on a
   conflict and only flag baseless info. That call lives in your code; Cite
   reports both the same way.
@@ -281,26 +282,27 @@ from MS MARCO and news articles, under their own terms.
 - **Your label rule must ask your question.** Spans do not follow
   sentences, so turn them into sentence labels by a rule. A sentence gets
   every kind whose span overlaps it; a sentence no span touches is labelled
-  none, so false alarms count. The rule marks a long sentence with a
-  three-word problem, which is why the questions ask whether a sentence
-  *contains* one.
+  none, so false alarms count. Under this rule, a three-word problem marks
+  the whole long sentence around it, which is why the questions ask
+  whether a sentence *contains* one.
 - **Check the negatives before you trust precision.** Against RAGTruth,
   most sentences the policy cited looked like false alarms. A second
   reading, blind to the results and against the full input, found most of
   them were real problems the annotators left unlabelled. Keep such a
   reading as a reference of its own, score against both, and never merge
   the two.
-- **Score any problem and the right kind apart.** A policy can find the
-  problem sentences and still name the wrong kind. Sentences cited under
-  both kinds but labelled with one show where; the fix is in the
-  `not_for`.
+- **Score finding a problem apart from naming its kind.** A policy can
+  find the problem sentences and still name the wrong kind. Sentences
+  cited under both kinds but labelled with one show where; the fix is in
+  the `not_for`.
 
 Score a word-overlap check beside the policy: cite a sentence when enough
 of its words are missing from the input. It only sees new words, so it
 misses every conflict built from the input's own words ("as many as 900"
 restated as "over 900", "unable to answer" when the documents answer). And
 it flags faithful paraphrases, which use words the input does not. Tune
-its share on your training labels, not on the ones you hold out.
+how many count as enough on your training labels, not on the ones you
+hold out.
 
 Keep some answers aside that you never read while rewording.
 [Tuning against labels](../writing-policies.md#tuning-against-labels) has
@@ -317,9 +319,9 @@ Mind the cost when the input is long. Every sentence carries it, so an
 answer's cost grows with its sentence count times the length of its input.
 Round 2 adds to that. Each kind of problem is one request, holding every
 sentence cited under it with its own copy of the input. Round 2 never
-splits a request, so a long answer with many problems against long
-documents can grow past the provider's limit. That finding then becomes an
-error.
+splits a request. With a long answer, many problems, and long documents,
+one request can grow past the provider's limit. That finding then becomes
+an error.
 
 ## The whole policy
 

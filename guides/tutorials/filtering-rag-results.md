@@ -27,9 +27,9 @@ six passages share its words, so any of them could top a retriever's list.
 Only two say how long.
 
 You write down what counts as an answer, pass each query's candidates in
-the order the retriever returned them, and send the answers to your
-generator. Cite asks your question of every candidate and cites the ones
-that fit.
+the order the retriever returned them, and send the answering candidates
+to your generator. Cite asks your question of every candidate and cites
+the ones that fit.
 
 ## 1. Decide what counts
 
@@ -118,9 +118,10 @@ rules came out of those tries:
   policy differ by a few false alarms. A rewording that changes fewer than
   that has changed nothing.
 - **Stop rewording when every wording makes the same false alarms.** The
-  ones that survived here were passages about the query's subject, read as
-  answers under every wording, whether judged together or alone. That is
-  how the model reads the concept, not a gap in the question.
+  false alarms that survived here were passages about the query's
+  subject, read as answers under every wording, whether judged together
+  or alone. That is how the model reads the concept, not a gap in the
+  question.
 - **A narrower second question costs real answers.** A confirm that asked
   for "the specific answer" cleared some of those false alarms. It also
   sent sound answers to review, such as a price range for a cost.
@@ -142,7 +143,7 @@ query per call.
 ## 5. From findings to context
 
 The finding cites the candidates that answer the query. Each citation keeps
-the model's answer, so you can order them by it:
+the model's round-2 answer, so you can order them by it:
 
 ```elixir
 defmodule MyApp.Context do
@@ -166,9 +167,9 @@ defmodule MyApp.Context do
 end
 ```
 
-- **When nothing holds, nothing answers.** The retriever found nothing
-  that answers the query. Say so, or retrieve again, rather than let the
-  generator write from passages that only share the topic.
+- **When nothing holds, nothing answers.** Say so, or retrieve again,
+  rather than let the generator write from passages that only share the
+  topic.
 - **Decide what review means for you.** A `:review` candidate is one the
   model was unsure of. Leave it out of the context, or add it after the
   held ones.
@@ -178,8 +179,8 @@ end
 
 ### Ordering every candidate
 
-To order all of a query's candidates, not only keep the answers, sort them
-by their round-1 score. `report.screen` keeps it for every candidate:
+To order all of a query's candidates, not just the answers, sort them by
+their round-1 score. `report.screen` keeps it for every candidate:
 
 ```elixir
 ordered =
@@ -203,11 +204,13 @@ the passages themselves.
   the passage they used, not every passage that answers. Many unmarked
   candidates answer the query, and some marked ones do not. A second
   reading, blind to the results, is the reference to measure precision
-  against. Keep it apart from the first, and never merge the two.
-- **Word overlap is a weak baseline here.** Cite a candidate when enough of
-  the query's words appear in it. Every candidate was retrieved for those
-  words, so the rule cites answers and near misses alike. It finds many of
-  the answers, and flags much of what does not answer.
+  against. Keep it apart from the annotators' labels, and never merge the
+  two.
+- **Word overlap is a weak baseline here.** The baseline cites a candidate
+  when enough of the query's words appear in it. Every candidate was
+  retrieved for those words, so the rule cites answers and near misses
+  alike. It finds many of the answers, and flags much of what does not
+  answer.
 
 Keep some queries aside that you never read while rewording.
 [Tuning against labels](../writing-policies.md#tuning-against-labels) has

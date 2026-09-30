@@ -2,8 +2,9 @@
 
 This guide builds a policy that reads a recipe and says which major
 allergens it contains, citing the lines that carry each one. It suits a
-meal-planning app, a meal-kit catalogue, or a menu being labelled: a list
-like "contains milk, egg, gluten", where a person can see why.
+meal-planning app, a meal-kit catalogue, or a menu being labelled. The
+result is a list like "contains milk, egg, gluten", where a person can see
+why.
 
 It assumes you know food and have not used Cite before. The recipe lines
 below are invented.
@@ -26,7 +27,7 @@ this:
 | milk | "30 g butter or margarine" (depending on your choice), "Fry in the butter and serve." |
 | egg | "1 egg, beaten", "Whisk the flour and the egg into a smooth batter." |
 
-Most of it a lookup table could do. The reason to use a model is the lines
+A lookup table could do most of it. The reason to use a model is the lines
 a table gets wrong. "2 tbsp gluten-free soy sauce" carries soy and no
 gluten, though a word match on "soy sauce" would add gluten. "A splash of
 Worcestershire sauce" carries fish. "Coconut milk" carries no milk.
@@ -69,7 +70,7 @@ step carries nothing; each allergen is cited where it enters the recipe.
 soup mix: what they contain depends on the brand. This guide counts a
 prepared food only when its usual recipe settles it (pesto, Worcestershire
 sauce, ordinary soy sauce). For the rest, neither a reader nor a model can
-tell from the text; decide who checks them, usually against the product's
+tell from the text. Decide who checks them, usually against the product's
 own label.
 
 Leave out "may contain", cross-contamination, and shared equipment: the
@@ -97,7 +98,8 @@ source = Cite.source(lines, as: "lines", show: [:section])
   the lines that show it. Judge a catalogue recipe by recipe.
 - **Show the section.** Whether a line is an ingredient or a step helps
   the model read "the butter" in a step as the butter already listed.
-- **Ids you can trace,** such as `i1` for ingredients and `s1` for steps.
+- **Give each line an id you can trace,** such as `i1` for ingredients
+  and `s1` for steps.
 
 ## 3. Write one concern per allergen
 
@@ -140,8 +142,8 @@ A few rules from practice:
   the listed ingredients as a whole" are those rules. If the criteria say
   less than your labelling rules, the model fills the gap its own way.
 - **Ask about what a line does, not only what it lists.** A first wording
-  asked whether a line "calls for" an ingredient, and steps that use one
-  ("stir in the milk") read as calling for nothing: they were missed.
+  asked whether a line "calls for" an ingredient. Steps that use one
+  ("stir in the milk") read as calling for nothing, and were missed.
   "Name or use" fixed that. Each fix then needed its boundary: a general
   word for a listed ingredient ("the nuts") counts, and a thing made from
   several ("the dough") does not, or every step after the dough is mixed
@@ -202,8 +204,8 @@ end
   them; say "may contain, depending on your choice" where the cited line
   offers a choice.
 - **Send composite products to a person.** A line such as "2 tbsp barbecue
-  sauce" can be left uncited, since its usual recipe does not settle it,
-  and a citation of one is a guess about the brand. Find those lines
+  sauce" can be left uncited, since its usual recipe does not settle it.
+  A citation of one is a guess about the brand. Find those lines
   yourself (a list of such products is enough) and check them against the
   product's label, rather than reading their silence as "free of".
 
@@ -218,12 +220,12 @@ levels:
 - **Line level**: which lines carry it. This is what the citations show.
 
 Score a lookup table beside the policy: a list of ingredient words per
-allergen. It is a strong baseline here, right about most plain lines, and
-its false alarms include the free-from lines it reads backwards. What
-matters is where the policy beats it: free-from forms, hidden sources,
-steps that use an ingredient. Report those cases on their own; a handful
-of "gluten-free" recipes can move a total by little and still be the
-reason a user trusts the label.
+allergen. It is a strong baseline here, right about most plain lines. Its
+false alarms include the free-from lines it reads backwards. What matters
+is where the policy beats it: free-from forms, hidden sources, steps that
+use an ingredient. Report those cases on their own. A handful of
+"gluten-free" recipes can barely move a total and still be the reason a
+user trusts the label.
 
 Mark the lines your rules leave open, such as composite products and
 alternatives, as borderline, and score them apart. Most of what both the
@@ -231,8 +233,8 @@ policy and the table miss is on these lines; mixed in, they hide how well
 the clear lines are read.
 
 Keep some recipes aside that you never read while rewording.
-[Tuning against labels](../writing-policies.md#tuning-against-labels) has the
-method.
+[Tuning against labels](../writing-policies.md#tuning-against-labels) has
+the method.
 
 ## 7. When not to use Cite
 

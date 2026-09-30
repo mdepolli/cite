@@ -22,7 +22,7 @@ A policy module, a few lines of code that run it, and a table like this:
 | L006 | `machine check enable..............0` | no alert |
 
 The last two are the reason to use a model here. Both contain words that
-page people ("failed", "machine check"), and neither is an alert: one is a
+page people ("failed", "machine check"). Neither is an alert: one is a
 user's wrong path, the other a field printed in a register dump.
 
 You write down what counts as each kind of alert, split the log into lines,
@@ -54,7 +54,7 @@ as the first:
 - the dozens of lines a crash prints afterwards, one register field each.
 
 Each alert kind becomes a **concern**. Each lookalike ends up in a `no`
-criterion or, when it looks like everything, in a **filter**.
+criterion or, when it resembles every kind, in a **filter**.
 
 ## 2. Turn lines into a source
 
@@ -113,8 +113,9 @@ concern's `no`, not in a filter.
 
 A concern screened directly has a **detect**: one yes/no question asked of
 every line. `yes` and `no` say what each answer covers. Word the question
-as an operator would describe the alert, not after the log's message
-templates: the model reads meaning, and your wording is what it matches.
+as an operator would describe the alert, not in the words of the log's
+message templates: the model reads meaning, and your wording is what it
+matches.
 
 Start with the pair whose boundary is hardest. A processor exception and a
 hardware error both arrive as "interrupts":
@@ -187,10 +188,10 @@ client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API
 report = Cite.judge(client, source, MyApp.LogTriage)
 ```
 
-Cite screens every line for every detect and filter, in windows of 40 lines
-per request, then judges each kind of alert that matched, in one request
-per kind. A thousand lines under seven concerns cost about 25 screening
-requests and at most 7 judging requests.
+Cite screens every line for every detect and filter, in windows of 40
+lines per request. Then it judges each kind of alert that matched, one
+request per kind. A thousand lines under seven concerns cost about 25
+screening requests and at most 7 judging requests.
 
 Keep the defaults at first. `window` sets lines per screening request.
 Leave `threshold` at 0.5. Lowering it does not simply catch more: it
@@ -239,7 +240,7 @@ Three things to handle deliberately:
 
 - **A line can be several kinds.** `external input interrupt (unit=0x02
   bit=0x00): uncorrectable torus error` is a hardware error in the torus
-  network, and it was cited as both a hardware error and a lost connection.
+  network. It was cited as both a hardware error and a lost connection.
   Keep both, or decide by your own precedence; Cite does not choose for
   you.
 - **Review is a queue, not a verdict.** Page on `:holds`; send `:review` to
@@ -265,10 +266,10 @@ policy on them and compare:
 - A line Cite cited that you did not: read the `no` of that concern. The
   explanation you would give is usually the missing part.
 
-Change one thing at a time, and keep some labelled lines aside that you
-never read while rewording; check them once you stop.
-[Tuning against labels](../writing-policies.md#tuning-against-labels) has the
-method.
+Change one thing at a time. Keep some labelled lines aside that you never
+read while rewording, and check them once you stop.
+[Tuning against labels](../writing-policies.md#tuning-against-labels) has
+the method.
 
 ## 8. When not to use Cite
 

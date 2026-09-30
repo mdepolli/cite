@@ -70,9 +70,10 @@ chunks = [
 source = Cite.source(chunks, as: "chunks")
 ```
 
-- **Chunk size is the main decision.** Small enough that a chunk says where
-  a read is; big enough that a read spans several chunks, so each has some
-  context of its own. Twenty seconds holds a sentence or two of speech.
+- **Chunk size is the main decision.** Keep a chunk small enough to say
+  where a read is, and big enough to have some context of its own. A read
+  then spans several chunks. Twenty seconds holds a sentence or two of
+  speech.
   Cite judges a finding's chunks together in the second round, so a chunk
   that only says "use code build twenty" is read beside the chunks that
   name the sponsor.
@@ -188,9 +189,8 @@ and they have two traps:
 - **The crowd misses reads.** A read nobody marked counts as your false
   alarm. On crowd labels, most of a good policy's "false alarms" are sponsor
   reads nobody submitted. Before you change a word to remove one, have
-  someone who has not seen your results read those chunks, alongside chunks
-  nobody cited, and judge them blind. Measure precision against that
-  reading.
+  someone who has not seen your results judge those chunks blind, mixed in
+  with chunks nobody cited. Measure precision against that reading.
 - **Your label rule must ask your question.** Turning a marked time span
   into chunk labels takes a rule, such as "a chunk counts when five seconds
   of it fall inside the span". If the rule counts a chunk that is mostly
@@ -198,10 +198,10 @@ and they have two traps:
   misses that no wording will fix. Look at where misses fall before you
   reword.
 
-Change one thing at a time, and keep some videos aside that you never read
-while rewording, from channels you did not tune on.
-[Tuning against labels](../writing-policies.md#tuning-against-labels) has the
-method.
+Change one thing at a time. Keep some videos aside, from channels you did
+not tune on, and never read them while rewording.
+[Tuning against labels](../writing-policies.md#tuning-against-labels) has
+the method.
 
 ## 7. When not to use Cite
 
