@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and a string, such as `%{k: 1, "k" => 2}`, and on a `show` that names
   one key both ways. On the wire they were one key, and which value the
   model saw depended on map order.
+- `Cite.client/2` raises `ArgumentError` on an atom that is not a
+  provider module, instead of `UndefinedFunctionError`.
 
 ## [0.1.1] - 2026-09-28
 

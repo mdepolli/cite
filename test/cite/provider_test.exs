@@ -28,9 +28,13 @@ defmodule Cite.ProviderTest do
                {:ok, %{answers: %{"U0:d" => %{"noul" => 0.5}}, usage: nil}}
     end
 
-    test "raises on a provider that is not a module" do
-      assert_raise ArgumentError, ~r/provider must be a module implementing Cite.Provider/, fn ->
-        Cite.client("Cite.Provider.TypeSafe", api_key: "k")
+    test "raises on a provider that is not a module implementing Cite.Provider" do
+      for provider <- ["Cite.Provider.TypeSafe", :not_a_module, Enum] do
+        assert_raise ArgumentError,
+                     ~r/provider must be a module implementing Cite.Provider/,
+                     fn ->
+                       Cite.client(provider, api_key: "k")
+                     end
       end
     end
 

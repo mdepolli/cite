@@ -67,20 +67,26 @@ defmodule Cite do
       client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
   """
   @spec client(module(), keyword()) :: client()
-  def client(provider, opts \\ [])
-
-  def client(provider, opts) when is_atom(provider) and is_list(opts) do
-    handle = provider.new(opts)
+  def client(provider, opts \\ []) do
+    provider = provider(provider)
+    handle = provider.new(provider_options(opts))
     &provider.judge(handle, &1)
   end
 
-  def client(provider, opts) when is_atom(provider) do
-    raise ArgumentError, "provider options must be a keyword list, got: #{inspect(opts)}"
+  defp provider(provider) do
+    if is_atom(provider) and Code.ensure_loaded?(provider) and
+         function_exported?(provider, :new, 1) and function_exported?(provider, :judge, 2) do
+      provider
+    else
+      raise ArgumentError,
+            "provider must be a module implementing Cite.Provider, got: #{inspect(provider)}"
+    end
   end
 
-  def client(provider, _opts) do
-    raise ArgumentError,
-          "provider must be a module implementing Cite.Provider, got: #{inspect(provider)}"
+  defp provider_options(opts) when is_list(opts), do: opts
+
+  defp provider_options(opts) do
+    raise ArgumentError, "provider options must be a keyword list, got: #{inspect(opts)}"
   end
 
   @doc """
