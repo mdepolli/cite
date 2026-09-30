@@ -4,7 +4,7 @@ defmodule Cite.Provider do
   request per call.
 
   `Cite.client/2` turns a provider into the client, the 1-arity function
-  `Cite.judge/4` takes, so the rounds never see the provider's own handle.
+  `Cite.judge/4` takes. The rounds never see the provider's own handle.
   `Cite.judge/4` may call `judge/2` from several processes at once with the
   same handle. Implementations: `Cite.Provider.TypeSafe`.
 
@@ -19,15 +19,15 @@ defmodule Cite.Provider do
 
   Cite encodes questions to that schema before they reach a provider, so a
   provider never sees a policy. A provider for a model that takes the schema
-  sends it as is; one for a model with different inputs converts from it.
+  sends it as is. One for a model with different inputs converts from it.
 
   ## Errors
 
-  A provider raises on caller error (bad options) and returns `{:error,
-  reason}` for anything the network did — a failed call, a reply Cite cannot
-  read. `Cite.judge/4` records those as `Cite.Error`s and carries on. A
-  provider must not raise on a condition that concurrency makes routine,
-  such as waiting for a connection.
+  A provider raises on caller error, such as bad options. It returns
+  `{:error, reason}` for anything the network did: a failed call, or a
+  reply Cite cannot read. `Cite.judge/4` records those as `Cite.Error`s and
+  carries on. A provider must not raise on a condition that concurrency
+  makes routine, such as waiting for a connection.
 
   One reason is shared across providers: `:request_too_large`, meaning the
   request exceeded the provider's size cap. Round 1 halves its window and
@@ -37,7 +37,7 @@ defmodule Cite.Provider do
 
   @type reason :: :request_too_large | term()
 
-  @doc "Builds the provider's handle from options. Bad options are a caller error and raise."
+  @doc "Builds the provider's handle from options. Raises on bad options."
   @callback new(keyword()) :: handle :: term()
 
   @doc """

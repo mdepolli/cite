@@ -2,7 +2,7 @@ defmodule Cite.Source do
   @moduledoc """
   The document as the caller's list of passages. Built by `Cite.source/2`,
   which documents `as` and `show`. Only the meta keys `show` names reach the
-  model; the rest of `meta` stays with the caller.
+  model. The rest of `meta` stays with the caller.
 
   Shown meta goes on the wire, so its values must be JSON: `nil`, booleans,
   atoms, numbers, UTF-8 binaries, and lists and plain maps of these, with
@@ -31,10 +31,10 @@ defmodule Cite.Source do
               type: {:custom, __MODULE__, :validate_as, []},
               default: "passages",
               doc: """
-              The word the passages sit under in every request, such as \
+              The key the passages sit under in every request, such as \
               `"utterances"`. It is part of every path the model reads, so it \
-              must be UTF-8 with no whitespace, `.`, backtick, `[`, or `]`; \
-              passage ids follow the same rule.\
+              must be UTF-8 with no whitespace, `.`, backtick, `[`, or `]`. \
+              Passage ids follow the same rule.\
               """
             ],
             show: [
@@ -55,9 +55,10 @@ defmodule Cite.Source do
 
   @doc """
   Builds a source from units, each a text or `%{text: text}` with optional
-  `:id` and `:meta`. Text is kept byte for byte. Missing ids default to
-  `P000`, `P001`, and so on. Raises `ArgumentError` on a unit, id, text,
-  shown meta value, or option it cannot use.
+  `:id` and `:meta`. Text is kept byte for byte. A unit without an id gets
+  one from its position in the list: `P000`, `P001`, and so on. Raises
+  `ArgumentError` on a unit, id, text, shown meta value, or option it
+  cannot use.
   """
   @spec new([String.t() | map()], keyword()) :: t()
   def new(units, opts \\ [])

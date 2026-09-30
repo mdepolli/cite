@@ -23,9 +23,9 @@ defmodule Cite.Policy do
 
   Declarations: `filter`, `concern` (with `category`, `detect`, `confirm`,
   `role`, `check`), `factor`, `score`, `choice`. Every mistake is a compile
-  error. [Writing policies](writing-policies.html) explains the language;
-  the reference below, generated from the DSL, lists every declaration's
-  arguments, options, and defaults (required ones starred).
+  error. [Writing policies](writing-policies.html) explains the language.
+  The reference below, generated from the DSL, lists every declaration's
+  arguments, options, and defaults, with required ones starred.
 
   #{@reference}
   """

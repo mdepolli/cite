@@ -1,7 +1,7 @@
 defmodule Cite.Run do
   @moduledoc """
   One judging run, passed through every step of `Cite.judge/4`. It starts as
-  what the caller gave, validated once, and each step fills in its part:
+  what the caller gave, validated once. Each step then fills in its part:
   round 1 fills `screen`, gathering fills `gathered`, and round 2 fills
   `findings`. Both rounds add their `errors`, `usages`, and `models`.
   Internal; use `Cite.judge/4`.
@@ -15,19 +15,20 @@ defmodule Cite.Run do
               type: {:custom, __MODULE__, :threshold, []},
               default: 0.5,
               doc: """
-              The round-1 score a filter, factor, or detect must exceed, from 0 to 1. \
-              It decides which passages are gathered, and a finding's confirms read \
-              every passage gathered with it, so it changes verdicts as well as \
-              recall. Below 0.5, measured on transcripts, it invents findings in \
-              concerns with no match at 0.5 and multiplies review load.\
+              A number from 0 to 1: the round-1 score a filter, factor, or detect \
+              must exceed. It decides which passages are gathered. A finding's \
+              confirms read every passage gathered with it, so the threshold \
+              changes verdicts as well as recall. Measured on transcripts, a \
+              threshold below 0.5 invents findings in concerns with no match at \
+              0.5 and multiplies review load.\
               """
             ],
             review_band: [
               type: {:custom, __MODULE__, :review_band, []},
               default: {0.4, 0.6},
               doc: """
-              `{low, high}`, `0 <= low < high <= 1`. At or below `low` a passage is \
-              dropped and a check fails; at or above `high` either holds.\
+              `{low, high}`, `0 <= low < high <= 1`. At or below `low`, a passage \
+              is dropped and a check fails. At or above `high`, each holds.\
               """
             ],
             window: [
@@ -43,9 +44,9 @@ defmodule Cite.Run do
               default: 4,
               doc: """
               The most requests in flight at once within a round. The rounds run \
-              one after the other, and the report is the same at any setting. Set \
-              it within the provider's rate limits; at `1`, requests go out one at \
-              a time.\
+              one after the other. The report is the same at any setting. Set it \
+              within the provider's rate limits. At `1`, requests go out one at a \
+              time.\
               """
             ]
           )

@@ -2,17 +2,18 @@ defmodule Cite.Wire.Object do
   @moduledoc """
   A JSON object whose key order survives encoding.
 
-  Elixir maps of more than 32 keys iterate in hash order, so a window of 40
+  Elixir maps of more than 32 keys iterate in hash order. A window of 40
   passages encoded from a map reaches the model shuffled, and the model
-  reads neighbours. Wherever order carries meaning (a screening window, a
-  concern's gathered passages) Cite sends one of these instead.
+  reads each passage beside its neighbours. Wherever order carries meaning
+  (a screening window, a concern's gathered passages), Cite sends one of
+  these instead.
 
   A provider meets one as a value in a request's `"state"`. It implements
-  `Access`, so it reads like a map (`object["U014"]`), and `Jason.Encoder`,
-  so it encodes as a JSON object with its keys in order. A provider that
-  sends the request as JSON needs nothing else. `pairs` holds the keys and
-  values in order, for a provider that converts the request to another
-  shape.
+  `Access`, so it reads like a map (`object["U014"]`). It also implements
+  `Jason.Encoder`, so it encodes as a JSON object with its keys in order.
+  A provider that sends the request as JSON needs nothing else. For a
+  provider that converts the request to another shape, `pairs` holds the
+  keys and values in order.
   """
 
   @behaviour Access

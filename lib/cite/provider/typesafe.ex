@@ -26,14 +26,14 @@ defmodule Cite.Provider.TypeSafe do
             max_retry_delay: [
               type: :non_neg_integer,
               default: @max_retry_delay_ms,
-              doc: "Milliseconds: the cap on any one retry wait, `Retry-After` included."
+              doc: "The cap on any one retry wait, in milliseconds, `Retry-After` included."
             ],
             req_options: [
               type: {:custom, __MODULE__, :validate_req_options, []},
               default: [],
               doc: """
               Req options, merged over the ones the adapter sets, as `Req.new/1` \
-              merges them; the app's `Req.default_options/0` sits beneath both. \
+              merges them. The app's `Req.default_options/0` sits beneath both. \
               See "Req options" below.\
               """
             ]
@@ -50,16 +50,16 @@ defmodule Cite.Provider.TypeSafe do
 
   ## Retries
 
-  Rate limits (429), overloads (529), server errors (500–504), and connection
-  failures are retried up to three times, honouring `Retry-After`, with any one
-  wait capped at `max_retry_delay` (30 seconds by default). Timeouts are not
-  retried: a 120-second call retried is eight minutes, and a slow success would
-  be billed twice.
+  Rate limits (429), overloads (529), server errors (500–504), and
+  connection failures are retried up to three times. Retries honour
+  `Retry-After`, with any one wait capped at `max_retry_delay` (30 seconds
+  by default). Timeouts are not retried: a 120-second call retried is eight
+  minutes, and a slow success would be billed twice.
 
   ## Req options
 
   The adapter builds its Req client with these options. Anything in
-  `req_options` overrides them, key by key, as `Req.new/1` merges; the
+  `req_options` overrides them, key by key, as `Req.new/1` merges. The
   app's `Req.default_options/0` applies beneath both.
 
   | Option | Set to | To change it |
@@ -79,12 +79,14 @@ defmodule Cite.Provider.TypeSafe do
   - A larger connection pool: `req_options: [finch: [size: 100]]`, which Req
     starts and supervises, or `finch: [name: MyFinch]` for a Finch you run.
   - A proxy, custom CA certificates, or HTTP/2: `connect_options: [...]`.
-    Req refuses it beside `finch:`; there, set them as Finch pool options.
+    Req refuses it beside `finch:`. With `finch:`, set them as Finch pool
+    options.
 
-  One combination is refused when the client is built, where Req would
-  raise only on the first retry: a `:retry_delay`, in `req_options` or the
-  app's defaults, without a `:retry` in `req_options`. The adapter's retry
-  sets its own delays. Other Req options are Req's to check.
+  One combination is refused when the client is built: a `:retry_delay`,
+  in `req_options` or the app's defaults, without a `:retry` in
+  `req_options`. The adapter's retry sets its own delays, and Req would
+  raise on the pair only at the first retry. Other Req options are Req's
+  to check.
 
   ## Connections
 
@@ -92,17 +94,17 @@ defmodule Cite.Provider.TypeSafe do
   Past that, a request waits for a connection with no time limit, so
   `concurrency` above 50 queues inside Finch instead of sending more at
   once. A `pool_timeout` under `finch:`, in `req_options` or the app's
-  defaults, sets a limit instead, and a request still waiting when it runs
-  out raises Finch's error, which ends the run. Leave it unset unless that
-  is what you want.
+  defaults, sets a limit instead. A request still waiting when it runs out
+  raises Finch's error, which ends the run. Leave it unset unless that is
+  what you want.
 
   ## The size cap
 
   A request over the model's token cap comes back as a 400 whose body names
   the failure: `{"detail": {"error_type": "max_tokens_exceeded"}}`. This
-  provider reports it as `:request_too_large`, the error on which
-  `Cite.judge/4` halves round-1 windows. That name is observed behaviour,
-  checked against the live API on 2026-09-26; TypeSafe's docs do not list
+  provider reports it as `:request_too_large`, the error that makes
+  `Cite.judge/4` halve round-1 windows. That name is observed behaviour,
+  checked against the live API on 2026-09-26. TypeSafe's docs do not list
   it. If TypeSafe renames it, oversized windows will be recorded as bad
   requests instead of halved.
   """

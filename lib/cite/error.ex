@@ -2,12 +2,16 @@ defmodule Cite.Error do
   @moduledoc """
   A failed request: the concern it was judging (`nil` for a screening
   window), the passages it covered, and the reason. A failed request is
-  never a verdict; it lands in `Cite.Report.errors` and nowhere else.
+  never a verdict. It lands in `Cite.Report.errors` and nowhere else.
 
-  `reason` is whatever the provider returned, or `{:missing_answers, keys}`
-  or `{:malformed_answers, keys}` when a reply skipped a question or
-  answered one with a value its question cannot have. Encoding always succeeds:
-  JSON-safe reasons pass through, everything else becomes `inspect(reason)`.
+  `reason` is whatever the provider returned, or:
+
+  - `{:missing_answers, keys}` when a reply skipped a question.
+  - `{:malformed_answers, keys}` when a reply answered one with a value
+    its question cannot have.
+
+  Encoding with Jason always succeeds: JSON-safe reasons pass through,
+  everything else becomes `inspect(reason)`.
   """
 
   @type t :: %__MODULE__{

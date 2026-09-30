@@ -22,7 +22,7 @@ defmodule Cite do
 
   `judge/4` runs two fixed rounds: a screen of every passage for every
   detect, then one judgment per finding. A decision model answers typed
-  questions about the passages; it never writes text and never sees a
+  questions about the passages. It never writes text and never sees a
   passage the caller did not list.
 
   ## The client
@@ -32,23 +32,25 @@ defmodule Cite do
 
       request -> {:ok, verdict} | {:error, reason}
 
-  `request` is `%{"state" => map(), "questions" => map()}`; a value in
+  `request` is `%{"state" => map(), "questions" => map()}`. A value in
   `"state"` may be a `Cite.Wire.Object`, a JSON object that keeps its keys
   in order. `verdict` is `%{answers: map(), usage: usage | nil}`, plus
-  `:model`, the versioned id that answered, when the provider reports it.
+  `:model`, the versioned id of the model that answered, when the provider
+  reports it.
 
   `judge/4` calls the client from task processes, up to `concurrency` at
-  once (4 by default), so it must be safe to call concurrently. Each task
-  starts with the caller's Logger metadata and process level, and with
-  `$callers`, which `Task` sets so that Mox, `Req.Test`, and Ecto's sandbox
-  reach the client.
-  Nothing else from the caller's process dictionary carries over,
-  OpenTelemetry context included: a client that needs it attaches it itself.
+  once (4 by default), so the client must be safe to call concurrently.
+  Each task starts with the caller's Logger metadata and process level. It
+  also gets `$callers`, which `Task` sets, so Mox, `Req.Test`, and Ecto's
+  sandbox work inside the client. Nothing else from the caller's process
+  dictionary carries over, OpenTelemetry context included. A client that
+  needs that context attaches it itself.
 
-  Tasks don't trap exits. A crash in a process the client links to ends that
-  request's task, and `judge/4` exits with the same reason, even in a caller
-  that traps exits, such as a GenServer. There, as with a raise, the exit
-  comes once the requests before it have answered.
+  Tasks don't trap exits. A crash in a process the client links to ends
+  that request's task, and `judge/4` exits with the same reason. It does so
+  even in a caller that traps exits, such as a GenServer. In that caller,
+  as with a raise, the exit comes once the requests before it have
+  answered.
   """
 
   alias Cite.{Answer, ClientError, Gather, Judge, Report, Run, Screen, Source}
@@ -62,9 +64,9 @@ defmodule Cite do
   @type client :: (map() -> {:ok, verdict()} | {:error, term()})
 
   @doc """
-  A client backed by `provider`, a module implementing `Cite.Provider`;
-  `opts` are the provider's. Build it once, where the credentials live, and
-  pass it in.
+  A client backed by `provider`, a module implementing `Cite.Provider`.
+  `opts` are the provider's options. Build it once, where the credentials
+  live, and pass it in.
 
       client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
   """
@@ -104,14 +106,17 @@ defmodule Cite do
 
   @doc """
   Judges `source` against `policy_module`, a module that uses `Cite.Policy`.
-  Raises `ArgumentError` before any request on an argument it cannot use: a
-  client that is not a 1-arity function, a source not built by `source/2`,
-  a module that is not a policy, or a bad option. Raises `Cite.ClientError`
-  mid-run when the client returns something outside its contract, and
-  passes on as is whatever the client raises, throws, or exits with, an
-  `ArgumentError` included. Either comes once the requests before it have
-  answered; requests started meanwhile are stopped, but the provider may
-  already have received, and billed, them. Nothing is sent after it.
+
+  Before any request, raises `ArgumentError` on an argument it cannot use:
+  a client that is not a 1-arity function, a source not built by
+  `source/2`, a module that is not a policy, or a bad option.
+
+  Mid-run, raises `Cite.ClientError` when the client returns something
+  outside its contract. `judge/4` passes on, as is, whatever the client
+  raises, throws, or exits with, an `ArgumentError` included. Either comes
+  once the requests before it have answered. Requests started meanwhile
+  are stopped, but the provider may already have received, and billed,
+  them. Nothing is sent after it.
 
   ## Options
 
