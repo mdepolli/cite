@@ -58,6 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   order.
 - `Cite.client/2` raises `ArgumentError` on an atom that is not a
   provider module, instead of `UndefinedFunctionError`.
+- `Cite.client/2`, `Cite.source/2`, and `Cite.judge/4` raise
+  `ArgumentError` on options that are not a keyword list, such as
+  `[1, 2]`, instead of `FunctionClauseError`.
 
 ## [0.1.1] - 2026-09-28
 

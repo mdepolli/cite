@@ -102,15 +102,15 @@ defmodule Cite.Run do
           "source must be a Cite.Source, built by Cite.source/2, got: #{inspect(other)}"
   end
 
-  defp options(opts) when is_list(opts) do
+  defp options(opts) do
+    if not Keyword.keyword?(opts) do
+      raise ArgumentError, "options must be a keyword list, got: #{inspect(opts)}"
+    end
+
     case Spark.Options.validate(opts, @schema) do
       {:ok, options} -> options
       {:error, error} -> raise ArgumentError, Exception.message(error)
     end
-  end
-
-  defp options(other) do
-    raise ArgumentError, "options must be a keyword list, got: #{inspect(other)}"
   end
 
   # Round-1 scores, confirms, and checks are all probabilities, so the options

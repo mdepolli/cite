@@ -39,8 +39,11 @@ defmodule Cite.ProviderTest do
     end
 
     test "raises on provider options that are not a keyword list" do
-      assert_raise ArgumentError, ~r/provider options must be a keyword list/, fn ->
-        Cite.client(Echo, %{score: 0.9})
+      for {opts, message} <- [
+            {%{score: 0.9}, "provider options must be a keyword list, got: %{score: 0.9}"},
+            {[1, 2], "provider options must be a keyword list, got: [1, 2]"}
+          ] do
+        assert_raise ArgumentError, message, fn -> Cite.client(Echo, opts) end
       end
     end
   end

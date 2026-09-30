@@ -83,6 +83,10 @@ defmodule Cite.Source do
   end
 
   defp options(opts) do
+    if not Keyword.keyword?(opts) do
+      raise ArgumentError, "options must be a keyword list, got: #{inspect(opts)}"
+    end
+
     case Spark.Options.validate(opts, @schema) do
       {:ok, options} -> options
       {:error, error} -> raise ArgumentError, Exception.message(error)

@@ -32,7 +32,9 @@ defmodule Cite.RunTest do
             {client(), Cite.source(["a"]), "Riddles", [],
              ~s("Riddles" is not a Cite policy; it must `use Cite.Policy`)},
             {client(), Cite.source(["a"]), Riddles, %{window: 4},
-             "options must be a keyword list, got: %{window: 4}"}
+             "options must be a keyword list, got: %{window: 4}"},
+            {client(), Cite.source(["a"]), Riddles, [1, 2],
+             "options must be a keyword list, got: [1, 2]"}
           ] do
         assert_raise ArgumentError, message, fn -> Run.new(client, source, policy, opts) end
       end

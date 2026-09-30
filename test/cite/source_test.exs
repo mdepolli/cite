@@ -189,6 +189,15 @@ defmodule Cite.SourceTest do
       end
     end
 
+    test "raises on options that are not a keyword list" do
+      for {opts, message} <- [
+            {[1, 2], "options must be a keyword list, got: [1, 2]"},
+            {:nope, "options must be a keyword list, got: :nope"}
+          ] do
+        assert_raise ArgumentError, message, fn -> Source.new(["a"], opts) end
+      end
+    end
+
     test "raises on unknown options" do
       assert_raise ArgumentError,
                    "unknown options [:window], valid options are: [:as, :show]",

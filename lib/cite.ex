@@ -90,10 +90,12 @@ defmodule Cite do
     end
   end
 
-  defp provider_options(opts) when is_list(opts), do: opts
-
   defp provider_options(opts) do
-    raise ArgumentError, "provider options must be a keyword list, got: #{inspect(opts)}"
+    if Keyword.keyword?(opts) do
+      opts
+    else
+      raise ArgumentError, "provider options must be a keyword list, got: #{inspect(opts)}"
+    end
   end
 
   @doc """
