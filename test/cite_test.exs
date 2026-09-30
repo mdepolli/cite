@@ -482,7 +482,7 @@ defmodule CiteTest do
       client = held_client(&window_ids/1, client(%{}))
       task = judge_async(client, source, Riddles, window: 1, concurrency: 4)
 
-      # Act
+      # Act + Assert
       [first | others] = arrivals(4)
       refute_receive {:arrive, _, _}
       release([first])
@@ -490,8 +490,6 @@ defmodule CiteTest do
       refute_receive {:arrive, _, _}
       release(others ++ fifth)
       release(arrivals(1))
-
-      # Assert
       assert %Report{errors: []} = Task.await(task)
     end
 
@@ -616,15 +614,17 @@ defmodule CiteTest do
       assert {report.errors, map_size(report.screen)} == {[], 8}
     end
 
-    test "re-raises, re-throws, and re-exits what the client did, with its stacktrace" do
+    test "re-raises what the client raised, with its stacktrace" do
       # Arrange
       source = Cite.source(["a", "b"])
-      judge = &Cite.judge(&1, source, Riddles, window: 1, concurrency: 4)
 
       # Act
       {error, stacktrace} =
         try do
-          judge.(fn _request -> raise "boom" end)
+          Cite.judge(fn _request -> raise "boom" end, source, Riddles,
+            window: 1,
+            concurrency: 4
+          )
         rescue
           error -> {error, __STACKTRACE__}
         end
@@ -632,6 +632,11 @@ defmodule CiteTest do
       # Assert
       assert error == %RuntimeError{message: "boom"}
       assert [{CiteTest, _fun, _arity, _location} | _] = stacktrace
+    end
+
+    test "re-throws and re-exits what the client did" do
+      judge = &Cite.judge(&1, Cite.source(["a", "b"]), Riddles, window: 1, concurrency: 4)
+
       assert catch_throw(judge.(fn _request -> throw(:thrown) end)) == :thrown
       assert catch_exit(judge.(fn _request -> exit(:gone) end)) == :gone
     end
