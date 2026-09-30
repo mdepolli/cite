@@ -110,8 +110,7 @@ defmodule Cite.MixProject do
           Cite.Report,
           Cite.Finding,
           Cite.Citation,
-          Cite.Error,
-          Cite.ClientError
+          Cite.Error
         ],
         Providers: [Cite.Provider, Cite.Provider.TypeSafe, Cite.Wire.Object],
         Internal: [

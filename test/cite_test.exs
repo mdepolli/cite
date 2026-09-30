@@ -1,7 +1,7 @@
 defmodule CiteTest do
   use ExUnit.Case, async: true
 
-  alias Cite.{Citation, ClientError, Error, Finding, Passage, Report}
+  alias Cite.{Citation, Error, Finding, Passage, Report}
   alias Cite.TestPolicies.{Household, Riddles, TwoConcerns}
 
   # A stub client that answers every question: Nouls from `nouls` by key
@@ -387,7 +387,7 @@ defmodule CiteTest do
             {{:ok, %{answers: %{}, usage: nil, model: ""}},
              ~r/client model must be a non-empty binary when given, got: ""/}
           ] do
-        assert_raise ClientError, message, fn ->
+        assert_raise RuntimeError, message, fn ->
           Cite.judge(fn _request -> reply end, Cite.source(["a"]), Riddles,
             concurrency: concurrency
           )
@@ -408,7 +408,7 @@ defmodule CiteTest do
       end
 
       # Act + Assert
-      assert_raise ClientError, ~r/got: :not_a_verdict/, fn ->
+      assert_raise RuntimeError, ~r/got: :not_a_verdict/, fn ->
         Cite.judge(client, source, Riddles, window: 1, concurrency: 1)
       end
 
@@ -632,7 +632,7 @@ defmodule CiteTest do
 
       # Assert
       assert still_running == nil
-      assert %ClientError{} = Task.await(task)
+      assert %RuntimeError{} = Task.await(task)
     end
 
     test "starts no request once one has raised" do
@@ -661,7 +661,7 @@ defmodule CiteTest do
       release(others)
 
       # Assert
-      assert %ClientError{} = Task.await(task)
+      assert %RuntimeError{} = Task.await(task)
     end
 
     test "stops the requests after a raise that are still in flight" do
@@ -688,7 +688,7 @@ defmodule CiteTest do
       send(held[["P000"]], :go)
 
       # Assert
-      assert %ClientError{} = Task.await(task)
+      assert %RuntimeError{} = Task.await(task)
       assert_receive {:DOWN, ^ref, :process, ^third, :killed}
     end
 

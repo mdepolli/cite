@@ -170,9 +170,9 @@ A mistake in a policy stops it from compiling. A mistake in the source or
 in `Cite.judge/4`'s options raises `ArgumentError`, before any request is
 sent. A provider's own options may fail later: Req checks some only when a
 request goes out, so a misspelled one raises on the first request and ends
-the run. A client that returns something outside its contract raises
-`Cite.ClientError` and ends the run: that's a bug in the client, not in
-your arguments.
+the run. A client that returns something outside its contract raises a
+`RuntimeError` and ends the run: that's a bug in the client, not in your
+arguments.
 
 A failed request never counts as a "no". If the model or the network fails,
 Cite reports an error and leaves the passages it covered without a verdict,
@@ -231,8 +231,8 @@ a first-round request in half and retries.
 
 SemVer covers the **Core API**: `Cite.client/2`, `Cite.source/2`,
 `Cite.judge/4`, the policy language, the structs you read (`Report`,
-`Finding`, `Citation`, `Passage`, `Error`), the `ClientError` it raises,
-and the client's request and reply maps. The docs group modules by tier.
+`Finding`, `Citation`, `Passage`, `Error`), and the client's request and
+reply maps. The docs group modules by tier.
 
 **Providers.** `Cite.Provider` may change in a minor release while it has
 only one implementation; the changelog will say so.

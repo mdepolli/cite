@@ -51,7 +51,7 @@ defmodule Cite do
   answered. Until then, requests keep starting.
   """
 
-  alias Cite.{Answer, ClientError, Gather, Judge, Report, Run, Screen, Source}
+  alias Cite.{Answer, Gather, Judge, Report, Run, Screen, Source}
 
   @type usage :: Report.usage()
   @type verdict :: %{
@@ -113,7 +113,7 @@ defmodule Cite do
   a client that is not a 1-arity function, a source not built by
   `source/2`, a module that is not a policy, or a bad option.
 
-  Mid-run, raises `Cite.ClientError` when the client returns something
+  Mid-run, raises `RuntimeError` when the client returns something
   outside its contract. `judge/4` passes on, as is, whatever the client
   raises, throws, or exits with, an `ArgumentError` included. Either comes
   once the requests before it have answered. Once a call fails, no further
@@ -235,7 +235,7 @@ defmodule Cite do
         error
 
       other ->
-        raise ClientError, """
+        raise """
         client must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, \
         got: #{inspect(other)}
         """
@@ -249,15 +249,13 @@ defmodule Cite do
        do: :ok
 
   defp check_usage(other) do
-    raise ClientError,
-          "client usage must be nil or %{input_tokens: n, output_tokens: n}, got: #{inspect(other)}"
+    raise "client usage must be nil or %{input_tokens: n, output_tokens: n}, got: #{inspect(other)}"
   end
 
   defp check_model(nil), do: :ok
   defp check_model(model) when is_binary(model) and model != "", do: :ok
 
   defp check_model(other) do
-    raise ClientError,
-          "client model must be a non-empty binary when given, got: #{inspect(other)}"
+    raise "client model must be a non-empty binary when given, got: #{inspect(other)}"
   end
 end
