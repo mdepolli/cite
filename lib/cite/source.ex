@@ -10,7 +10,7 @@ defmodule Cite.Source do
   string (`:k` and `"k"`): on the wire they are one key.
   """
 
-  alias Cite.{Options, Passage}
+  alias Cite.{Options, Passage, Wire}
 
   @type t :: %__MODULE__{
           passages: [Passage.t()],
@@ -97,7 +97,7 @@ defmodule Cite.Source do
       not Enum.all?(show, &(is_atom(&1) or is_binary(&1))) ->
         {:error, "expected a list of atom or binary keys, got: #{inspect(show)}"}
 
-      Enum.any?(show, &(to_string(&1) in ["id", "text"])) ->
+      Enum.any?(show, &(Wire.key(&1) in ["id", "text"])) ->
         {:error, "must not name id or text, got: #{inspect(show)}"}
 
       not distinct_on_wire?(show) ->
@@ -187,13 +187,9 @@ defmodule Cite.Source do
 
   defp json_key?(key), do: is_atom(key) or (is_binary(key) and String.valid?(key))
 
-  # Cite.Wire sends atom keys as strings, so `:k` and `"k"` would reach the
-  # model as one key, whichever value survived.
+  # `:k` and `"k"` would reach the model as one key, whichever value survived.
   defp distinct_on_wire?(keys),
-    do: length(Enum.uniq(keys)) == length(Enum.uniq_by(keys, &wire_key/1))
-
-  defp wire_key(key) when is_atom(key), do: Atom.to_string(key)
-  defp wire_key(key), do: key
+    do: length(Enum.uniq(keys)) == length(Enum.uniq_by(keys, &Wire.key/1))
 
   defp reject_duplicate_ids(passages) do
     dupes = for {id, n} <- Enum.frequencies_by(passages, & &1.id), n > 1, do: id

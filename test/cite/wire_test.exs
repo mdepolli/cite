@@ -138,6 +138,12 @@ defmodule Cite.WireTest do
     end
   end
 
+  describe "key/1" do
+    test "turns an atom into its string and leaves a string as it is" do
+      assert {Wire.key(:speaker), Wire.key("speaker")} == {"speaker", "speaker"}
+    end
+  end
+
   describe "Object on the wire" do
     test "encodes its keys in order past 32 entries, where a plain map goes to hash order" do
       passages = for i <- 0..39, do: %Passage{id: id(i), text: "t#{i}"}

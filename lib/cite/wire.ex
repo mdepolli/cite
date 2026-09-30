@@ -64,10 +64,10 @@ defmodule Cite.Wire do
     Map.new(map, fn {key, value} -> {key(key), value(value)} end)
   end
 
-  # `Cite.Source` has already checked shown meta is JSON, so only atom keys
-  # need turning into strings.
-  defp key(key) when is_atom(key), do: Atom.to_string(key)
-  defp key(key), do: key
+  @doc "A key on the wire: an atom becomes its string, and a string stays as it is."
+  @spec key(atom() | String.t()) :: String.t()
+  def key(key) when is_atom(key), do: Atom.to_string(key)
+  def key(key), do: key
 
   defp value(%{} = map), do: stringify(map)
   defp value(list) when is_list(list), do: Enum.map(list, &value/1)
