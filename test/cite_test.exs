@@ -98,9 +98,9 @@ defmodule CiteTest do
   # Judges eight passages at window 1 and concurrency 4, holding every
   # request. P001's client calls `failing` in place of a reply; `catching`
   # runs the judge call in the caller task and returns what it failed with.
-  # Releases P001 alone, waits for its task to go down, and asserts no fifth
-  # request arrives before the rest are released.
-  defp nothing_starts_after(failing, catching) do
+  # Releases P001 alone and waits for its task to go down, which frees a
+  # slot. Returns the judge task and the three requests still held.
+  defp fail_second_of_four(failing, catching) do
     source = Cite.source(["a", "b", "c", "d", "e", "f", "g", "h"])
     answering = client(%{})
 
@@ -120,10 +120,8 @@ defmodule CiteTest do
     ref = Process.monitor(second)
     send(second, :go)
     assert_receive {:DOWN, ^ref, :process, ^second, _}
-    refute_receive {:arrive, _label, _pid}
-    release(others)
 
-    Task.await(task)
+    {task, others}
   end
 
   describe "judge/4 end to end" do
@@ -672,7 +670,13 @@ defmodule CiteTest do
     end
 
     test "starts no request once one has raised" do
-      assert %RuntimeError{} = nothing_starts_after(fn -> :not_a_verdict end, &catch_error(&1.()))
+      # Arrange / Act
+      {task, held} = fail_second_of_four(fn -> :not_a_verdict end, &catch_error(&1.()))
+
+      # Assert
+      refute_receive {:arrive, _label, _pid}
+      release(held)
+      assert %RuntimeError{} = Task.await(task)
     end
 
     test "stops the requests after a raise that are still in flight" do
@@ -752,6 +756,7 @@ defmodule CiteTest do
     end
 
     test "starts no request once a linked crash has killed one, in a caller that traps exits" do
+      # Arrange
       crash = fn ->
         spawn_link(fn -> exit(:helper_crashed) end)
 
@@ -765,7 +770,13 @@ defmodule CiteTest do
         catch_exit(judge.())
       end
 
-      assert nothing_starts_after(crash, trapping) == :helper_crashed
+      # Act
+      {task, held} = fail_second_of_four(crash, trapping)
+
+      # Assert
+      refute_receive {:arrive, _label, _pid}
+      release(held)
+      assert Task.await(task) == :helper_crashed
     end
 
     test "leaves a caller that traps exits with an empty mailbox after a run" do
