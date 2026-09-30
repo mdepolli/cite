@@ -635,6 +635,35 @@ defmodule CiteTest do
       assert %ClientError{} = Task.await(task)
     end
 
+    test "starts no request once one has raised" do
+      # Arrange
+      source = Cite.source(["a", "b", "c", "d", "e", "f", "g", "h"])
+      answering = client(%{})
+
+      reply = fn request ->
+        if window_ids(request) == ["P001"], do: :not_a_verdict, else: answering.(request)
+      end
+
+      client = held_client(&window_ids/1, reply)
+
+      task =
+        Task.async(fn ->
+          catch_error(Cite.judge(client, source, Riddles, window: 1, concurrency: 4))
+        end)
+
+      # Act
+      held = Map.new(arrivals(4))
+      {second, others} = Map.pop(held, ["P001"])
+      ref = Process.monitor(second)
+      send(second, :go)
+      assert_receive {:DOWN, ^ref, :process, ^second, _}
+      refute_receive {:arrive, _label, _pid}
+      release(others)
+
+      # Assert
+      assert %ClientError{} = Task.await(task)
+    end
+
     test "stops the requests after a raise that are still in flight" do
       # Arrange
       source = Cite.source(["a", "b", "c"])

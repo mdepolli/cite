@@ -26,12 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   metadata and process level carry over; OpenTelemetry context does not.
 - A crash in a process the client links to now exits `Cite.judge/4` with
   the same reason, even in a caller that traps exits. There, as with a
-  raise, the exit comes once the requests before it have answered.
-  Before, such a caller (a GenServer, say) received an `:EXIT` message and
-  the run carried on.
+  raise, the exit comes once the requests before it have answered. Until
+  then, requests keep starting. Before, such a caller (a GenServer, say)
+  received an `:EXIT` message and the run carried on.
 - At `concurrency` above 1, a raise mid-run comes once the requests before
-  it have answered. Requests started meanwhile are stopped, but the
-  provider may already have received and billed them.
+  it have answered. Once a call fails, no further request starts. Those
+  still in flight when the error comes are stopped, but the provider may
+  already have received and billed them.
 - `Cite.Provider.TypeSafe` waits for a pooled connection with no time
   limit, instead of raising after 5 seconds. A `pool_timeout` under
   `finch:`, in `req_options` or the app's `Req.default_options/0`, still

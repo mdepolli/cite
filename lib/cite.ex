@@ -48,7 +48,7 @@ defmodule Cite do
   that request's task, and `judge/4` exits with the same reason. It does so
   even in a caller that traps exits, such as a GenServer. In that caller,
   as with a raise, the exit comes once the requests before it have
-  answered.
+  answered. Until then, requests keep starting.
   """
 
   alias Cite.{Answer, ClientError, Gather, Judge, Report, Run, Screen, Source}
@@ -116,9 +116,9 @@ defmodule Cite do
   Mid-run, raises `Cite.ClientError` when the client returns something
   outside its contract. `judge/4` passes on, as is, whatever the client
   raises, throws, or exits with, an `ArgumentError` included. Either comes
-  once the requests before it have answered. Requests started meanwhile
-  are stopped, but the provider may already have received, and billed,
-  them. Nothing is sent after it.
+  once the requests before it have answered. Once a call fails, no further
+  request starts. Those still in flight when the error comes are stopped,
+  but the provider may already have received, and billed, them.
 
   ## Options
 
@@ -172,12 +172,15 @@ defmodule Cite do
 
   # Runs `fun` on every item, up to `concurrency` at once, and returns the
   # results in item order. A raise in a task reaches the caller, with the
-  # client's own stacktrace, once the results before it are in.
+  # client's own stacktrace, once the results before it are in; no item
+  # starts after it.
   defp concurrently(items, %Run{concurrency: concurrency}, fun) do
     logger = {Logger.metadata(), Logger.get_process_level(self())}
+    raised = :atomics.new(1, [])
 
     items
-    |> Task.async_stream(&attempt(fun, &1, logger),
+    |> Stream.take_while(fn _item -> :atomics.get(raised, 1) == 0 end)
+    |> Task.async_stream(&attempt(fun, &1, logger, raised),
       max_concurrency: concurrency,
       timeout: :infinity
     )
@@ -185,13 +188,16 @@ defmodule Cite do
   end
 
   # A task starts with an empty process dictionary; the caller's Logger
-  # state goes with it, so the client logs as the caller would.
-  defp attempt(fun, item, {metadata, level}) do
+  # state goes with it, so the client logs as the caller would. A raise
+  # flags `raised` before the task replies, so no later item starts.
+  defp attempt(fun, item, {metadata, level}, raised) do
     Logger.metadata(metadata)
     put_process_level(level)
     fun.(item)
   catch
-    kind, reason -> {:raised, kind, reason, __STACKTRACE__}
+    kind, reason ->
+      :atomics.put(raised, 1, 1)
+      {:raised, kind, reason, __STACKTRACE__}
   end
 
   defp put_process_level(nil), do: :ok
