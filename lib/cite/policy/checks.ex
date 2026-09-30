@@ -298,7 +298,7 @@ defmodule Cite.Policy.Checks do
   defp concern_nouls(%Dsl.Concern{name: name} = concern) do
     label = "concern #{inspect(name)}"
 
-    checks =
+    check_nouls =
       for check <- concern.checks,
           do: {:check, "check #{inspect(check.name)}", check, [name, check.name]}
 
@@ -309,7 +309,7 @@ defmodule Cite.Policy.Checks do
         concern.confirm && {:confirm, "#{label} confirm", concern.confirm, [name, :confirm]}
       ],
       &is_nil/1
-    ) ++ checks
+    ) ++ check_nouls
   end
 
   defp passage_only(label, noul, path) do
