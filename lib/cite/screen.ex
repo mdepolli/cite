@@ -18,9 +18,11 @@ defmodule Cite.Screen do
   """
   @spec request([Passage.t()], Terms.t(), String.t(), [atom() | String.t()]) :: map()
   def request(window, %Terms{} = terms, as, show) do
+    detects = detects(terms)
+
     questions =
       for %Passage{id: id} <- window,
-          {name, question} <- detects(terms),
+          {name, question} <- detects,
           into: %{},
           do: {key(id, name), Wire.question(question, %{"passage" => Wire.text_path(as, id)}, [])}
 
