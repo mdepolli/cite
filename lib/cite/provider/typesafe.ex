@@ -35,8 +35,10 @@ defmodule Cite.Provider.TypeSafe do
               Merged into the Req client last, over the adapter's options and \
               the app's `Req.default_options/0`; a test passes \
               `plug: {Req.Test, name}`. `finch:` must be a keyword list, here and \
-              in the defaults, and merges key by key: the defaults' list, then \
-              the adapter's pool wait, then this one. Req refuses some options \
+              in the defaults, and merges key by key: the defaults' list without \
+              its timeouts, then the adapter's pool wait, then this one. Req \
+              reads timeouts in `finch:` over top-level ones, so set \
+              `pool_timeout` there. Req refuses some options \
               only once a request is sent, so the merged options are checked \
               when the client is built: `:connect_options` (set Finch pool \
               options under `finch:` instead), `finch:` pool options beside a \
@@ -118,11 +120,15 @@ defmodule Cite.Provider.TypeSafe do
     # A request past the pool's size waits its turn instead of raising. The
     # wait restarts at every checkout and the pool is shared node-wide, so
     # any finite limit is eventually reached under load; an app-wide default
-    # doesn't override it, a caller's own finch: does. The lists merge key
-    # by key, where Req's own merge would replace one list with the next.
+    # doesn't override it, a caller's own finch: does. Req reads a finch:
+    # list's timeouts over the top-level ones, so the app's default list
+    # loses its timeouts, which would beat the adapter's and the caller's.
+    # The lists merge key by key, where Req's own merge would replace one
+    # list with the next.
     finch =
       req_defaults
       |> finch_list("Req.default_options/0")
+      |> Keyword.drop([:pool_timeout, :receive_timeout, :request_timeout])
       |> Keyword.merge(pool_timeout: :infinity)
       |> Keyword.merge(finch_list(req_overrides, "req_options"))
 

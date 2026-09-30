@@ -25,6 +25,16 @@ defmodule Cite.Provider.TypeSafeDefaultsTest do
     assert finch_options_sent(finch: [name: MyFinch]) == [pool_timeout: :infinity, name: MyFinch]
   end
 
+  # Req reads a finch: list's timeouts over the top-level ones, so a default
+  # list's timeouts would beat the adapter's receive_timeout and the caller's.
+  test "drops the timeouts from the app's default finch options" do
+    Req.default_options(
+      finch: [name: MyApp.Finch, receive_timeout: 200, request_timeout: 300, pool_timeout: 400]
+    )
+
+    assert finch_options_sent([]) == [name: MyApp.Finch, pool_timeout: :infinity]
+  end
+
   test "refuses app defaults that can't sit beside the adapter's options" do
     for {defaults, message} <- [
           {[connect_options: [timeout: 1_000]],

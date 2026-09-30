@@ -31,8 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it have answered. Requests started meanwhile are stopped, but the
   provider may already have received, and billed, them.
 - `Cite.Provider.TypeSafe` waits for a pooled connection with no time
-  limit, instead of raising after 5 seconds. An app-wide `pool_timeout` in
-  `Req.default_options/0` doesn't shorten it; one in `req_options` does.
+  limit, instead of raising after 5 seconds. Timeouts in the app's default
+  `finch:` list, in `Req.default_options/0`, no longer apply to TypeSafe:
+  Req reads them over the adapter's own. One in `req_options`'
+  `finch: [...]` still does.
 - `Cite.Provider.TypeSafe` refuses, when the client is built rather than on
   the first request: `:connect_options`; `finch:` as a bare pool name;
   `finch:` pool options beside a pool `name:`; and a default `:retry_delay`
