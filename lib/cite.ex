@@ -67,6 +67,10 @@ defmodule Cite do
   live, and pass it in.
 
       client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
+
+  Raises `ArgumentError` if `provider` does not implement `Cite.Provider` or
+  `opts` is not a keyword list. The provider's `new/1` raises on options it
+  refuses.
   """
   @spec client(module(), keyword()) :: client()
   def client(provider, opts \\ []) do
