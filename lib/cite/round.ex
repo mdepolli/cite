@@ -163,7 +163,7 @@ defmodule Cite.Round do
       drop_exit(task.pid)
     end
 
-    %{state | running: %{}}
+    state
   end
 
   defp drop_exit(pid) do
