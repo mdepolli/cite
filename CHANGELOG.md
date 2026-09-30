@@ -24,8 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   metadata and process level carry over; OpenTelemetry context does not.
 - A crash in a process the client links to now exits `Cite.judge/4` with
   the same reason, even in a caller that traps exits. There, as with a
-  raise, the exit comes once the requests before it have answered. Until
-  then, requests keep starting. Before, such a caller (a GenServer, say)
+  raise, the exit comes once the requests before it have answered, and no
+  request starts after the crash. Before, such a caller (a GenServer, say)
   received an `:EXIT` message and the run carried on.
 - At `concurrency` above 1, a raise mid-run comes once the requests before
   it have answered. Once a call fails, no further request starts. Those

@@ -48,10 +48,10 @@ defmodule Cite do
   that request's task, and `judge/4` exits with the same reason. It does so
   even in a caller that traps exits, such as a GenServer. In that caller,
   as with a raise, the exit comes once the requests before it have
-  answered. Until then, requests keep starting.
+  answered. No request starts after the crash.
   """
 
-  alias Cite.{Answer, Gather, Judge, Report, Run, Screen, Source}
+  alias Cite.{Answer, Gather, Judge, Report, Round, Run, Screen, Source}
 
   @type usage :: Report.usage()
   @type verdict :: %{
@@ -139,7 +139,7 @@ defmodule Cite do
     outcomes =
       run.source.passages
       |> Stream.chunk_every(run.window)
-      |> concurrently(run, &screen_window(run, &1))
+      |> Round.run(run.concurrency, &screen_window(run, &1))
       |> Enum.concat()
 
     Screen.resolve(run, outcomes)
@@ -161,7 +161,7 @@ defmodule Cite do
 
   # Round 2: one request per gathered finding.
   defp judge_findings(%Run{gathered: gathered} = run) when is_list(gathered) do
-    outcomes = concurrently(gathered, run, &judge_finding(run, &1))
+    outcomes = Round.run(gathered, run.concurrency, &judge_finding(run, &1))
 
     Judge.resolve(run, outcomes)
   end
@@ -169,48 +169,6 @@ defmodule Cite do
   # One gathered finding, judged in one request.
   defp judge_finding(%Run{} = run, gathered),
     do: {gathered, fetch_verdict(run.client, Judge.request(run, gathered))}
-
-  # Runs `fun` on every item, up to `concurrency` at once, and returns the
-  # results in item order. A raise in a task reaches the caller, with the
-  # client's own stacktrace, once the results before it are in; no item
-  # starts after it.
-  defp concurrently(items, %Run{concurrency: concurrency}, fun) do
-    logger = {Logger.metadata(), Logger.get_process_level(self())}
-    raised = :atomics.new(1, [])
-
-    items
-    |> Stream.take_while(fn _item -> :atomics.get(raised, 1) == 0 end)
-    |> Task.async_stream(&attempt(fun, &1, logger, raised),
-      max_concurrency: concurrency,
-      timeout: :infinity
-    )
-    |> Enum.map(&outcome/1)
-  end
-
-  # A task starts with an empty process dictionary; the caller's Logger
-  # state goes with it, so the client logs as the caller would. A raise
-  # flags `raised` before the task replies, so no later item starts.
-  defp attempt(fun, item, {metadata, level}, raised) do
-    Logger.metadata(metadata)
-    put_process_level(level)
-    fun.(item)
-  catch
-    kind, reason ->
-      :atomics.put(raised, 1, 1)
-      {:raised, kind, reason, __STACKTRACE__}
-  end
-
-  defp put_process_level(nil), do: :ok
-  defp put_process_level(level), do: Logger.put_process_level(self(), level)
-
-  defp outcome({:ok, {:raised, kind, reason, stacktrace}}),
-    do: :erlang.raise(kind, reason, stacktrace)
-
-  defp outcome({:ok, result}), do: result
-
-  # A task killed by a linked process's exit; the stream reports it only to a
-  # caller that traps exits.
-  defp outcome({:exit, reason}), do: exit(reason)
 
   # A reply must answer every question with a value it can have; a reply that
   # skips one or answers it out of range is not a verdict on it, so the whole

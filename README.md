@@ -240,9 +240,9 @@ only one implementation; the changelog will say so.
 `Cite.Wire.Object` is stable only through `Access` and `Jason.Encoder`.
 
 **Internal.** Everything else carries no guarantee: the compiled policy
-structs, the Spark extension, `Run`, `Screen`, `Gather`, `Gathered`,
-`Judge`, `Placeholder`, `Wire`, and `Answer`. Their docs stay published
-because they explain how Cite works.
+structs, the Spark extension, `Run`, `Round`, `Screen`, `Gather`,
+`Gathered`, `Judge`, `Placeholder`, `Wire`, and `Answer`. Their docs stay
+published because they explain how Cite works.
 
 The [roadmap](https://github.com/mdepolli/cite/blob/main/ROADMAP.md) lists
 what is still being explored and what was ruled out.

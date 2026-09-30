@@ -115,6 +115,7 @@ defmodule Cite.MixProject do
         Providers: [Cite.Provider, Cite.Provider.TypeSafe, Cite.Wire.Object],
         Internal: [
           Cite.Run,
+          Cite.Round,
           Cite.Screen,
           Cite.Gather,
           Cite.Gathered,
