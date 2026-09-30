@@ -75,8 +75,13 @@ jobs:
         if: matrix.elixir == '1.20' && matrix.otp == '28'
 
   format:
-    name: Code Format Check
+    name: Code Format Check (OTP ${{ matrix.otp }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        otp: ['28', '29']
 
     steps:
       - name: Checkout code
@@ -86,7 +91,7 @@ jobs:
         uses: erlef/setup-beam@v1
         with:
           elixir-version: '1.20'
-          otp-version: '28'
+          otp-version: ${{ matrix.otp }}
 
       - name: Restore dependencies cache
         uses: actions/cache@v5
@@ -94,9 +99,9 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-format-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-mix-format-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-mix-format-
+            ${{ runner.os }}-mix-format-${{ matrix.otp }}-
 
       - name: Install dependencies
         run: mix deps.get
@@ -112,8 +117,13 @@ jobs:
         run: mix spark.formatter --extensions Cite.Policy.Dsl --check
 
   deps_check:
-    name: Dependencies Check
+    name: Dependencies Check (OTP ${{ matrix.otp }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        otp: ['28', '29']
 
     steps:
       - name: Checkout code
@@ -123,7 +133,7 @@ jobs:
         uses: erlef/setup-beam@v1
         with:
           elixir-version: '1.20'
-          otp-version: '28'
+          otp-version: ${{ matrix.otp }}
 
       - name: Restore dependencies cache
         uses: actions/cache@v5
@@ -131,9 +141,9 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-deps-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-mix-deps-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-mix-deps-
+            ${{ runner.os }}-mix-deps-${{ matrix.otp }}-
 
       - name: Install dependencies
         run: mix deps.get
@@ -148,8 +158,13 @@ jobs:
         run: mix deps.audit
 
   credo:
-    name: Static Analysis
+    name: Static Analysis (OTP ${{ matrix.otp }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        otp: ['28', '29']
 
     steps:
       - name: Checkout code
@@ -159,7 +174,7 @@ jobs:
         uses: erlef/setup-beam@v1
         with:
           elixir-version: '1.20'
-          otp-version: '28'
+          otp-version: ${{ matrix.otp }}
 
       - name: Restore dependencies cache
         uses: actions/cache@v5
@@ -167,9 +182,9 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-credo-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-mix-credo-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-mix-credo-
+            ${{ runner.os }}-mix-credo-${{ matrix.otp }}-
 
       - name: Install dependencies
         run: mix deps.get
