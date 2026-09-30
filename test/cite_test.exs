@@ -95,6 +95,37 @@ defmodule CiteTest do
 
   defp release(arrivals), do: Enum.each(arrivals, fn {_label, pid} -> send(pid, :go) end)
 
+  # Judges eight passages at window 1 and concurrency 4, holding every
+  # request. P001's client calls `failing` in place of a reply; `catching`
+  # runs the judge call in the caller task and returns what it failed with.
+  # Releases P001 alone, waits for its task to go down, and asserts no fifth
+  # request arrives before the rest are released.
+  defp nothing_starts_after(failing, catching) do
+    source = Cite.source(["a", "b", "c", "d", "e", "f", "g", "h"])
+    answering = client(%{})
+
+    reply = fn request ->
+      if window_ids(request) == ["P001"], do: failing.(), else: answering.(request)
+    end
+
+    client = held_client(&window_ids/1, reply)
+
+    task =
+      Task.async(fn ->
+        catching.(fn -> Cite.judge(client, source, Riddles, window: 1, concurrency: 4) end)
+      end)
+
+    held = Map.new(arrivals(4))
+    {second, others} = Map.pop(held, ["P001"])
+    ref = Process.monitor(second)
+    send(second, :go)
+    assert_receive {:DOWN, ^ref, :process, ^second, _}
+    refute_receive {:arrive, _label, _pid}
+    release(others)
+
+    Task.await(task)
+  end
+
   describe "judge/4 end to end" do
     test "an empty source sends no request and reports nothing" do
       assert Cite.judge(refusing_client(), Cite.source([]), Riddles) == %Report{
@@ -636,32 +667,7 @@ defmodule CiteTest do
     end
 
     test "starts no request once one has raised" do
-      # Arrange
-      source = Cite.source(["a", "b", "c", "d", "e", "f", "g", "h"])
-      answering = client(%{})
-
-      reply = fn request ->
-        if window_ids(request) == ["P001"], do: :not_a_verdict, else: answering.(request)
-      end
-
-      client = held_client(&window_ids/1, reply)
-
-      task =
-        Task.async(fn ->
-          catch_error(Cite.judge(client, source, Riddles, window: 1, concurrency: 4))
-        end)
-
-      # Act
-      held = Map.new(arrivals(4))
-      {second, others} = Map.pop(held, ["P001"])
-      ref = Process.monitor(second)
-      send(second, :go)
-      assert_receive {:DOWN, ^ref, :process, ^second, _}
-      refute_receive {:arrive, _label, _pid}
-      release(others)
-
-      # Assert
-      assert %RuntimeError{} = Task.await(task)
+      assert %RuntimeError{} = nothing_starts_after(fn -> :not_a_verdict end, &catch_error(&1.()))
     end
 
     test "stops the requests after a raise that are still in flight" do
@@ -741,41 +747,20 @@ defmodule CiteTest do
     end
 
     test "starts no request once a linked crash has killed one, in a caller that traps exits" do
-      # Arrange
-      source = Cite.source(["a", "b", "c", "d", "e", "f", "g", "h"])
-      answering = client(%{})
+      crash = fn ->
+        spawn_link(fn -> exit(:helper_crashed) end)
 
-      reply = fn request ->
-        if window_ids(request) == ["P001"] do
-          spawn_link(fn -> exit(:helper_crashed) end)
-
-          receive do
-            :never -> :ok
-          end
-        else
-          answering.(request)
+        receive do
+          :never -> :ok
         end
       end
 
-      client = held_client(&window_ids/1, reply)
+      trapping = fn judge ->
+        Process.flag(:trap_exit, true)
+        catch_exit(judge.())
+      end
 
-      task =
-        Task.async(fn ->
-          Process.flag(:trap_exit, true)
-          catch_exit(Cite.judge(client, source, Riddles, window: 1, concurrency: 4))
-        end)
-
-      # Act
-      held = Map.new(arrivals(4))
-      {second, others} = Map.pop(held, ["P001"])
-      ref = Process.monitor(second)
-      send(second, :go)
-      assert_receive {:DOWN, ^ref, :process, ^second, _}
-      refute_receive {:arrive, _label, _pid}
-      release(others)
-
-      # Assert
-      assert Task.await(task) == :helper_crashed
+      assert nothing_starts_after(crash, trapping) == :helper_crashed
     end
 
     test "leaves a caller that traps exits with an empty mailbox after a run" do
