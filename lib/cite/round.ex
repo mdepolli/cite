@@ -19,20 +19,20 @@ defmodule Cite.Round do
   Runs `fun` on each item, up to `concurrency` at once, and returns the
   results in item order. Fails with the first failure in item order.
   """
-  # Nothing between the first Task.async and stop_the_rest/1 can raise, so
-  # no task outlives the round; a step added there must keep it so. The
-  # items must not raise either: Cite passes a list, or chunks one.
-  #
-  # Task.async monitors the task and then sends it its job, both from the
-  # caller, so the monitor lands first and a task that dies at once is
-  # reported with its real reason. Task.async_stream monitors from one
-  # process and sends the job from another, and can report such a task as
-  # :noproc.
   @spec run(Enumerable.t(), pos_integer(), (term() -> term())) :: [term()]
   def run(items, concurrency, fun) do
     logger = {Logger.metadata(), Logger.get_process_level(self())}
+
+    # Task.async monitors the task and then sends it its job, both from the
+    # caller, so the monitor lands first and a task that dies at once is
+    # reported with its real reason. Task.async_stream monitors from one
+    # process and sends the job from another, and can report such a task as
+    # :noproc.
     start = fn item -> Task.async(fn -> attempt(fun, item, logger) end) end
 
+    # Nothing between the first Task.async and stop_the_rest/1 can raise, so
+    # no task outlives the round; a step added there must keep it so. The
+    # items must not raise either: Cite passes a list, or chunks one.
     items
     |> Stream.with_index()
     |> Enum.reduce_while(
