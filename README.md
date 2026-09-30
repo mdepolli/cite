@@ -245,7 +245,7 @@ structs, the Spark extension, `Run`, `Screen`, `Gather`, `Gathered`,
 because they explain how Cite works.
 
 The [roadmap](https://github.com/mdepolli/cite/blob/main/ROADMAP.md) lists
-what is planned for the next release and what is still being explored.
+what is still being explored and what was ruled out.
 
 ## License
 

@@ -3,7 +3,6 @@
 Where Cite is heading next. Plans change; the
 [changelog](CHANGELOG.md) records what shipped.
 
-- **Planned**: the direction is set, and the work is scheduled for 0.2.0.
 - **Exploring**: the problem is real, but the fix waits on a benchmark. It
   ships only if the benchmark shows it helps, in 0.2.0 or later.
 - **Not planned**: asked for or considered, and ruled out.
