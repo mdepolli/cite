@@ -221,18 +221,20 @@ The full policy is at the end of this guide. More on the language in
 
 ```elixir
 client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
-report = Cite.judge(client, source, MyApp.Grounding, window: 1)
+report = Cite.judge(client, source, MyApp.Grounding)
 ```
 
-Every sentence carries the full input, so a window of 40 sentences would
-send it 40 times in one request. At `window: 1`, each request holds one
-sentence and one copy. A five-sentence answer is five screening requests,
-each asking the filter and both concerns, then one judging request per
-kind of problem found.
+Each sentence carries its own copy of the input, whatever the window. At
+the default window, an answer's sentences are screened together: a
+five-sentence answer is one screening request with five copies, asking the
+filter and both concerns of each sentence, then one judging request per
+kind of problem found. Screening one sentence per request sends the same
+copies in more requests, and repeats every question's criteria in each.
 
-`window: 1` also means round 1 reads each sentence without its neighbours,
-so a sentence that leans on the one before ("That makes the K2…") is read
-alone. Such sentences were no more often false alarms than the rest.
+Round 1 also reads each sentence beside the rest of its answer, so a
+framing line ("Here is an example of how it might look:") reads as part of
+the answer instead of as a claim of its own. Screening one sentence at a
+time made no fewer mistakes.
 
 ## 5. From findings to a table
 
