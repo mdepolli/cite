@@ -1,6 +1,8 @@
 defmodule CiteTest do
   use ExUnit.Case, async: true
 
+  import Cite.TestHeld, only: [held: 2, arrivals: 1, release: 1, release_and_await: 1]
+
   alias Cite.{Citation, Error, Finding, Passage, Report}
   alias Cite.TestPolicies.{Household, Riddles, TwoConcerns}
 
@@ -59,91 +61,10 @@ defmodule CiteTest do
     fn _request -> flunk("no request should be sent") end
   end
 
-  # A client that reports each request it holds to the test process as
-  # {:arrive, label, pid} and answers only when the test sends pid :go.
-  # Requests `label` maps to nil are answered at once.
-  defp held_client(label, answering) do
-    test_pid = self()
-
-    fn request ->
-      case label.(request) do
-        nil ->
-          answering.(request)
-
-        held ->
-          send(test_pid, {:arrive, held, self()})
-
-          receive do
-            :go -> answering.(request)
-          end
-      end
-    end
-  end
-
   # Runs Cite.judge/4 in a task so the test process is free to pace the
   # client.
   defp judge_async(client, source, policy, opts) do
     Task.async(fn -> Cite.judge(client, source, policy, opts) end)
-  end
-
-  defp arrivals(n) do
-    for _ <- 1..n//1 do
-      assert_receive {:arrive, label, pid}
-      {label, pid}
-    end
-  end
-
-  defp release(arrivals), do: Enum.each(arrivals, fn {_label, pid} -> send(pid, :go) end)
-
-  # Lets one held request answer and waits for its task to go down, which
-  # frees its slot.
-  defp release_and_await(pid) do
-    ref = Process.monitor(pid)
-    send(pid, :go)
-    assert_receive {:DOWN, ^ref, :process, ^pid, _}
-  end
-
-  # A client body that links to a helper that crashes, and waits to be
-  # killed by it.
-  defp crash_through_link do
-    spawn_link(fn -> exit(:helper_crashed) end)
-
-    receive do
-      :never -> :ok
-    end
-  end
-
-  # Judges `texts` at window 1 and concurrency 4, holding every request.
-  # P001's client calls `failing` in place of a reply; `catching` runs the
-  # judge call in the caller task and returns what it failed with. Releases
-  # P001 alone and waits for its task to go down. Returns the judge task and
-  # the requests still held, by window.
-  defp fail_p001(texts, failing, catching) do
-    source = Cite.source(texts)
-    answering = client(%{})
-
-    reply = fn request ->
-      if window_ids(request) == ["P001"], do: failing.(), else: answering.(request)
-    end
-
-    client = held_client(&window_ids/1, reply)
-
-    task =
-      Task.async(fn ->
-        catching.(fn -> Cite.judge(client, source, Riddles, window: 1, concurrency: 4) end)
-      end)
-
-    {second, others} =
-      texts
-      |> length()
-      |> min(4)
-      |> arrivals()
-      |> Map.new()
-      |> Map.pop(["P001"])
-
-    release_and_await(second)
-
-    {task, others}
   end
 
   describe "judge/4 end to end" do
@@ -481,51 +402,22 @@ defmodule CiteTest do
   end
 
   describe "judge/4 with concurrency" do
-    test "sends up to `concurrency` requests at once" do
-      # Arrange
-      source = Cite.source(["a", "b", "c", "d"])
-      client = held_client(&window_ids/1, client(%{}))
-      task = judge_async(client, source, Riddles, window: 1, concurrency: 4)
-
-      # Act
-      held = arrivals(4)
-      release(held)
-
-      # Assert
-      assert Enum.sort(Enum.map(held, &elem(&1, 0))) == [["P000"], ["P001"], ["P002"], ["P003"]]
-      assert %Report{errors: []} = Task.await(task)
-    end
-
-    test "never has more than `concurrency` requests in flight" do
-      # Arrange
-      source = Cite.source(["a", "b", "c", "d", "e", "f"])
-      client = held_client(&window_ids/1, client(%{}))
-      task = judge_async(client, source, Riddles, window: 1, concurrency: 4)
-
-      # Act + Assert
-      [first | others] = arrivals(4)
-      refute_receive {:arrive, _, _}
-      release([first])
-      fifth = arrivals(1)
-      refute_receive {:arrive, _, _}
-      release(others ++ fifth)
-      release(arrivals(1))
-      assert %Report{errors: []} = Task.await(task)
-    end
-
-    test "sends up to 4 requests at once by default" do
+    # Five is one more than the default, so the option is what lets the
+    # fifth request out.
+    test "sends `concurrency` round-1 requests at once" do
       # Arrange
       source = Cite.source(["a", "b", "c", "d", "e"])
-      client = held_client(&window_ids/1, client(%{}))
-      task = judge_async(client, source, Riddles, window: 1)
+      client = held(&window_ids/1, client(%{}))
+      task = judge_async(client, source, Riddles, window: 1, concurrency: 5)
 
       # Act
-      first = arrivals(4)
-      refute_receive {:arrive, _, _}
-      release(first)
-      release(arrivals(1))
+      in_flight = arrivals(5)
+      release(in_flight)
 
       # Assert
+      assert Enum.sort(Enum.map(in_flight, &elem(&1, 0))) ==
+               [["P000"], ["P001"], ["P002"], ["P003"], ["P004"]]
+
       assert %Report{errors: []} = Task.await(task)
     end
 
@@ -545,7 +437,7 @@ defmodule CiteTest do
         end
       end
 
-      client = held_client(&window_ids/1, reply)
+      client = held(&window_ids/1, reply)
       task = judge_async(client, source, Riddles, window: 1, concurrency: 4)
 
       # Act
@@ -588,7 +480,7 @@ defmodule CiteTest do
         request -> screening.(request)
       end
 
-      task = judge_async(held_client(label, reply), source, TwoConcerns, concurrency: 4)
+      task = judge_async(held(label, reply), source, TwoConcerns, concurrency: 4)
 
       # Act
       held = Map.new(arrivals(2))
@@ -623,198 +515,6 @@ defmodule CiteTest do
              ]
 
       assert {report.errors, map_size(report.screen)} == {[], 8}
-    end
-
-    test "re-raises what the client raised, with its stacktrace" do
-      # Arrange
-      source = Cite.source(["a", "b"])
-
-      # Act
-      {error, stacktrace} =
-        try do
-          Cite.judge(fn _request -> raise "boom" end, source, Riddles,
-            window: 1,
-            concurrency: 4
-          )
-        rescue
-          error -> {error, __STACKTRACE__}
-        end
-
-      # Assert
-      assert error == %RuntimeError{message: "boom"}
-      assert [{CiteTest, _fun, _arity, _location} | _] = stacktrace
-    end
-
-    test "re-throws and re-exits what the client did" do
-      judge = &Cite.judge(&1, Cite.source(["a", "b"]), Riddles, window: 1, concurrency: 4)
-
-      assert catch_throw(judge.(fn _request -> throw(:thrown) end)) == :thrown
-      assert catch_exit(judge.(fn _request -> exit(:gone) end)) == :gone
-    end
-
-    test "raises only once the requests before the raise have answered" do
-      # Arrange / Act
-      {task, held} = fail_p001(["a", "b"], fn -> :not_a_verdict end, &catch_error(&1.()))
-      still_running = Task.yield(task, 100)
-      release(held)
-
-      # Assert
-      assert still_running == nil
-      assert %RuntimeError{} = Task.await(task)
-    end
-
-    test "starts no request once one has raised" do
-      # Arrange / Act
-      {task, held} =
-        fail_p001(~w(a b c d e f g h), fn -> :not_a_verdict end, &catch_error(&1.()))
-
-      # Assert
-      refute_receive {:arrive, _label, _pid}
-      release(held)
-      assert %RuntimeError{} = Task.await(task)
-    end
-
-    test "stops the requests after a raise that are still in flight" do
-      # Arrange / Act
-      {task, held} = fail_p001(["a", "b", "c"], fn -> :not_a_verdict end, &catch_error(&1.()))
-      third = held[["P002"]]
-      send(held[["P000"]], :go)
-
-      # Assert
-      assert %RuntimeError{} = Task.await(task)
-      # judge/4 raises only once Cite.Round has shut down its running tasks,
-      # and Task.shutdown/2 waits for each to go down. A monitor set on P002
-      # here could land after that and report :noproc.
-      refute Process.alive?(third)
-    end
-
-    test "exits a caller that traps exits with a linked crash's reason, once the requests before it have answered" do
-      # Arrange
-      test_pid = self()
-      answering = client(%{})
-
-      reply = fn request ->
-        if window_ids(request) == ["P001"] do
-          send(test_pid, {:crashing, self()})
-          crash_through_link()
-        else
-          answering.(request)
-        end
-      end
-
-      label = fn request -> if window_ids(request) == ["P000"], do: ["P000"] end
-      client = held_client(label, reply)
-
-      task =
-        Task.async(fn ->
-          Process.flag(:trap_exit, true)
-
-          catch_exit(
-            Cite.judge(client, Cite.source(["a", "b"]), Riddles, window: 1, concurrency: 4)
-          )
-        end)
-
-      # Act
-      [{["P000"], first}] = arrivals(1)
-      assert_receive {:crashing, second}
-      ref = Process.monitor(second)
-      assert_receive {:DOWN, ^ref, :process, ^second, _}
-      still_running = Task.yield(task, 100)
-      send(first, :go)
-
-      # Assert
-      assert still_running == nil
-      assert Task.await(task) == :helper_crashed
-    end
-
-    test "starts no request once a linked crash has killed one, in a caller that traps exits" do
-      # Arrange
-      trapping = fn judge ->
-        Process.flag(:trap_exit, true)
-        catch_exit(judge.())
-      end
-
-      # Act
-      {task, held} = fail_p001(~w(a b c d e f g h), &crash_through_link/0, trapping)
-
-      # Assert
-      refute_receive {:arrive, _label, _pid}
-      release(held)
-      assert Task.await(task) == :helper_crashed
-    end
-
-    test "leaves a caller that traps exits with an empty mailbox after a run" do
-      task =
-        Task.async(fn ->
-          Process.flag(:trap_exit, true)
-          Cite.judge(client(%{}), Cite.source(["a", "b", "c"]), Riddles, window: 1)
-          Process.info(self(), :messages)
-        end)
-
-      assert Task.await(task) == {:messages, []}
-    end
-
-    test "leaves a caller that traps exits with an empty mailbox after a raise" do
-      task =
-        Task.async(fn ->
-          Process.flag(:trap_exit, true)
-          catch_error(Cite.judge(fn _request -> :not_a_verdict end, Cite.source(["a"]), Riddles))
-          Process.info(self(), :messages)
-        end)
-
-      assert Task.await(task) == {:messages, []}
-    end
-
-    test "leaves a caller that traps exits with an empty mailbox after a linked crash" do
-      task =
-        Task.async(fn ->
-          Process.flag(:trap_exit, true)
-
-          catch_exit(
-            Cite.judge(fn _request -> crash_through_link() end, Cite.source(["a"]), Riddles)
-          )
-
-          Process.info(self(), :messages)
-        end)
-
-      assert Task.await(task) == {:messages, []}
-    end
-
-    test "stops its requests when the caller dies" do
-      # Arrange
-      client = held_client(&window_ids/1, client(%{}))
-      source = Cite.source(["a", "b"])
-      caller = spawn(fn -> Cite.judge(client, source, Riddles, window: 1) end)
-      held = arrivals(2)
-      refs = Enum.map(held, fn {_label, pid} -> Process.monitor(pid) end)
-
-      # Act
-      Process.exit(caller, :kill)
-
-      # Assert
-      for ref <- refs, do: assert_receive({:DOWN, ^ref, :process, _pid, _reason})
-    end
-
-    test "carries the caller's Logger metadata and process level into the client" do
-      test_pid = self()
-      answering = client(%{})
-
-      client = fn request ->
-        send(
-          test_pid,
-          {:logger, Logger.metadata()[:request_id], Logger.get_process_level(self())}
-        )
-
-        answering.(request)
-      end
-
-      # The key is test data, not metadata a log formatter prints.
-      # credo:disable-for-next-line Credo.Check.Warning.MissedMetadataKeyInLoggerConfig
-      Logger.metadata(request_id: "req-1")
-      Logger.put_process_level(self(), :error)
-      Cite.judge(client, Cite.source(["a"]), Riddles)
-
-      assert_received {:logger, "req-1", :error}
     end
   end
 end
