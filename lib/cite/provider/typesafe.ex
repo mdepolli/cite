@@ -157,10 +157,11 @@ defmodule Cite.Provider.TypeSafe do
     %__MODULE__{http_client: http_client, model: model}
   end
 
-  # One source's finch: list. Req still takes a bare pool name there, but a
-  # name can't merge with the adapter's pool wait.
+  # One source's finch: list; nil means none, as it does to Req. Req still
+  # takes a bare pool name there, but a name can't merge with the adapter's
+  # pool wait.
   defp finch_list(options, source) do
-    finch = Keyword.get(options, :finch, [])
+    finch = Keyword.get(options, :finch) || []
 
     if Keyword.keyword?(finch) do
       finch
@@ -172,10 +173,11 @@ defmodule Cite.Provider.TypeSafe do
 
   # Req refuses these only once a request is sent, so they're checked on the
   # options it will get. A key may come from req_options or the app's
-  # Req.default_options/0; the check can't tell which.
+  # Req.default_options/0; the check can't tell which. Like Req, a nil
+  # :retry_delay counts as unset, but any :connect_options is refused.
   defp check_req_options(req_options, adapter_retry) do
     cond do
-      Keyword.has_key?(req_options, :retry_delay) and req_options[:retry] == adapter_retry ->
+      req_options[:retry_delay] && req_options[:retry] == adapter_retry ->
         raise ArgumentError,
               ":retry_delay needs a :retry in req_options, because the adapter's retry sets delays itself"
 

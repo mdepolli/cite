@@ -122,6 +122,11 @@ defmodule Cite.Provider.TypeSafeTest do
       end
     end
 
+    test "treats a nil retry_delay or finch as unset, as Req does" do
+      assert %TypeSafe{} = TypeSafe.new(api_key: "k", req_options: [retry_delay: nil])
+      assert finch_options_sent(finch: nil) == [pool_timeout: :infinity]
+    end
+
     test "refuses a finch pool name beside pool options" do
       assert_raise ArgumentError,
                    "finch: can't set pool options beside name: MyFinch, got: [size: 100]; configure the pool when starting MyFinch instead",
