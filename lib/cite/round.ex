@@ -71,15 +71,16 @@ defmodule Cite.Round do
 
     state
     |> put_in([:running, task.ref], {index, task})
-    |> fill_slot(concurrency)
+    |> wait_for_slot(concurrency)
   end
 
   defp start_unless_failed(state, _item, _index, _concurrency, _start), do: {[], state}
 
-  defp fill_slot(%{running: running} = state, concurrency) when map_size(running) < concurrency,
-    do: {[], state}
+  defp wait_for_slot(%{running: running} = state, concurrency)
+       when map_size(running) < concurrency,
+       do: {[], state}
 
-  defp fill_slot(state, _concurrency), do: {[], await_one(state)}
+  defp wait_for_slot(state, _concurrency), do: {[], await_one(state)}
 
   # Each receive scans the caller's whole mailbox, since it matches any of
   # the round's refs, not one made just before it. Task.async_stream's own
