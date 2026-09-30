@@ -22,9 +22,9 @@ calls the client, halves an oversized window, and assembles the
 see the client.
 
 Within a round, the shell sends up to `concurrency` requests at once, 4 by
-default. Round 2 starts only when round 1 has finished. The report is the
-same at any setting: errors, usage, and models keep window and finding
-order.
+default. Round 2 starts only when round 1 has finished. Given the same
+replies, the report is the same at any setting: errors, usage, and models
+keep window and finding order.
 
 ## Round 1: screen
 

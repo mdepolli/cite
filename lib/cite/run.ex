@@ -44,9 +44,9 @@ defmodule Cite.Run do
               default: 4,
               doc: """
               The most requests in flight at once within a round. The rounds run \
-              one after the other. The report is the same at any setting. Set it \
-              within the provider's rate limits. At `1`, requests go out one at a \
-              time.\
+              one after the other. Given the same replies, the report is the same \
+              at any setting. Set it within the provider's rate limits. At `1`, \
+              requests go out one at a time.\
               """
             ]
           )

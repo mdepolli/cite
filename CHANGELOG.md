@@ -10,8 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `concurrency` on `Cite.judge/4`: the most requests in flight at once
-  within a round, 4 by default. The report is the same at any setting; set
-  `concurrency: 1` to send one request at a time, as 0.1 did.
+  within a round, 4 by default. Given the same replies, the report is the
+  same at any setting. Set `concurrency: 1` to send one request at a time,
+  as 0.1 did.
 - `Cite.ClientError`, raised mid-run when a client returns something
   outside its contract.
 
