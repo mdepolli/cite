@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the app's `Req.default_options/0`, whose `finch:` list still applies,
   beneath the client's own. Set Finch options under `finch: [...]` instead
   of `:connect_options`.
+- The RAG grounding tutorial runs at the default window: screening an
+  answer's sentences together costs no more and makes no more mistakes
+  than one at a time.
 
 ### Fixed
 
