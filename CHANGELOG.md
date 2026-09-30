@@ -25,9 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Mox and `Req.Test` rely on; the rest of the caller's process dictionary,
   OpenTelemetry context included, does not.
 - A crash in a process the client links to now exits `Cite.judge/4` with
-  the same reason, even in a caller that traps exits. Before, such a
-  caller, a GenServer for instance, received an `:EXIT` message and the
-  run carried on.
+  the same reason, even in a caller that traps exits. There, as with a
+  raise, the exit comes once the requests before it have answered.
+  Before, such a caller, a GenServer for instance, received an `:EXIT`
+  message and the run carried on.
 - At `concurrency` above 1, a raise mid-run comes once the requests before
   it have answered. Requests started meanwhile are stopped, but the
   provider may already have received, and billed, them.

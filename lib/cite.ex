@@ -46,7 +46,8 @@ defmodule Cite do
 
   Tasks don't trap exits. A crash in a process the client links to ends that
   request's task, and `judge/4` exits with the same reason, even in a caller
-  that traps exits, such as a GenServer.
+  that traps exits, such as a GenServer. There, as with a raise, the exit
+  comes once the requests before it have answered.
   """
 
   alias Cite.{Answer, ClientError, Gather, Judge, Report, Run, Screen, Source}
