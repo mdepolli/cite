@@ -43,6 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   beneath the client's own. Set Finch options under `finch: [...]` instead
   of `:connect_options`.
 
+### Fixed
+
+- `Cite.source/2` raises on shown meta that holds a key as both an atom
+  and a string, such as `%{k: 1, "k" => 2}`, and on a `show` that names
+  one key both ways. On the wire they were one key, and which value the
+  model saw depended on map order.
+
 ## [0.1.1] - 2026-09-28
 
 ### Added

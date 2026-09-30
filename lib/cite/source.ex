@@ -6,7 +6,8 @@ defmodule Cite.Source do
 
   Shown meta goes on the wire, so its values must be JSON: `nil`, booleans,
   atoms, numbers, UTF-8 binaries, and lists and plain maps of these, with
-  atom or binary keys.
+  atom or binary keys. A map may not hold a key as both an atom and a
+  string (`:k` and `"k"`): on the wire they are one key.
   """
 
   alias Cite.Passage
@@ -42,7 +43,8 @@ defmodule Cite.Source do
               doc: """
               The meta keys the model sees beside `id` and `text`, as given in \
               `meta` (`:speaker` finds `%{speaker: _}`, not `%{"speaker" => _}`). \
-              It may not name `id` or `text`.\
+              It may not name `id` or `text`, or one key as both an atom and a \
+              string.\
               """
             ]
           )
@@ -104,6 +106,9 @@ defmodule Cite.Source do
       Enum.any?(show, &(to_string(&1) in ["id", "text"])) ->
         {:error, "must not name id or text, got: #{inspect(show)}"}
 
+      not distinct_on_wire?(show) ->
+        {:error, "must not name a key as both an atom and a string, got: #{inspect(show)}"}
+
       true ->
         {:ok, show}
     end
@@ -163,7 +168,8 @@ defmodule Cite.Source do
         raise ArgumentError, """
         passage #{inspect(id)} shows meta #{inspect(key)}, so its value must be JSON: \
         nil, booleans, atoms, numbers, UTF-8 binaries, and lists and plain maps of \
-        these with atom or binary keys; got: #{inspect(value)}
+        these with atom or binary keys, no key given as both an atom and a string; \
+        got: #{inspect(value)}
         """
     end
   end
@@ -178,12 +184,22 @@ defmodule Cite.Source do
   defp json?(list) when is_list(list),
     do: not List.improper?(list) and Enum.all?(list, &json?/1)
 
-  defp json?(map) when is_map(map) and not is_struct(map),
-    do: Enum.all?(map, fn {key, value} -> json_key?(key) and json?(value) end)
+  defp json?(map) when is_map(map) and not is_struct(map) do
+    Enum.all?(map, fn {key, value} -> json_key?(key) and json?(value) end) and
+      distinct_on_wire?(Map.keys(map))
+  end
 
   defp json?(_value), do: false
 
   defp json_key?(key), do: is_atom(key) or (is_binary(key) and String.valid?(key))
+
+  # Cite.Wire sends atom keys as strings, so `:k` and `"k"` would reach the
+  # model as one key, whichever value survived.
+  defp distinct_on_wire?(keys),
+    do: length(Enum.uniq(keys)) == length(Enum.uniq_by(keys, &wire_key/1))
+
+  defp wire_key(key) when is_atom(key), do: Atom.to_string(key)
+  defp wire_key(key), do: key
 
   defp reject_duplicate_ids(passages) do
     dupes = for {id, n} <- Enum.frequencies_by(passages, & &1.id), n > 1, do: id

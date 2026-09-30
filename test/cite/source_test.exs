@@ -133,6 +133,16 @@ defmodule Cite.SourceTest do
       end
     end
 
+    test "raises on shown meta with a key given as both an atom and a string" do
+      for value <- [%{"k" => 2, k: 1}, [%{nil => 1, "nil" => 2}]] do
+        assert_raise ArgumentError,
+                     ~r/passage "P000" shows meta :at, so its value must be JSON: .*no key given as both an atom and a string/s,
+                     fn ->
+                       Source.new([%{text: "a", meta: %{at: value}}], show: [:at])
+                     end
+      end
+    end
+
     test "accepts shown meta that is JSON, nested or not" do
       meta = %{about: %{"role" => [%{kind: :client, lead: true}], age: 41.5}, note: nil}
       [passage] = Source.new([%{text: "a", meta: meta}], show: [:about, :note]).passages
@@ -157,6 +167,14 @@ defmodule Cite.SourceTest do
                        Source.new(["a"], show: [key])
                      end
       end
+    end
+
+    test "raises when show names a key as both an atom and a string" do
+      assert_raise ArgumentError,
+                   ~s(invalid value for :show option: must not name a key as both an atom and a string, got: [:speaker, "speaker"]),
+                   fn ->
+                     Source.new(["a"], show: [:speaker, "speaker"])
+                   end
     end
 
     test "raises on a blank as or a show that is not a list of keys" do
