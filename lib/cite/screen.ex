@@ -18,9 +18,10 @@ defmodule Cite.Screen do
   @spec request(Run.t(), [Passage.t()]) :: map()
   def request(%Run{source: %Source{as: as, show: show}} = run, window) do
     questions =
-      for %Passage{id: id} <- window, {name, question} <- detects(run.terms), into: %{} do
-        {key(id, name), Wire.question(question, %{"passage" => Wire.text_path(as, id)}, [])}
-      end
+      for %Passage{id: id} <- window,
+          {name, question} <- detects(run.terms),
+          into: %{},
+          do: {key(id, name), Wire.question(question, %{"passage" => Wire.text_path(as, id)}, [])}
 
     %{"state" => %{as => Wire.passages(window, show)}, "questions" => questions}
   end

@@ -37,9 +37,9 @@ defmodule Cite.Judge do
           do: Wire.text_path(role)
 
     checks =
-      for %Check{} = check <- asked(gathered), into: %{} do
-        {Atom.to_string(check.name), Wire.question(check.question, paths, [])}
-      end
+      for %Check{} = check <- asked(gathered),
+          into: %{},
+          do: {Atom.to_string(check.name), Wire.question(check.question, paths, [])}
 
     %{
       "state" => state,
