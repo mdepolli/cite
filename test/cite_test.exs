@@ -683,11 +683,11 @@ defmodule CiteTest do
       # Act
       held = Map.new(arrivals(3))
       second = held[["P001"]]
+      third = held[["P002"]]
       second_ref = Process.monitor(second)
+      ref = Process.monitor(third)
       send(second, :go)
       assert_receive {:DOWN, ^second_ref, :process, ^second, _}
-      third = held[["P002"]]
-      ref = Process.monitor(third)
       send(held[["P000"]], :go)
 
       # Assert
