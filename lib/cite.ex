@@ -75,12 +75,12 @@ defmodule Cite do
   """
   @spec client(module(), keyword()) :: client()
   def client(provider, opts \\ []) do
-    provider = provider(provider)
-    handle = provider.new(provider_options(opts))
-    &provider.judge(handle, &1)
+    module = provider_module(provider)
+    handle = module.new(provider_options(opts))
+    &module.judge(handle, &1)
   end
 
-  defp provider(provider) do
+  defp provider_module(provider) do
     if is_atom(provider) and Code.ensure_loaded?(provider) and
          function_exported?(provider, :new, 1) and function_exported?(provider, :judge, 2) do
       provider
