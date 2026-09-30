@@ -6,6 +6,7 @@ defmodule Cite.Provider.TypeSafeTest do
   alias Cite.Provider.TypeSafe
   alias Cite.Report
   alias Cite.TestPolicies.Riddles
+  alias Req.{Request, TransportError}
 
   @request %{
     "state" => %{"passages" => %{"U0" => %{"text" => "hi"}}},
@@ -259,7 +260,7 @@ defmodule Cite.Provider.TypeSafeTest do
     test "wraps transport failures" do
       Req.Test.stub(__MODULE__, &Req.Test.transport_error(&1, :econnrefused))
 
-      assert {:error, {:request_error, %Req.TransportError{reason: :econnrefused}}} =
+      assert {:error, {:request_error, %TransportError{reason: :econnrefused}}} =
                judge().(@request)
     end
 
@@ -274,7 +275,7 @@ defmodule Cite.Provider.TypeSafeTest do
             req_options: [retry: false] ++ req_options
           )
 
-        assert {:error, {:request_error, %Req.TransportError{reason: :econnrefused}}} =
+        assert {:error, {:request_error, %TransportError{reason: :econnrefused}}} =
                  client.(@request)
       end
     end
@@ -347,7 +348,7 @@ defmodule Cite.Provider.TypeSafeTest do
       end)
 
       record = fn request ->
-        send(test_pid, {:attempt, Req.Request.get_private(request, :req_retry_count, :unset)})
+        send(test_pid, {:attempt, Request.get_private(request, :req_retry_count, :unset)})
         request
       end
 
@@ -360,7 +361,7 @@ defmodule Cite.Provider.TypeSafeTest do
 
       client = %{
         client
-        | http_client: Req.Request.append_request_steps(client.http_client, record: record)
+        | http_client: Request.append_request_steps(client.http_client, record: record)
       }
 
       reply = TypeSafe.judge(client, @request)
@@ -388,7 +389,7 @@ defmodule Cite.Provider.TypeSafeTest do
       end)
 
       # Act + Assert
-      assert {:error, {:request_error, %Req.TransportError{reason: :timeout}}} =
+      assert {:error, {:request_error, %TransportError{reason: :timeout}}} =
                retrying_judge().(@request)
 
       assert Agent.get(calls, & &1) == 1

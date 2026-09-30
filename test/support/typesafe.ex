@@ -4,6 +4,7 @@ defmodule Cite.TestTypeSafe do
   import ExUnit.Assertions
 
   alias Cite.Provider.TypeSafe
+  alias Req.{Request, Response}
 
   @request %{"state" => %{}, "questions" => %{}}
 
@@ -23,9 +24,9 @@ defmodule Cite.TestTypeSafe do
   # The adapter: Req calls it in the process that sent the request, so the
   # options go back to that process's mailbox.
   @doc false
-  @spec run(Req.Request.t()) :: {Req.Request.t(), Req.Response.t()}
-  def run(%Req.Request{} = request) do
+  @spec run(Request.t()) :: {Request.t(), Response.t()}
+  def run(%Request{} = request) do
     send(self(), {:options, Map.take(request.options, [:pool_timeout, :finch, :connect_options])})
-    {request, Req.Response.new(status: 200, body: %{"answers" => %{}})}
+    {request, Response.new(status: 200, body: %{"answers" => %{}})}
   end
 end

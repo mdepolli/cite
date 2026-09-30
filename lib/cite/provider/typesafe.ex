@@ -111,7 +111,9 @@ defmodule Cite.Provider.TypeSafe do
 
   @behaviour Cite.Provider
 
-  @type t :: %__MODULE__{http_client: Req.Request.t(), model: String.t()}
+  alias Req.{Request, Response, TransportError}
+
+  @type t :: %__MODULE__{http_client: Request.t(), model: String.t()}
 
   @type error ::
           :request_too_large
@@ -154,8 +156,8 @@ defmodule Cite.Provider.TypeSafe do
       ]
       |> Keyword.merge(req_overrides)
       |> Req.new()
-      |> Req.Request.put_new_option(:pool_timeout, :infinity)
-      |> Req.Request.put_private(:cite_max_retry_delay, max_retry_delay)
+      |> Request.put_new_option(:pool_timeout, :infinity)
+      |> Request.put_private(:cite_max_retry_delay, max_retry_delay)
 
     check_retry_delay(http_client, adapter_retry)
 
@@ -166,7 +168,7 @@ defmodule Cite.Provider.TypeSafe do
   # delays, as the adapter's does, but only on the first retry. So it's
   # checked here, on the options Req built: the delay may come from
   # req_options or the app's Req.default_options/0. A nil one is unset.
-  defp check_retry_delay(%Req.Request{options: options}, adapter_retry) do
+  defp check_retry_delay(%Request{options: options}, adapter_retry) do
     if options[:retry_delay] && options[:retry] == adapter_retry do
       raise ArgumentError,
             ":retry_delay needs a :retry in req_options, because the adapter's retry sets delays itself"
@@ -212,26 +214,26 @@ defmodule Cite.Provider.TypeSafe do
   # retried is eight minutes, and a slow success would be billed twice. What
   # reaches decode/1 has already had its retries; a 429 there still carries
   # Retry-After so the caller knows what the server asked for.
-  defp retry(request, %Req.Response{status: status} = response)
+  defp retry(request, %Response{status: status} = response)
        when status == 429 or status == 529 or status in 500..504 do
     {:delay, min(retry_after_ms(response) || backoff_ms(request), max_retry_delay(request))}
   end
 
-  defp retry(request, %Req.TransportError{reason: reason}) when reason != :timeout do
+  defp retry(request, %TransportError{reason: reason}) when reason != :timeout do
     {:delay, min(backoff_ms(request), max_retry_delay(request))}
   end
 
   defp retry(_request, _response_or_exception), do: false
 
   defp max_retry_delay(request) do
-    Req.Request.get_private(request, :cite_max_retry_delay, @max_retry_delay_ms)
+    Request.get_private(request, :cite_max_retry_delay, @max_retry_delay_ms)
   end
 
   defp backoff_ms(request) do
-    Integer.pow(2, Req.Request.get_private(request, :req_retry_count, 0)) * 1_000
+    Integer.pow(2, Request.get_private(request, :req_retry_count, 0)) * 1_000
   end
 
-  defp decode({:ok, %Req.Response{status: 200, body: %{"answers" => answers} = body}})
+  defp decode({:ok, %Response{status: 200, body: %{"answers" => answers} = body}})
        when is_map(answers) do
     verdict = %{answers: answers, usage: usage(body["usage"])}
 
@@ -242,7 +244,7 @@ defmodule Cite.Provider.TypeSafe do
   end
 
   # A 200 Cite cannot read is a network fact, not a verdict of "no" everywhere.
-  defp decode({:ok, %Req.Response{status: 200, body: body}}) do
+  defp decode({:ok, %Response{status: 200, body: body}}) do
     {:error, {:malformed_reply, preview(body)}}
   end
 
@@ -253,27 +255,27 @@ defmodule Cite.Provider.TypeSafe do
   # oversized request (see "The size cap" in the moduledoc). The docs list
   # validation failures as 422; the API answers 400. Both are matched by the
   # error type so a status change does not lose halving.
-  defp decode({:ok, %Req.Response{status: status, body: %{"detail" => %{"error_type" => type}}}})
+  defp decode({:ok, %Response{status: status, body: %{"detail" => %{"error_type" => type}}}})
        when status in [400, 422] and type == "max_tokens_exceeded",
        do: {:error, :request_too_large}
 
-  defp decode({:ok, %Req.Response{status: status, body: %{"detail" => %{"error_type" => type}}}})
+  defp decode({:ok, %Response{status: status, body: %{"detail" => %{"error_type" => type}}}})
        when status in [400, 422] and is_binary(type),
        do: {:error, {:bad_request, type}}
 
-  defp decode({:ok, %Req.Response{status: status, body: body}}) when status in [400, 422],
+  defp decode({:ok, %Response{status: status, body: body}}) when status in [400, 422],
     do: {:error, {:bad_request, preview(body)}}
 
-  defp decode({:ok, %Req.Response{status: 401}}), do: {:error, :unauthorized}
+  defp decode({:ok, %Response{status: 401}}), do: {:error, :unauthorized}
 
-  defp decode({:ok, %Req.Response{status: 429} = response}) do
+  defp decode({:ok, %Response{status: 429} = response}) do
     {:error, {:rate_limited, retry_after_ms(response)}}
   end
 
-  defp decode({:ok, %Req.Response{status: status}}) when status >= 500,
+  defp decode({:ok, %Response{status: status}}) when status >= 500,
     do: {:error, :server_error}
 
-  defp decode({:ok, %Req.Response{status: status, body: body}}) do
+  defp decode({:ok, %Response{status: status, body: body}}) do
     {:error, {:api_error, status, preview(body)}}
   end
 
@@ -292,7 +294,7 @@ defmodule Cite.Provider.TypeSafe do
   # value, reads as no advice. Req.Response.get_retry_after/1 raises on the
   # unparseable case, and a proxy's 429 can carry one.
   defp retry_after_ms(response) do
-    case Req.Response.get_header(response, "retry-after") do
+    case Response.get_header(response, "retry-after") do
       [value | _] -> retry_after_ms_from(value)
       [] -> nil
     end
