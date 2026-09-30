@@ -226,8 +226,8 @@ first-round requests in half and retries.
 
 SemVer covers the **Core API**: `Cite.client/2`, `Cite.source/2`,
 `Cite.judge/4`, the policy language, the structs you read (`Report`,
-`Finding`, `Citation`, `Passage`, `Error`), and the client's request and
-reply maps. The docs group modules by tier.
+`Finding`, `Citation`, `Passage`, `Error`), the `ClientError` it raises,
+and the client's request and reply maps. The docs group modules by tier.
 
 **Providers.** `Cite.Provider` may change in a minor release while it has
 only one implementation; the changelog will say so.
