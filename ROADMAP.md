@@ -21,18 +21,21 @@ option on `Cite.judge/4`. Results keep their order, so errors and usage
 stay in window and finding order. The rounds themselves stay in sequence:
 round 2 needs round 1's scores.
 
-### A local provider
+## Exploring
+
+### A local provider, as its own package
 
 Cite ships with one provider, `Cite.Provider.TypeSafe`, which calls
-TypeSafe's Jev and needs an API key. 0.2.0 adds `Cite.Provider.Laya`, which
-runs the Laya decision model on your own machine through Bumblebee. It is an
-optional dependency: callers who use TypeSafe do not pull in Nx.
+TypeSafe's Jev and needs an API key. A provider for the Laya decision model
+would run on your own machine through Nx and Bumblebee. It will be a
+separate package that implements `Cite.Provider`, so Cite itself never
+depends on Nx, and its releases don't follow Nx's.
 
 It waits on two fixes in the `laya` package. Its decision head uses GELU
 where the original model uses ReLU. And it truncates long state silently,
-so Cite cannot tell that a request was too large and split it.
-
-## Exploring
+so Cite cannot tell that a request was too large and split it. Then the
+benchmarks must show how Laya's answers compare with Jev's before a
+tutorial can recommend it.
 
 ### More than one case in a concern built from factors
 
