@@ -45,10 +45,11 @@ defmodule Cite do
   attaches it itself.
 
   Tasks don't trap exits. A crash in a process the client links to ends
-  that request's task, and `judge/4` exits with the same reason. It does so
-  even in a caller that traps exits, such as a GenServer. In that caller,
-  as with a raise, the exit comes once the requests before it have
-  answered. No request starts after the crash.
+  that request's task with the crash's reason. A caller that doesn't trap
+  exits dies of it at once, through its link to the task. In a caller that
+  traps exits, such as a GenServer, `judge/4` exits with the same reason,
+  an exit the caller can catch. As with a raise, it comes once the
+  requests before it have answered. No request starts after the crash.
   """
 
   alias Cite.{Answer, Gather, Judge, Report, Round, Run, Screen, Source}
@@ -116,9 +117,10 @@ defmodule Cite do
   Mid-run, raises `RuntimeError` when the client returns something
   outside its contract. `judge/4` passes on, as is, whatever the client
   raises, throws, or exits with, an `ArgumentError` included. Either comes
-  once the requests before it have answered. Once a call fails, no further
-  request starts. Those still in flight when the error comes are stopped,
-  but the provider may already have received, and billed, them.
+  once the requests before it have answered. Once a call raises, throws,
+  or exits, no further request starts. Those still in flight when the
+  error comes are stopped, but the provider may already have received,
+  and billed, them.
 
   ## Options
 

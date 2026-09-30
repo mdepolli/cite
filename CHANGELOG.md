@@ -27,15 +27,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it must not raise on a condition that concurrency makes routine, such as
   waiting for a connection. A custom client must be safe to call
   concurrently too, or be run at `concurrency: 1`.
-- A crash in a process the client links to now exits `Cite.judge/4` with
-  the same reason, even in a caller that traps exits. There, as with a
-  raise, the exit comes once the requests before it have answered, and no
-  request starts after the crash. Before, such a caller (a GenServer, say)
-  received an `:EXIT` message and the run carried on.
+- In a caller that traps exits, a crash in a process the client links to
+  now makes `Cite.judge/4` exit with the same reason. As with a raise, the
+  exit comes once the requests before it have answered, and no request
+  starts after the crash. Before, such a caller (a GenServer, say)
+  received an `:EXIT` message and the run carried on. A caller that
+  doesn't trap exits still dies at once, through the link.
 - At `concurrency` above 1, a raise mid-run comes once the requests before
-  it have answered. Once a call fails, no further request starts. Those
-  still in flight when the error comes are stopped, but the provider may
-  already have received and billed them.
+  it have answered. Once a call raises, throws, or exits, no further
+  request starts. Those still in flight when the error comes are stopped,
+  but the provider may already have received and billed them.
 - `Cite.Provider.TypeSafe` waits for a pooled connection with no time
   limit, instead of raising after 5 seconds. A `pool_timeout` under
   `finch:`, in `req_options` or the app's `Req.default_options/0`, still

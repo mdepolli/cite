@@ -8,7 +8,9 @@ defmodule Cite.Round do
   exit signal from outside, no further item starts. The failure reaches
   the caller once the items before it have answered, and the items after
   it still running are killed. Of several failures, the first in item
-  order wins.
+  order wins. The exception is an exit signal from outside in a caller
+  that doesn't trap exits: it reaches the caller at once, through the
+  link, and kills it.
 
   The caller's mailbox is left as it was, even when it traps exits.
   """
