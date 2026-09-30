@@ -13,9 +13,8 @@ defmodule Cite.Round do
   The caller's mailbox is left as it was, even when it traps exits.
   """
 
-  # Nothing in the caller may raise between the first task and
-  # stop_the_rest/1: there is no try/after to kill the tasks on the way out.
-  # A new step in the loop, such as a deadline, must keep it so or add one.
+  # Stream.transform/5 calls stop_the_rest/1 however the stream ends, a
+  # raise included, so no task outlives the round.
   @spec run(Enumerable.t(), pos_integer(), (term() -> term())) :: [term()]
   def run(items, concurrency, fun) do
     logger = {Logger.metadata(), Logger.get_process_level(self())}
@@ -23,12 +22,14 @@ defmodule Cite.Round do
 
     items
     |> Stream.with_index()
-    |> Enum.reduce_while(%{running: %{}, outcomes: %{}, failed_at: nil}, fn item, state ->
-      start_next(item, state, concurrency, start)
-    end)
-    |> await_before_failure()
-    |> stop_the_rest()
-    |> results()
+    |> Stream.transform(
+      fn -> %{running: %{}, outcomes: %{}, failed_at: nil} end,
+      &start_next(&1, &2, concurrency, start),
+      &settle/1,
+      &stop_the_rest/1
+    )
+    |> Enum.to_list()
+    |> deliver()
   end
 
   # A task starts with an empty process dictionary; the caller's Logger
@@ -45,12 +46,15 @@ defmodule Cite.Round do
   defp put_process_level(level), do: Logger.put_process_level(self(), level)
 
   # A slot can be free while a failure sits unread in the mailbox, so every
-  # reply already in is read before the item starts.
-  defp start_next({item, index}, state, concurrency, start) do
+  # reply already in is read before the item starts. Once a failure is known,
+  # the rest of the items pass by unstarted: halting would skip settle/1.
+  defp start_next({item, index}, %{failed_at: nil} = state, concurrency, start) do
     state
     |> collect_ready()
     |> start_unless_failed(item, index, concurrency, start)
   end
+
+  defp start_next(_item, state, _concurrency, _start), do: {[], state}
 
   defp start_unless_failed(%{failed_at: nil} = state, item, index, concurrency, start) do
     task = start.(item)
@@ -60,12 +64,12 @@ defmodule Cite.Round do
     |> fill_slot(concurrency)
   end
 
-  defp start_unless_failed(state, _item, _index, _concurrency, _start), do: {:halt, state}
+  defp start_unless_failed(state, _item, _index, _concurrency, _start), do: {[], state}
 
   defp fill_slot(%{running: running} = state, concurrency) when map_size(running) < concurrency,
-    do: {:cont, state}
+    do: {[], state}
 
-  defp fill_slot(state, _concurrency), do: {:cont, await_one(state)}
+  defp fill_slot(state, _concurrency), do: {[], await_one(state)}
 
   defp collect_ready(state) do
     case receive_one(state, 0) do
@@ -114,6 +118,13 @@ defmodule Cite.Round do
   defp first_failure(nil, index, _failure), do: index
   defp first_failure(failed_at, index, _failure), do: min(failed_at, index)
 
+  # Once the items run out, waits for every task before a failure and emits
+  # the round's final state.
+  defp settle(state) do
+    state = await_before_failure(state)
+    {[state], state}
+  end
+
   defp await_before_failure(state) do
     if Enum.any?(state.running, fn {_ref, {index, _task}} -> before?(index, state.failed_at) end) do
       state
@@ -129,7 +140,8 @@ defmodule Cite.Round do
 
   # Task.shutdown/2 unlinks before it kills, but an :EXIT from a task that
   # already died, killed from outside, may be queued. What it returns is not
-  # needed: every task still running comes after the failure.
+  # needed: after settle/1, every task still running comes after the
+  # failure, and after a raise none of them matters.
   defp stop_the_rest(state) do
     for {_ref, {_index, task}} <- state.running do
       Task.shutdown(task, :brutal_kill)
@@ -147,13 +159,15 @@ defmodule Cite.Round do
     end
   end
 
-  defp results(%{failed_at: nil, outcomes: outcomes}) do
+  # The stream emits one element: the round's final state, from settle/1.
+  defp deliver([%{failed_at: nil, outcomes: outcomes}]) do
     outcomes
     |> Enum.sort_by(fn {index, _outcome} -> index end)
     |> Enum.map(fn {_index, {:ok, value}} -> value end)
   end
 
-  defp results(%{failed_at: index, outcomes: outcomes}), do: fail(Map.fetch!(outcomes, index))
+  defp deliver([%{failed_at: index, outcomes: outcomes}]),
+    do: fail(Map.fetch!(outcomes, index))
 
   defp fail({:raised, kind, reason, stacktrace}), do: :erlang.raise(kind, reason, stacktrace)
   defp fail({:exit, reason}), do: exit(reason)
