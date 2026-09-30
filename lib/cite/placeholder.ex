@@ -54,9 +54,15 @@ defmodule Cite.Placeholder do
   @spec instructions(String.t(), String.t() | nil, %{String.t() => String.t()}, [String.t()]) ::
           map()
   def instructions(text, focus, paths, fallback) when is_list(fallback) do
+    targets =
+      [text, focus]
+      |> names()
+      |> Enum.map(&Map.fetch!(paths, &1))
+      |> targets(fallback)
+
     %{"question" => expand(text, paths)}
     |> put_focus(focus, paths)
-    |> Map.merge(targets(Enum.map(names([text, focus]), &Map.fetch!(paths, &1)), fallback))
+    |> Map.merge(targets)
   end
 
   defp put_focus(instructions, nil, _paths), do: instructions

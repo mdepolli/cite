@@ -28,7 +28,9 @@ defmodule Cite.ReportTest do
 
     test "refuses a run that has not been judged" do
       assert_raise FunctionClauseError, fn ->
-        Report.new(TestRun.new(TestTerms.riddles(), screen: %{}))
+        TestTerms.riddles()
+        |> TestRun.new(screen: %{})
+        |> Report.new()
       end
     end
   end

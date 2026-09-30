@@ -96,7 +96,10 @@ defmodule Cite.ScreenTest do
         model: "jev-1.13.0"
       }
 
-      run = Screen.resolve(TestRun.new(TestTerms.riddles()), [{source.passages, {:ok, verdict}}])
+      run =
+        TestTerms.riddles()
+        |> TestRun.new()
+        |> Screen.resolve([{source.passages, {:ok, verdict}}])
 
       assert {run.screen, run.errors, run.usages, run.models} ==
                {%{"L1" => %{riddle: 0.94}, "L2" => %{riddle: 0.03}}, [],
@@ -107,7 +110,9 @@ defmodule Cite.ScreenTest do
       source = Source.new([%{id: "L1", text: "a"}, %{id: "L2", text: "b"}])
 
       run =
-        Screen.resolve(TestRun.new(TestTerms.riddles()), [{source.passages, {:error, :timeout}}])
+        TestTerms.riddles()
+        |> TestRun.new()
+        |> Screen.resolve([{source.passages, {:error, :timeout}}])
 
       assert {run.screen, run.errors, run.usages, run.models} ==
                {%{}, [%Error{concern: nil, passage_ids: ["L1", "L2"], reason: :timeout}], [], []}

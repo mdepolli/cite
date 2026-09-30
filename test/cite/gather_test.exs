@@ -6,12 +6,13 @@ defmodule Cite.GatherTest do
   # Gathers from a run whose source holds one passage per screen row, in id
   # order; `fields` override the run's defaults.
   defp gather(terms, screen, fields \\ []) do
-    ids =
+    source =
       screen
       |> Map.keys()
       |> Enum.sort()
+      |> Enum.map(&%{id: &1, text: "text of #{&1}"})
+      |> Source.new(as: "utterances")
 
-    source = Source.new(Enum.map(ids, &%{id: &1, text: "text of #{&1}"}), as: "utterances")
     run = TestRun.new(terms, [source: source, screen: screen] ++ fields)
 
     Gather.findings(run).gathered
@@ -38,7 +39,11 @@ defmodule Cite.GatherTest do
     test "a passage whose window failed has no row and is evidence for nothing" do
       screen = %{"U1" => spoken_by_client(%{cashflow_stress: 0.9})}
       source = Source.new([%{id: "U0", text: "lost"}, %{id: "U1", text: "kept"}])
-      run = Gather.findings(TestRun.new(TestTerms.household(), source: source, screen: screen))
+
+      run =
+        TestTerms.household()
+        |> TestRun.new(source: source, screen: screen)
+        |> Gather.findings()
 
       assert summary(run.gathered) == [{:cashflow_stress, ["U1"], %{}}]
     end
@@ -137,7 +142,9 @@ defmodule Cite.GatherTest do
 
   test "refuses a run that has not been screened" do
     assert_raise FunctionClauseError, fn ->
-      Gather.findings(TestRun.new(TestTerms.household()))
+      TestTerms.household()
+      |> TestRun.new()
+      |> Gather.findings()
     end
   end
 
