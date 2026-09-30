@@ -138,7 +138,6 @@ defmodule Cite.Provider.TypeSafe do
     base_url = opts[:base_url]
     max_retry_delay = opts[:max_retry_delay]
     req_overrides = opts[:req_options]
-    adapter_retry = &retry/2
 
     # A request past the pool's size waits its turn instead of raising: the
     # wait restarts at every checkout and the pool is shared node-wide, so
@@ -150,7 +149,7 @@ defmodule Cite.Provider.TypeSafe do
         base_url: base_url,
         auth: {:bearer, api_key},
         receive_timeout: 120_000,
-        retry: adapter_retry,
+        retry: &retry/2,
         max_retries: @max_retries,
         redirect: false
       ]
@@ -159,7 +158,7 @@ defmodule Cite.Provider.TypeSafe do
       |> Request.put_new_option(:pool_timeout, :infinity)
       |> Request.put_private(:cite_max_retry_delay, max_retry_delay)
 
-    check_retry_delay(http_client, adapter_retry)
+    check_retry_delay(http_client)
 
     %__MODULE__{http_client: http_client, model: model}
   end
@@ -168,8 +167,9 @@ defmodule Cite.Provider.TypeSafe do
   # delays, as the adapter's does, but only on the first retry. So it's
   # checked here, on the options Req built: the delay may come from
   # req_options or the app's Req.default_options/0. A nil one is unset.
-  defp check_retry_delay(%Request{options: options}, adapter_retry) do
-    if options[:retry_delay] && options[:retry] == adapter_retry do
+  defp check_retry_delay(%Request{} = http_client) do
+    if Request.get_option(http_client, :retry_delay) &&
+         Request.get_option(http_client, :retry) == (&retry/2) do
       raise ArgumentError,
             ":retry_delay needs a :retry in req_options, because the adapter's retry sets delays itself"
     end
