@@ -605,6 +605,36 @@ defmodule CiteTest do
       assert catch_exit(judge.(fn _request -> exit(:gone) end)) == :gone
     end
 
+    test "raises only once the requests before the raise have answered" do
+      # Arrange
+      source = Cite.source(["a", "b"])
+      answering = client(%{})
+
+      reply = fn request ->
+        if window_ids(request) == ["P001"], do: :not_a_verdict, else: answering.(request)
+      end
+
+      client = held_client(&window_ids/1, reply)
+
+      task =
+        Task.async(fn ->
+          catch_error(Cite.judge(client, source, Riddles, window: 1, concurrency: 4))
+        end)
+
+      # Act
+      held = Map.new(arrivals(2))
+      second = held[["P001"]]
+      ref = Process.monitor(second)
+      send(second, :go)
+      assert_receive {:DOWN, ^ref, :process, ^second, _}
+      still_running = Task.yield(task, 100)
+      send(held[["P000"]], :go)
+
+      # Assert
+      assert still_running == nil
+      assert %ClientError{} = Task.await(task)
+    end
+
     test "exits a caller that traps exits with the reason a client's linked process crashed with" do
       task =
         Task.async(fn ->
