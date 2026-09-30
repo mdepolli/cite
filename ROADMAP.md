@@ -52,6 +52,11 @@ as a person would group them, at a cost in requests that stays in
 proportion to the cases found. This changes what callers rely on: a
 concern could report more than one finding.
 
+Status: waiting for data. The transcripts measured so far are
+inconclusive: none has a second household of the client's own to judge,
+and their labels don't say which lines belong to which household. They
+can't show whether a design groups cases as a person would.
+
 ### Context shared by every passage
 
 A request has no place for context that every passage shares, such as the
