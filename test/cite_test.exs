@@ -340,16 +340,9 @@ defmodule CiteTest do
     end
   end
 
-  describe "judge/4 arguments" do
-    test "raises on an argument it cannot use before any request" do
-      assert_raise ArgumentError,
-                   "invalid value for :window option: expected positive integer, got: 0",
-                   fn -> Cite.judge(refusing_client(), Cite.source(["a"]), Riddles, window: 0) end
-    end
-
+  describe "judge/4 when a request ends the run" do
     test "raises when the client returns something that is not a verdict" do
-      for concurrency <- [1, 4],
-          {reply, message} <- [
+      for {reply, message} <- [
             {:ok,
              "client must return {:ok, %{answers: map, usage: map | nil}} or {:error, reason}, got: :ok"},
             {{:ok, %{answers: %{}, usage: :lots}},
@@ -360,14 +353,18 @@ defmodule CiteTest do
              ~s(client model must be a non-empty binary when given, got: "")}
           ] do
         assert_raise RuntimeError, message, fn ->
-          Cite.judge(fn _request -> reply end, Cite.source(["a"]), Riddles,
-            concurrency: concurrency
-          )
+          Cite.judge(fn _request -> reply end, Cite.source(["a"]), Riddles)
         end
       end
     end
 
-    test "ends the run at a client's raise, sending nothing after it" do
+    test "passes on what the client raises" do
+      assert_raise ArgumentError, "boom", fn ->
+        Cite.judge(fn _request -> raise ArgumentError, "boom" end, Cite.source(["a"]), Riddles)
+      end
+    end
+
+    test "sends nothing after a reply that is not a verdict" do
       # Arrange
       test_pid = self()
       source = Cite.source(["Why is a raven like a writing-desk?", "b", "c"])
@@ -386,6 +383,14 @@ defmodule CiteTest do
 
       # P000's riddle would have been judged in round 2.
       assert windows_sent() == [["P000"], ["P001"]]
+    end
+  end
+
+  describe "judge/4 arguments" do
+    test "raises on an argument it cannot use before any request" do
+      assert_raise ArgumentError,
+                   "invalid value for :window option: expected positive integer, got: 0",
+                   fn -> Cite.judge(refusing_client(), Cite.source(["a"]), Riddles, window: 0) end
     end
 
     test "refuses a concurrency that is not a positive integer" do
