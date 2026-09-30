@@ -107,10 +107,11 @@ defmodule Cite do
   Raises `ArgumentError` before any request on an argument it cannot use: a
   client that is not a 1-arity function, a source not built by `source/2`,
   a module that is not a policy, or a bad option. Raises `Cite.ClientError`
-  mid-run when the client returns something outside its contract. That
-  raise comes once the requests before it have answered; requests started
-  meanwhile are stopped, but the provider may already have received, and
-  billed, them. Nothing is sent after it.
+  mid-run when the client returns something outside its contract, and
+  passes on as is whatever the client raises, throws, or exits with, an
+  `ArgumentError` included. Either comes once the requests before it have
+  answered; requests started meanwhile are stopped, but the provider may
+  already have received, and billed, them. Nothing is sent after it.
 
   ## Options
 

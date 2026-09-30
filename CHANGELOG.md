@@ -18,8 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - A client that returns something outside its contract raises
-  `Cite.ClientError` instead of `ArgumentError`, which now means only a bad
-  argument to `Cite.judge/4`, raised before any request.
+  `Cite.ClientError` instead of `ArgumentError`. `Cite.judge/4` itself
+  raises `ArgumentError` only on a bad argument, before any request; what
+  the client raises passes through as is.
 - The client runs in a task process, at every `concurrency`. Logger
   metadata and process level carry over, and so does `$callers`, which
   Mox and `Req.Test` rely on; the rest of the caller's process dictionary,
