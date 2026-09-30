@@ -112,6 +112,17 @@ defmodule Cite.Provider.TypeSafeTest do
              }
     end
 
+    test "refuses connect_options beside finch:, as Req would on the first request" do
+      assert_raise ArgumentError,
+                   ":connect_options can't be combined with :finch, in req_options or Req.default_options/0; set them as Finch pool options instead",
+                   fn ->
+                     TypeSafe.new(
+                       api_key: "k",
+                       req_options: [finch: [name: MyFinch], connect_options: nil]
+                     )
+                   end
+    end
+
     test "treats a nil retry_delay as unset, as Req does" do
       assert %TypeSafe{} = TypeSafe.new(api_key: "k", req_options: [retry_delay: nil])
     end
