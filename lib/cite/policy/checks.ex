@@ -201,7 +201,7 @@ defmodule Cite.Policy.Checks do
     |> concerns()
     |> Enum.filter(&(&1.roles != []))
     |> first_error(fn concern ->
-      if not Enum.any?(concern.roles, &(not &1.optional)),
+      if Enum.all?(concern.roles, & &1.optional),
         do:
           {:error, "concern #{inspect(concern.name)} needs at least one required role",
            [concern.name], concern}
