@@ -44,10 +44,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `Cite.source/2` raises on shown meta that holds a key as both an atom
-  and a string, such as `%{k: 1, "k" => 2}`, and on a `show` that names
-  one key both ways. On the wire they were one key, and which value the
-  model saw depended on map order.
+- `Cite.source/2` raises on shown meta whose value holds a key as both an
+  atom and a string, such as `tags: %{k: 1, "k" => 2}` with
+  `show: [:tags]`, and on a `show` that names one key both ways. On the
+  wire they were one key, and which value the model saw depended on map
+  order.
 - `Cite.client/2` raises `ArgumentError` on an atom that is not a
   provider module, instead of `UndefinedFunctionError`.
 
