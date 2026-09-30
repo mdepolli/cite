@@ -4,6 +4,8 @@ defmodule Cite.Provider.TypeSafeTest do
   import Cite.TestTypeSafe, only: [options_sent: 1]
 
   alias Cite.Provider.TypeSafe
+  alias Cite.Report
+  alias Cite.TestPolicies.Riddles
 
   @request %{
     "state" => %{"passages" => %{"U0" => %{"text" => "hi"}}},
@@ -390,6 +392,23 @@ defmodule Cite.Provider.TypeSafeTest do
                retrying_judge().(@request)
 
       assert Agent.get(calls, & &1) == 1
+    end
+  end
+
+  describe "through Cite.judge/4" do
+    # The moduledoc suggests a Req.Test plug for tests. judge/4 sends each
+    # request from a task, so the stub this test process owns must still
+    # answer there.
+    test "answers from a Req.Test stub the caller owns" do
+      Req.Test.stub(__MODULE__, fn conn ->
+        Req.Test.json(conn, %{
+          "model" => "jev-stub",
+          "answers" => %{"P000:riddle" => %{"noul" => 0.1}}
+        })
+      end)
+
+      assert %Report{errors: [], models: ["jev-stub"]} =
+               Cite.judge(judge(), Cite.source(["a"]), Riddles)
     end
   end
 end
