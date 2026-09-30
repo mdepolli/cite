@@ -40,11 +40,9 @@ defmodule Cite do
 
   `judge/4` calls the client from task processes, up to `concurrency` at
   once (4 by default), so the client must be safe to call concurrently.
-  Each task starts with the caller's Logger metadata and process level. It
-  also gets `$callers`, which `Task` sets, so Mox, `Req.Test`, and Ecto's
-  sandbox work inside the client. Nothing else from the caller's process
-  dictionary carries over, OpenTelemetry context included. A client that
-  needs that context attaches it itself.
+  Each task starts with the caller's Logger metadata and process level.
+  OpenTelemetry context does not carry over; a client that needs it
+  attaches it itself.
 
   Tasks don't trap exits. A crash in a process the client links to ends
   that request's task, and `judge/4` exits with the same reason. It does so

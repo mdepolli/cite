@@ -22,9 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   raises `ArgumentError` only on a bad argument, before any request. What
   the client raises passes through as is.
 - The client runs in a task process, even at `concurrency: 1`. Logger
-  metadata and process level carry over, and so does `$callers`, which
-  Mox and `Req.Test` rely on. The rest of the caller's process dictionary
-  does not, OpenTelemetry context included.
+  metadata and process level carry over; OpenTelemetry context does not.
 - A crash in a process the client links to now exits `Cite.judge/4` with
   the same reason, even in a caller that traps exits. There, as with a
   raise, the exit comes once the requests before it have answered.
