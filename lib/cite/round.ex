@@ -15,6 +15,12 @@ defmodule Cite.Round do
 
   # Stream.transform/5 calls stop_the_rest/1 however the stream ends, a
   # raise included, so no task outlives the round.
+  #
+  # Task.async monitors the task and then sends it its job, both from the
+  # caller, so the monitor lands first and a task that dies at once is
+  # reported with its real reason. Task.async_stream monitors from one
+  # process and sends the job from another, and can report such a task as
+  # :noproc.
   @spec run(Enumerable.t(), pos_integer(), (term() -> term())) :: [term()]
   def run(items, concurrency, fun) do
     logger = {Logger.metadata(), Logger.get_process_level(self())}
