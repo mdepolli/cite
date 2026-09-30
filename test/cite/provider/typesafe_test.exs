@@ -93,6 +93,15 @@ defmodule Cite.Provider.TypeSafeTest do
       refute inspect(TypeSafe.new(api_key: "k")) =~ "http_client"
     end
 
+    test "raises on options that are not a keyword list" do
+      for {opts, message} <- [
+            {[1, 2], "options must be a keyword list, got: [1, 2]"},
+            {%{api_key: "k"}, ~s(options must be a keyword list, got: %{api_key: "k"})}
+          ] do
+        assert_raise ArgumentError, message, fn -> TypeSafe.new(opts) end
+      end
+    end
+
     test "rejects unknown options" do
       assert_raise ArgumentError, ~r/unknown options \[:modle\]/, fn ->
         TypeSafe.new(api_key: "k", modle: "x")
