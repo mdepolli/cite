@@ -5,7 +5,7 @@ defmodule Cite.Judge do
   rules. Pure. Internal.
   """
 
-  alias Cite.{Answer, Citation, Error, Finding, Gathered, Passage, Run, Source, Wire}
+  alias Cite.{Answer, Citation, Error, Finding, Gathered, Passage, Run, Wire}
   alias Cite.Policy.{Check, Concern, Role, Terms}
 
   @type outcome :: {Gathered.t(), {:ok, Cite.verdict()} | {:error, term()}}
@@ -16,11 +16,8 @@ defmodule Cite.Judge do
   descriptors over all of them. A concern built from factors: each role at
   the top level, the checks that apply, the descriptors over every role.
   """
-  @spec request(Run.t(), Gathered.t()) :: map()
-  def request(
-        %Run{source: %Source{show: show}} = run,
-        %Gathered{concern: %Concern{detect: nil}} = gathered
-      ) do
+  @spec request(Gathered.t(), Terms.t(), String.t(), [atom() | String.t()]) :: map()
+  def request(%Gathered{concern: %Concern{detect: nil}} = gathered, %Terms{} = terms, _as, show) do
     state =
       Map.new(gathered.roles, fn {role, passage} ->
         {Atom.to_string(role), Wire.passage(passage, show)}
@@ -43,13 +40,15 @@ defmodule Cite.Judge do
 
     %{
       "state" => state,
-      "questions" => Map.merge(checks, descriptor_questions(run.terms, fallback))
+      "questions" => Map.merge(checks, descriptor_questions(terms, fallback))
     }
   end
 
   def request(
-        %Run{source: %Source{as: as, show: show}} = run,
-        %Gathered{concern: %Concern{confirm: confirm}, passages: passages}
+        %Gathered{concern: %Concern{confirm: confirm}, passages: passages},
+        %Terms{} = terms,
+        as,
+        show
       ) do
     confirms =
       for %Passage{id: id} <- passages, into: %{} do
@@ -60,7 +59,7 @@ defmodule Cite.Judge do
 
     %{
       "state" => %{as => Wire.passages(passages, show)},
-      "questions" => Map.merge(confirms, descriptor_questions(run.terms, fallback))
+      "questions" => Map.merge(confirms, descriptor_questions(terms, fallback))
     }
   end
 

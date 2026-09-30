@@ -4,7 +4,7 @@ defmodule Cite.ScreenTest do
   alias Cite.{Error, Screen, Source, TestRun, TestTerms}
   alias Cite.Wire.Object
 
-  describe "request/2" do
+  describe "request/4" do
     test "asks every detect of every passage in the window, under the source's word" do
       source =
         Source.new(
@@ -20,7 +20,7 @@ defmodule Cite.ScreenTest do
           show: [:speaker]
         )
 
-      request = Screen.request(TestRun.new(TestTerms.riddles(), source: source), source.passages)
+      request = Screen.request(source.passages, TestTerms.riddles(), "lines", [:speaker])
 
       criteria = %{
         "true" => %{"what" => "A question asked to be puzzled over."},
@@ -65,7 +65,7 @@ defmodule Cite.ScreenTest do
       source = Source.new([%{id: "U3", text: "Two kids."}], as: "utterances")
 
       %{"questions" => questions} =
-        Screen.request(TestRun.new(TestTerms.household(), source: source), source.passages)
+        Screen.request(source.passages, TestTerms.household(), "utterances", [])
 
       assert Enum.sort(Map.keys(questions)) == [
                "U3:cashflow_stress",
@@ -80,7 +80,7 @@ defmodule Cite.ScreenTest do
       source = Source.new([%{id: "U3", text: "Two kids."}], as: "utterances")
 
       %{"questions" => questions} =
-        Screen.request(TestRun.new(TestTerms.shared_factor(), source: source), source.passages)
+        Screen.request(source.passages, TestTerms.shared_factor(), "utterances", [])
 
       assert Map.keys(questions) == ["U3:dependents"]
     end

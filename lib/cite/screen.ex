@@ -5,21 +5,22 @@ defmodule Cite.Screen do
   Internal.
   """
 
-  alias Cite.{Answer, Error, Passage, Run, Source, Wire}
+  alias Cite.{Answer, Error, Passage, Run, Wire}
   alias Cite.Policy.{Question, Terms}
 
   @type outcome :: {[Passage.t()], {:ok, map()} | {:error, term()}}
   @type screen :: %{String.t() => %{atom() => number()}}
 
   @doc """
-  One request: the window under the source's `as`, and every detect asked
-  of every passage in it, keyed `"<passage id>:<detect>"`.
+  One request: the window under the source's `as`, with the meta keys
+  `show` names, and every detect in `terms` asked of every passage in it,
+  keyed `"<passage id>:<detect>"`.
   """
-  @spec request(Run.t(), [Passage.t()]) :: map()
-  def request(%Run{source: %Source{as: as, show: show}} = run, window) do
+  @spec request([Passage.t()], Terms.t(), String.t(), [atom() | String.t()]) :: map()
+  def request(window, %Terms{} = terms, as, show) do
     questions =
       for %Passage{id: id} <- window,
-          {name, question} <- detects(run.terms),
+          {name, question} <- detects(terms),
           into: %{},
           do: {key(id, name), Wire.question(question, %{"passage" => Wire.text_path(as, id)}, [])}
 

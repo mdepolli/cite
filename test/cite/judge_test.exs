@@ -13,6 +13,7 @@ defmodule Cite.JudgeTest do
 
     %{
       run: TestRun.new(terms, source: source, review_band: @band),
+      terms: terms,
       source: source,
       cashflow: cashflow,
       household: household
@@ -128,12 +129,12 @@ defmodule Cite.JudgeTest do
     }
   end
 
-  describe "request/2 for a directly screened concern" do
+  describe "request/4 for a directly screened concern" do
     test "asks the confirm of each passage among its siblings, and the descriptors over all",
          ctx do
       gathered = %Gathered{concern: ctx.cashflow, passages: [@u1, @u2]}
 
-      assert Judge.request(ctx.run, gathered) == %{
+      assert Judge.request(gathered, ctx.terms, "utterances", [:speaker]) == %{
                "state" => %{
                  "utterances" =>
                    Object.new([
@@ -151,7 +152,7 @@ defmodule Cite.JudgeTest do
     end
   end
 
-  describe "request/2 for a concern built from factors" do
+  describe "request/4 for a concern built from factors" do
     test "puts each role at the top level and asks the checks that apply", ctx do
       gathered = %Gathered{
         concern: ctx.household,
@@ -159,7 +160,7 @@ defmodule Cite.JudgeTest do
         roles: %{household: @u3, income: @u9}
       }
 
-      assert Judge.request(ctx.run, gathered) == %{
+      assert Judge.request(gathered, ctx.terms, "utterances", [:speaker]) == %{
                "state" => %{
                  "household" => %{"id" => "U3", "speaker" => "B", "text" => "text of U3"},
                  "income" => %{"id" => "U9", "speaker" => "B", "text" => "text of U9"}
@@ -205,7 +206,7 @@ defmodule Cite.JudgeTest do
 
       # Act
       %{"state" => state, "questions" => questions} =
-        Judge.request(ctx.run, gathered)
+        Judge.request(gathered, ctx.terms, "utterances", [:speaker])
 
       # Assert
       assert Enum.sort(Map.keys(state)) == ["household", "income", "other_earner"]
@@ -221,15 +222,15 @@ defmodule Cite.JudgeTest do
         roles: %{household: @u3, income: @u3}
       }
 
-      %{"questions" => questions} = Judge.request(ctx.run, gathered)
+      %{"questions" => questions} =
+        Judge.request(gathered, ctx.terms, "utterances", [:speaker])
 
       assert Enum.sort(Map.keys(questions)) == ["concentrated_income", "severity", "temporal"]
     end
   end
 
-  describe "request/2 with a role named only in a check's focus" do
-    test "skips that check while the role is empty, instead of failing to expand the focus",
-         ctx do
+  describe "request/4 with a role named only in a check's focus" do
+    test "skips that check while the role is empty, instead of failing to expand the focus" do
       terms = TestTerms.focus_role()
       [household] = terms.concerns
 
@@ -239,13 +240,12 @@ defmodule Cite.JudgeTest do
         roles: %{household: @u3, income: @u9}
       }
 
-      %{"questions" => questions} =
-        Judge.request(TestRun.new(terms, source: ctx.source), gathered)
+      %{"questions" => questions} = Judge.request(gathered, terms, "utterances", [:speaker])
 
       assert Map.keys(questions) == ["same_household"]
     end
 
-    test "once the role is filled, reads it beside the roles the question names", ctx do
+    test "once the role is filled, reads it beside the roles the question names" do
       terms = TestTerms.focus_role()
       [household] = terms.concerns
 
@@ -255,8 +255,7 @@ defmodule Cite.JudgeTest do
         roles: %{household: @u3, income: @u9, other_earner: @u4}
       }
 
-      %{"questions" => questions} =
-        Judge.request(TestRun.new(terms, source: ctx.source), gathered)
+      %{"questions" => questions} = Judge.request(gathered, terms, "utterances", [:speaker])
 
       assert questions["concentrated_income"]["instructions"] == %{
                "question" => "Does one person's pay in `income.text` support `household.text`?",

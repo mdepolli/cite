@@ -138,12 +138,21 @@ defmodule Cite do
     |> Report.new()
   end
 
-  # Round 1: every passage, a window per request.
-  defp screen(%Run{} = run) do
+  # Round 1: every passage, a window per request. A task copies what it
+  # captures, so it gets the client and what a request reads, never the run.
+  defp screen(
+         %Run{
+           client: client,
+           terms: terms,
+           source: %Source{passages: passages, as: as, show: show}
+         } = run
+       ) do
+    request = &Screen.request(&1, terms, as, show)
+
     outcomes =
-      run.source.passages
+      passages
       |> Stream.chunk_every(run.window)
-      |> Round.run(run.concurrency, &screen_window(run, &1))
+      |> Round.run(run.concurrency, &screen_window(&1, client, request))
       |> Enum.concat()
 
     Screen.resolve(run, outcomes)
@@ -152,27 +161,37 @@ defmodule Cite do
   # A window over the request cap is split in half and both halves screened,
   # one after the other in the window's own task; only a single passage that
   # still exceeds it is an error.
-  defp screen_window(%Run{} = run, window) do
-    case fetch_verdict(run.client, Screen.request(run, window)) do
+  defp screen_window(window, client, request) do
+    case fetch_verdict(client, request.(window)) do
       {:error, :request_too_large} when length(window) > 1 ->
         {left, right} = Enum.split(window, div(length(window), 2))
-        screen_window(run, left) ++ screen_window(run, right)
+        screen_window(left, client, request) ++ screen_window(right, client, request)
 
       verdict ->
         [{window, verdict}]
     end
   end
 
-  # Round 2: one request per gathered finding.
-  defp judge_findings(%Run{gathered: gathered} = run) when is_list(gathered) do
-    outcomes = Round.run(gathered, run.concurrency, &judge_finding(run, &1))
+  # Round 2: one request per gathered finding. Its tasks capture what round
+  # 1's do.
+  defp judge_findings(
+         %Run{
+           client: client,
+           terms: terms,
+           source: %Source{as: as, show: show},
+           gathered: gathered
+         } = run
+       )
+       when is_list(gathered) do
+    request = &Judge.request(&1, terms, as, show)
+    outcomes = Round.run(gathered, run.concurrency, &judge_finding(&1, client, request))
 
     Judge.resolve(run, outcomes)
   end
 
   # One gathered finding, judged in one request.
-  defp judge_finding(%Run{} = run, gathered),
-    do: {gathered, fetch_verdict(run.client, Judge.request(run, gathered))}
+  defp judge_finding(gathered, client, request),
+    do: {gathered, fetch_verdict(client, request.(gathered))}
 
   # A reply must answer every question with a value it can have; a reply that
   # skips one or answers it out of range is not a verdict on it, so the whole
