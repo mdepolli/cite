@@ -198,7 +198,8 @@ riddles.
 Each answer must fit its question:
 
 - yes or no: `%{"noul" => p}`
-- a level: `%{"score" => level_index, "confidence" => p}`
+- a level: `%{"score" => s, "confidence" => p}`, where `s` is a number
+  from 0 to the last level's index, and may fall between levels
 - a choice: `%{"choice" => option_key, "confidence" => p}`
 
 Any other shape fails the request.
@@ -238,9 +239,9 @@ only one implementation; the changelog will say so.
 `Cite.Wire.Object` is stable only through `Access` and `Jason.Encoder`.
 
 **Internal.** Everything else carries no guarantee: the compiled policy
-structs, the Spark extension, `Run`, `Screen`, `Gather`, `Judge`,
-`Placeholder`, `Wire`, and `Answer`. Their docs stay published because they
-explain how Cite works.
+structs, the Spark extension, `Run`, `Screen`, `Gather`, `Gathered`,
+`Judge`, `Placeholder`, `Wire`, and `Answer`. Their docs stay published
+because they explain how Cite works.
 
 The [roadmap](https://github.com/mdepolli/cite/blob/main/ROADMAP.md) lists
 what is planned for the next release and what is still being explored.

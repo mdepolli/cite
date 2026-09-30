@@ -170,5 +170,5 @@ question, or answers one with a value its question cannot have, is no
 verdict on that question. The whole request becomes a `Cite.Error` with
 `{:missing_answers, keys}` or `{:malformed_answers, keys}`, and nothing from
 it is read. A Noul or a confidence must be a probability from 0 to 1, a
-Score a level index from 0 to its last level, and a Choice one of its
-options.
+Score a number from 0 to its last level's index, between levels
+included, and a Choice one of its options.

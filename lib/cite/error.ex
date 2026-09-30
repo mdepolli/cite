@@ -10,8 +10,10 @@ defmodule Cite.Error do
   - `{:malformed_answers, keys}` when a reply answered one with a value
     its question cannot have.
 
-  Encoding with Jason always succeeds: JSON-safe reasons pass through,
-  everything else becomes `inspect(reason)`.
+  Encoding with Jason always succeeds. Atoms, numbers, and UTF-8 strings
+  pass through, and lists and plain maps are encoded value by value. Any
+  other value, such as a tuple or a struct, becomes its `inspect` string,
+  wherever it sits in the reason.
   """
 
   @type t :: %__MODULE__{
