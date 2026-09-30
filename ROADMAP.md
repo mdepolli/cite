@@ -19,9 +19,9 @@ separate package that implements `Cite.Provider`, so Cite itself never
 depends on Nx, and its releases don't follow Nx's.
 
 It waits on two fixes in the `laya` package. Its decision head uses GELU
-where the original model uses ReLU. And it truncates long state silently,
-so Cite cannot tell that a request was too large and split it. Then the
-benchmarks must show how Laya's answers compare with Jev's before a
+where the original model uses ReLU. It also truncates long state silently,
+so Cite never learns that a request was too large and never splits it.
+Then the benchmarks must compare Laya's answers with Jev's before a
 tutorial can recommend it.
 
 ### More than one case in a concern built from factors
@@ -34,13 +34,13 @@ check such as `same_household` then fails the finding, and Cite never
 tries another combination. A caller can't recover the missed household
 afterwards: it never reached round 2.
 
-The aim is to judge each candidate case. One direction is an anchored
-role: each match for one role starts a candidate, the other roles are
-filled for that candidate, and the concern's checks judge each candidate in
-its own request. The benchmark must show candidates are formed and judged
-as a person would group them, at a cost in requests that stays in
-proportion to the cases found. This changes what callers rely on: a
-concern could report more than one finding.
+The aim is to judge each candidate case. One option is an anchored role:
+each match for one role starts a candidate, the other roles are filled for
+that candidate, and the concern's checks judge each candidate in its own
+request. The benchmark must show that candidates are formed and judged as
+a person would group them. Their cost in requests must stay in proportion
+to the cases found. This changes what callers rely on: a concern could
+report more than one finding.
 
 Status: waiting for data. The transcripts measured so far are
 inconclusive: none has a second household of the client's own to judge,
@@ -65,8 +65,8 @@ tokens. On summaries it did worse: framing lines such as "Here is the
 summary in 112 words:" passed as claims and were flagged, and borderline
 sentences shifted both ways. The questions must stay as they are: pointing
 them at the shared copy, or naming it by its path, lost precision
-everywhere. Batching passages with the context still copied onto each held
-up on both kinds.
+everywhere. Batching passages held up on both kinds when each passage
+still carried its own copy of the context.
 
 ## Not planned
 

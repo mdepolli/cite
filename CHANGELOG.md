@@ -19,27 +19,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A client that returns something outside its contract raises
   `Cite.ClientError` instead of `ArgumentError`. `Cite.judge/4` itself
-  raises `ArgumentError` only on a bad argument, before any request; what
+  raises `ArgumentError` only on a bad argument, before any request. What
   the client raises passes through as is.
-- The client runs in a task process, at every `concurrency`. Logger
+- The client runs in a task process, even at `concurrency: 1`. Logger
   metadata and process level carry over, and so does `$callers`, which
-  Mox and `Req.Test` rely on; the rest of the caller's process dictionary,
-  OpenTelemetry context included, does not.
+  Mox and `Req.Test` rely on. The rest of the caller's process dictionary
+  does not, OpenTelemetry context included.
 - A crash in a process the client links to now exits `Cite.judge/4` with
   the same reason, even in a caller that traps exits. There, as with a
   raise, the exit comes once the requests before it have answered.
-  Before, such a caller, a GenServer for instance, received an `:EXIT`
-  message and the run carried on.
+  Before, such a caller (a GenServer, say) received an `:EXIT` message and
+  the run carried on.
 - At `concurrency` above 1, a raise mid-run comes once the requests before
   it have answered. Requests started meanwhile are stopped, but the
-  provider may already have received, and billed, them.
+  provider may already have received and billed them.
 - `Cite.Provider.TypeSafe` waits for a pooled connection with no time
   limit, instead of raising after 5 seconds. A `pool_timeout` under
   `finch:`, in `req_options` or the app's `Req.default_options/0`, still
   sets one.
-- `Cite.Provider.TypeSafe` refuses a `:retry_delay`, in `req_options` or
-  the app's `Req.default_options/0`, unless `req_options` sets its own
-  `:retry`, when the client is built. Req would raise on the first retry.
+- When the client is built, `Cite.Provider.TypeSafe` refuses a
+  `:retry_delay` in `req_options` or the app's `Req.default_options/0`,
+  unless `req_options` sets its own `:retry`. Req would raise on the first
+  retry.
 - The RAG grounding tutorial runs at the default window: screening an
   answer's sentences together costs no more and makes no more mistakes
   than one at a time.

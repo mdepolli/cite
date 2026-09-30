@@ -124,18 +124,18 @@ checks that apply:
 }
 ```
 
-A round-2 request refused as too large is that finding's error; it is not
-split, because each confirm reads its passage beside all the others, and a
-split would judge a different finding (see
+A round-2 request refused as too large becomes that finding's error. It is
+not split: each confirm reads its passage beside all the others, so a split
+would judge a different finding (see
 [How a finding is read](#how-a-finding-is-read)).
 
 ## Verdict rules
 
 With `{low, high}` as the review band:
 
-- **Evidence of a directly screened concern.** A passage whose confirm is at or
-  below `low` is dropped; below `high` it is cited as `:review`; at or above
-  `high`, as `:holds`.
+- **Evidence of a directly screened concern.** A passage whose confirm is
+  at or below `low` is dropped; below `high` it is cited as `:review`; at
+  or above `high`, as `:holds`.
 - **Evidence of a concern built from factors.** Every passage filling a role
   is cited as `:holds`, once, even if it fills several roles.
 - **`:fails`**: any asked check at or below `low`, or no evidence left.
@@ -146,7 +146,7 @@ With `{low, high}` as the review band:
 ## How a finding is read
 
 A confirm does not judge its passage alone. It reads the passage for its
-part in the whole finding, beside every other passage gathered with it, so
+part in the whole finding, beside every other passage gathered with it. So
 a line that refers back to another ("I kind of resent it") can hold beside
 the line it refers to and fail alone. This was measured in an internal
 benchmark of conversation transcripts, where lines lean on turns far away.
@@ -166,8 +166,8 @@ follow:
 ## Replies
 
 The client's reply is checked once, in the shell. A reply that skips a
-question, or answers one with a value its question cannot have, is not a
-verdict on it: the whole request becomes a `Cite.Error` with
+question, or answers one with a value its question cannot have, is no
+verdict on that question. The whole request becomes a `Cite.Error` with
 `{:missing_answers, keys}` or `{:malformed_answers, keys}`, and nothing from
 it is read. A Noul or a confidence must be a probability from 0 to 1, a
 Score a level index from 0 to its last level, and a Choice one of its

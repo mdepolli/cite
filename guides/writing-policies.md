@@ -30,8 +30,8 @@ end
     its own detect, or built from factors.
   - **Factor**: never a finding alone; fills a role in a concern built from
     factors.
-- **Confirm**: a directly screened concern's second question, asked in round
-  2 of each passage the detect matched, read beside the concern's other
+- **Confirm**: a directly screened concern's second question. Round 2 asks
+  it of each passage the detect matched, beside the concern's other
   matches. It decides which passages are cited.
 - **Check**: a question across a concern's roles, asked in round 2. It
   decides whether the finding holds.
@@ -42,8 +42,8 @@ end
 
 ## Questions
 
-Every yes/no question — a filter, factor, detect, confirm, or check — has the
-same body:
+Every yes/no question — a filter, factor, detect, confirm, or check — has
+the same body:
 
 ```elixir
 question "Does {passage} say the speaker's household is currently struggling with money?"
@@ -63,7 +63,8 @@ yes do
 end
 ```
 
-`not_for` is what a reading of its own block's `what` might wrongly include.
+`not_for` names what its own block's `what` might wrongly be read to
+include.
 
 On the wire `yes` and `no` are the Noul's `"true"` and `"false"` criteria;
 the DSL says `yes`/`no` because `true` and `false` are Elixir literals.
@@ -101,7 +102,7 @@ concern :cashflow_stress do
 end
 ```
 
-The detect casts the net in round 1; the confirm decides, in round 2, which
+The detect casts the net in round 1. The confirm decides, in round 2, which
 matched passages are cited. `confirm` is optional: without it the detect is
 asked again, over the concern's gathered passages instead of a screening
 window. `category` defaults to the concern's name.
@@ -169,8 +170,8 @@ choice :temporal do
 end
 ```
 
-Every finding is described by every descriptor, asked over all of its
-evidence. A Score has 2 to 10 unique levels; a Choice at least one option.
+Every descriptor is asked of every finding, over all of its evidence. A
+Score has 2 to 10 unique levels; a Choice at least one option.
 
 ## Overlapping concerns
 
@@ -178,7 +179,7 @@ A passage is evidence for every directly screened concern it matches. When
 two concerns claim the same ground (say, redundancy listed as both a life
 event and a threat to the job), the policy must settle it: give one of
 them a `not_for` that sends the case to the other. Cite does not choose
-between concerns for you; their scores come from differently worded
+between concerns for you. Their scores come from differently worded
 questions and cannot be compared. If your readers should see a passage once,
 decide which finding shows it when you present the report.
 
@@ -187,8 +188,8 @@ decide which finding shows it when you present the report.
 A question names what it reads with a placeholder. Cite replaces each one
 with a backticked path to that text in the request.
 
-- `{passage}` is the passage a detect or confirm is asked about; `{household}`
-  names a role. A placeholder means the passage's text.
+- `{passage}` is the passage a detect or confirm is asked about;
+  `{household}` names a role. A placeholder means the passage's text.
 - Placeholders expand in `question` and `focus`, not in criteria.
 - Filters, factors, detects, and confirms use `{passage}` and nothing else,
   and name it in the question. A check uses its concern's roles and nothing
@@ -226,17 +227,17 @@ A policy fails to compile, pointing at the declaration, on:
 
 ## Wording that holds up
 
-The model reads literally. These are the rules that held up in practice.
+The model reads literally. These rules held up in practice.
 
 **One proposition per question.** "Does it pose a riddle *and* is it
 unanswered" is two questions, and the model answers whichever it weighs
 more. Ask the first as a detect and the second as the confirm.
 
 **Boundary cases go in `not_for`.** The first wording of a question is the
-half of the instruction you thought of; the wrong answers you meet afterwards
-are the other half. Put them in the criteria as paraphrases, not as fixture
-lines. When you find yourself explaining what you really meant, that
-explanation is the missing `not_for`.
+half of the instruction you thought of. The wrong answers you meet
+afterwards are the other half. Put them in the criteria as paraphrases,
+not as fixture lines. When you find yourself explaining what you really
+meant, that explanation is the missing `not_for`.
 
 **Question and criteria agree.** When they disagree, the model answers the
 question and ignores the criteria.

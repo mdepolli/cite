@@ -125,8 +125,8 @@ flowchart LR
 
 Each finding has a **verdict**: `:holds`, `:review` (a person should
 decide), or `:fails`. Each citation has its own verdict too. The model's
-answers come back untouched, a citation's in `answer` and a finding's in
-`checks` and `descriptors`, so you decide what a level or a choice means.
+answers come back untouched: a citation's in `answer`, a finding's in
+`checks` and `descriptors`. You decide what a level or a choice means.
 
 To build a policy of your own, start with a tutorial:
 
@@ -156,7 +156,7 @@ Four options tune a run:
 - `window`, a positive integer, default `40`: how many passages go in each
   first-round request. At `1`, each request holds one passage.
 - `concurrency`, a positive integer, default `4`: how many requests a round
-  sends at once. The report is the same at any setting; set it within your
+  sends at once. The report is the same at any setting. Set it within your
   provider's rate limits, or to `1` to send one request at a time.
 
 Leave `threshold` alone at first. Lowering it does more than find more
@@ -222,8 +222,8 @@ To write your own, implement `Cite.Provider`. The client receives
 `{:ok, %{answers: map, usage: usage | nil}}` (plus an optional `:model`
 key) or `{:error, reason}`. A value in `"state"` may be a
 `Cite.Wire.Object`, a JSON object that keeps its keys in order. Return
-`{:error, :request_too_large}` when a request is too big, and Cite splits
-first-round requests in half and retries.
+`{:error, :request_too_large}` when a request is too big. Cite then splits
+a first-round request in half and retries.
 
 ## Stability
 
