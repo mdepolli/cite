@@ -37,11 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   limit, instead of raising after 5 seconds. A `pool_timeout` under
   `finch:`, in `req_options` or the app's `Req.default_options/0`, still
   sets one.
-- `Cite.Provider.TypeSafe` refuses two combinations when the client is
-  built, where Req would raise only once a request is sent: a
-  `:retry_delay` without a `:retry` in `req_options`, and
-  `:connect_options` beside `:finch`. Either option may come from
-  `req_options` or the app's `Req.default_options/0`.
+- `Cite.Provider.TypeSafe` refuses a `:retry_delay`, in `req_options` or
+  the app's `Req.default_options/0`, unless `req_options` sets its own
+  `:retry`, when the client is built. Req would raise on the first retry.
 - The RAG grounding tutorial runs at the default window: screening an
   answer's sentences together costs no more and makes no more mistakes
   than one at a time.

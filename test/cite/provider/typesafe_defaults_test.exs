@@ -24,14 +24,6 @@ defmodule Cite.Provider.TypeSafeDefaultsTest do
     assert options_sent([]) == %{pool_timeout: :infinity, connect_options: [timeout: 1_000]}
   end
 
-  test "refuses a caller's finch: beside the app's default connect_options" do
-    Req.default_options(connect_options: [timeout: 1_000])
-
-    assert_raise ArgumentError,
-                 ":connect_options can't be combined with :finch, in req_options or Req.default_options/0; set them as Finch pool options instead",
-                 fn -> TypeSafe.new(api_key: "k", req_options: [finch: [size: 100]]) end
-  end
-
   test "lets a caller's finch: replace the app's default one whole, as Req does" do
     Req.default_options(finch: [name: MyApp.Finch])
 

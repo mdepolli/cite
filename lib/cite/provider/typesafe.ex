@@ -81,13 +81,10 @@ defmodule Cite.Provider.TypeSafe do
   - A proxy, custom CA certificates, or HTTP/2: `connect_options: [...]`.
     Req refuses it beside `finch:`; there, set them as Finch pool options.
 
-  Two combinations are refused when the client is built, where Req would
-  raise only once a request is sent. Both are checked on the merged
-  options, so the app's defaults count:
-
-  - A `:retry_delay` without a `:retry` in `req_options`. The adapter's
-    retry sets its own delays.
-  - `:connect_options` beside `:finch`.
+  One combination is refused when the client is built, where Req would
+  raise only on the first retry: a `:retry_delay`, in `req_options` or the
+  app's defaults, without a `:retry` in `req_options`. The adapter's retry
+  sets its own delays. Other Req options are Req's to check.
 
   ## Connections
 
@@ -157,7 +154,6 @@ defmodule Cite.Provider.TypeSafe do
       |> Req.Request.put_private(:cite_max_retry_delay, max_retry_delay)
 
     check_retry_delay(http_client, adapter_retry)
-    check_connect_options(http_client)
 
     %__MODULE__{http_client: http_client, model: model}
   end
@@ -170,15 +166,6 @@ defmodule Cite.Provider.TypeSafe do
     if options[:retry_delay] && options[:retry] == adapter_retry do
       raise ArgumentError,
             ":retry_delay needs a :retry in req_options, because the adapter's retry sets delays itself"
-    end
-  end
-
-  # Req refuses any :connect_options key, nil included, beside a :finch, and
-  # also only once a request is sent. Either may come from the app's defaults.
-  defp check_connect_options(%Req.Request{options: options}) do
-    if options[:finch] && Map.has_key?(options, :connect_options) do
-      raise ArgumentError,
-            ":connect_options can't be combined with :finch, in req_options or Req.default_options/0; set them as Finch pool options instead"
     end
   end
 
