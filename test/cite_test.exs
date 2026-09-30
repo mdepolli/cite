@@ -673,8 +673,7 @@ defmodule CiteTest do
         if window_ids(request) == ["P001"], do: :not_a_verdict, else: answering.(request)
       end
 
-      label = fn request -> if window_ids(request) != ["P001"], do: window_ids(request) end
-      client = held_client(label, reply)
+      client = held_client(&window_ids/1, reply)
 
       task =
         Task.async(fn ->
@@ -682,7 +681,11 @@ defmodule CiteTest do
         end)
 
       # Act
-      held = Map.new(arrivals(2))
+      held = Map.new(arrivals(3))
+      second = held[["P001"]]
+      second_ref = Process.monitor(second)
+      send(second, :go)
+      assert_receive {:DOWN, ^second_ref, :process, ^second, _}
       third = held[["P002"]]
       ref = Process.monitor(third)
       send(held[["P000"]], :go)
