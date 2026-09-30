@@ -95,13 +95,31 @@ defmodule CiteTest do
 
   defp release(arrivals), do: Enum.each(arrivals, fn {_label, pid} -> send(pid, :go) end)
 
-  # Judges eight passages at window 1 and concurrency 4, holding every
-  # request. P001's client calls `failing` in place of a reply; `catching`
-  # runs the judge call in the caller task and returns what it failed with.
-  # Releases P001 alone and waits for its task to go down, which frees a
-  # slot. Returns the judge task and the three requests still held.
-  defp fail_second_of_four(failing, catching) do
-    source = Cite.source(["a", "b", "c", "d", "e", "f", "g", "h"])
+  # Lets one held request answer and waits for its task to go down, which
+  # frees its slot.
+  defp release_and_await(pid) do
+    ref = Process.monitor(pid)
+    send(pid, :go)
+    assert_receive {:DOWN, ^ref, :process, ^pid, _}
+  end
+
+  # A client body that links to a helper that crashes, and waits to be
+  # killed by it.
+  defp crash_through_link do
+    spawn_link(fn -> exit(:helper_crashed) end)
+
+    receive do
+      :never -> :ok
+    end
+  end
+
+  # Judges `texts` at window 1 and concurrency 4, holding every request.
+  # P001's client calls `failing` in place of a reply; `catching` runs the
+  # judge call in the caller task and returns what it failed with. Releases
+  # P001 alone and waits for its task to go down. Returns the judge task and
+  # the requests still held, by window.
+  defp fail_p001(texts, failing, catching) do
+    source = Cite.source(texts)
     answering = client(%{})
 
     reply = fn request ->
@@ -115,11 +133,15 @@ defmodule CiteTest do
         catching.(fn -> Cite.judge(client, source, Riddles, window: 1, concurrency: 4) end)
       end)
 
-    held = Map.new(arrivals(4))
-    {second, others} = Map.pop(held, ["P001"])
-    ref = Process.monitor(second)
-    send(second, :go)
-    assert_receive {:DOWN, ^ref, :process, ^second, _}
+    {second, others} =
+      texts
+      |> length()
+      |> min(4)
+      |> arrivals()
+      |> Map.new()
+      |> Map.pop(["P001"])
+
+    release_and_await(second)
 
     {task, others}
   end
@@ -529,11 +551,7 @@ defmodule CiteTest do
       # Act
       arrivals(4)
       |> Enum.sort_by(&elem(&1, 0), :desc)
-      |> Enum.each(fn {_label, pid} = arrival ->
-        ref = Process.monitor(pid)
-        release([arrival])
-        assert_receive {:DOWN, ^ref, :process, ^pid, _}
-      end)
+      |> Enum.each(fn {_label, pid} -> release_and_await(pid) end)
 
       report = Task.await(task)
 
@@ -575,12 +593,7 @@ defmodule CiteTest do
       # Act
       held = Map.new(arrivals(2))
 
-      for concern <- [:life_event, :health] do
-        pid = held[concern]
-        ref = Process.monitor(pid)
-        send(pid, :go)
-        assert_receive {:DOWN, ^ref, :process, ^pid, _}
-      end
+      for concern <- [:life_event, :health], do: release_and_await(held[concern])
 
       report = Task.await(task)
 
@@ -640,29 +653,10 @@ defmodule CiteTest do
     end
 
     test "raises only once the requests before the raise have answered" do
-      # Arrange
-      source = Cite.source(["a", "b"])
-      answering = client(%{})
-
-      reply = fn request ->
-        if window_ids(request) == ["P001"], do: :not_a_verdict, else: answering.(request)
-      end
-
-      client = held_client(&window_ids/1, reply)
-
-      task =
-        Task.async(fn ->
-          catch_error(Cite.judge(client, source, Riddles, window: 1, concurrency: 4))
-        end)
-
-      # Act
-      held = Map.new(arrivals(2))
-      second = held[["P001"]]
-      ref = Process.monitor(second)
-      send(second, :go)
-      assert_receive {:DOWN, ^ref, :process, ^second, _}
+      # Arrange / Act
+      {task, held} = fail_p001(["a", "b"], fn -> :not_a_verdict end, &catch_error(&1.()))
       still_running = Task.yield(task, 100)
-      send(held[["P000"]], :go)
+      release(held)
 
       # Assert
       assert still_running == nil
@@ -671,7 +665,8 @@ defmodule CiteTest do
 
     test "starts no request once one has raised" do
       # Arrange / Act
-      {task, held} = fail_second_of_four(fn -> :not_a_verdict end, &catch_error(&1.()))
+      {task, held} =
+        fail_p001(~w(a b c d e f g h), fn -> :not_a_verdict end, &catch_error(&1.()))
 
       # Assert
       refute_receive {:arrive, _label, _pid}
@@ -680,28 +675,9 @@ defmodule CiteTest do
     end
 
     test "stops the requests after a raise that are still in flight" do
-      # Arrange
-      source = Cite.source(["a", "b", "c"])
-      answering = client(%{})
-
-      reply = fn request ->
-        if window_ids(request) == ["P001"], do: :not_a_verdict, else: answering.(request)
-      end
-
-      client = held_client(&window_ids/1, reply)
-
-      task =
-        Task.async(fn ->
-          catch_error(Cite.judge(client, source, Riddles, window: 1, concurrency: 4))
-        end)
-
-      # Act
-      held = Map.new(arrivals(3))
-      second = held[["P001"]]
+      # Arrange / Act
+      {task, held} = fail_p001(["a", "b", "c"], fn -> :not_a_verdict end, &catch_error(&1.()))
       third = held[["P002"]]
-      second_ref = Process.monitor(second)
-      send(second, :go)
-      assert_receive {:DOWN, ^second_ref, :process, ^second, _}
       send(held[["P000"]], :go)
 
       # Assert
@@ -720,11 +696,7 @@ defmodule CiteTest do
       reply = fn request ->
         if window_ids(request) == ["P001"] do
           send(test_pid, {:crashing, self()})
-          spawn_link(fn -> exit(:helper_crashed) end)
-
-          receive do
-            :never -> :ok
-          end
+          crash_through_link()
         else
           answering.(request)
         end
@@ -757,21 +729,13 @@ defmodule CiteTest do
 
     test "starts no request once a linked crash has killed one, in a caller that traps exits" do
       # Arrange
-      crash = fn ->
-        spawn_link(fn -> exit(:helper_crashed) end)
-
-        receive do
-          :never -> :ok
-        end
-      end
-
       trapping = fn judge ->
         Process.flag(:trap_exit, true)
         catch_exit(judge.())
       end
 
       # Act
-      {task, held} = fail_second_of_four(crash, trapping)
+      {task, held} = fail_p001(~w(a b c d e f g h), &crash_through_link/0, trapping)
 
       # Assert
       refute_receive {:arrive, _label, _pid}
@@ -806,15 +770,10 @@ defmodule CiteTest do
         Task.async(fn ->
           Process.flag(:trap_exit, true)
 
-          client = fn _request ->
-            spawn_link(fn -> exit(:helper_crashed) end)
+          catch_exit(
+            Cite.judge(fn _request -> crash_through_link() end, Cite.source(["a"]), Riddles)
+          )
 
-            receive do
-              :never -> :ok
-            end
-          end
-
-          catch_exit(Cite.judge(client, Cite.source(["a"]), Riddles))
           Process.info(self(), :messages)
         end)
 
