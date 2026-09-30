@@ -685,14 +685,16 @@ defmodule CiteTest do
       second = held[["P001"]]
       third = held[["P002"]]
       second_ref = Process.monitor(second)
-      ref = Process.monitor(third)
       send(second, :go)
       assert_receive {:DOWN, ^second_ref, :process, ^second, _}
       send(held[["P000"]], :go)
 
       # Assert
       assert %RuntimeError{} = Task.await(task)
-      assert_receive {:DOWN, ^ref, :process, ^third, :killed}
+      # judge/4 raises only once the stream has killed its running tasks and
+      # seen them go down. A monitor set on P002 here could land after that
+      # and report :noproc.
+      refute Process.alive?(third)
     end
 
     test "exits a caller that traps exits with a linked crash's reason, once the requests before it have answered" do
