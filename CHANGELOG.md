@@ -32,17 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it have answered. Requests started meanwhile are stopped, but the
   provider may already have received, and billed, them.
 - `Cite.Provider.TypeSafe` waits for a pooled connection with no time
-  limit, instead of raising after 5 seconds. Timeouts in the app's default
-  `finch:` list, in `Req.default_options/0`, no longer apply to TypeSafe:
-  Req reads them over the adapter's own. One in `req_options`'
-  `finch: [...]` still does.
-- `Cite.Provider.TypeSafe` refuses, when the client is built rather than on
-  the first request: `:connect_options`; `finch:` as a bare pool name;
-  `finch:` pool options beside a pool `name:`; and a default `:retry_delay`
-  without a `:retry` in `req_options`. These hold in `req_options` and in
-  the app's `Req.default_options/0`, whose `finch:` list still applies,
-  beneath the client's own. Set Finch options under `finch: [...]` instead
-  of `:connect_options`.
+  limit, instead of raising after 5 seconds. A `pool_timeout` under
+  `finch:`, in `req_options` or the app's `Req.default_options/0`, still
+  sets one.
+- `Cite.Provider.TypeSafe` refuses a `:retry_delay`, in `req_options` or
+  the app's `Req.default_options/0`, unless `req_options` sets its own
+  `:retry`, when the client is built. Req would raise on the first retry.
 - The RAG grounding tutorial runs at the default window: screening an
   answer's sentences together costs no more and makes no more mistakes
   than one at a time.

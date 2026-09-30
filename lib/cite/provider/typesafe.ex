@@ -32,18 +32,9 @@ defmodule Cite.Provider.TypeSafe do
               type: {:custom, __MODULE__, :validate_req_options, []},
               default: [],
               doc: """
-              Merged into the Req client last, over the adapter's options and \
-              the app's `Req.default_options/0`; a test passes \
-              `plug: {Req.Test, name}`. `finch:` must be a keyword list, here and \
-              in the defaults, and merges key by key: the defaults' list without \
-              its timeouts, then the adapter's pool wait, then this one. Req \
-              reads timeouts in `finch:` over top-level ones, so set \
-              `pool_timeout` there. Req refuses some options \
-              only once a request is sent, so the merged options are checked \
-              when the client is built: `:connect_options` (set Finch pool \
-              options under `finch:` instead), `finch:` pool options beside a \
-              `name:`, and a `:retry_delay` without a `:retry` here, since the \
-              adapter's retry sets delays itself.\
+              Req options, merged over the ones the adapter sets, as `Req.new/1` \
+              merges them; the app's `Req.default_options/0` sits beneath both. \
+              See "Req options" below.\
               """
             ]
           )
@@ -65,16 +56,42 @@ defmodule Cite.Provider.TypeSafe do
   retried: a 120-second call retried is eight minutes, and a slow success would
   be billed twice.
 
+  ## Req options
+
+  The adapter builds its Req client with these options. Anything in
+  `req_options` overrides them, key by key, as `Req.new/1` merges; the
+  app's `Req.default_options/0` applies beneath both.
+
+  | Option | Set to | To change it |
+  | --- | --- | --- |
+  | `base_url` | the `base_url` option | use `base_url` |
+  | `auth` | `{:bearer, api_key}` | use `api_key` |
+  | `receive_timeout` | `120_000` | `req_options: [receive_timeout: ms]` |
+  | `retry` | the adapter's retry, above | `req_options: [retry: ...]`, which replaces it |
+  | `max_retries` | `3` | `req_options: [max_retries: n]` |
+  | `redirect` | `false` | `req_options: [redirect: true]` |
+  | `pool_timeout` | `:infinity`, unless set | `req_options: [finch: [pool_timeout: ms]]` |
+
+  Every other Req option passes through as Req documents it. The common
+  ones:
+
+  - Tests: `req_options: [plug: {Req.Test, MyApp.TypeSafeStub}]`.
+  - A larger connection pool: `req_options: [finch: [size: 100]]`, which Req
+    starts and supervises, or `finch: [name: MyFinch]` for a Finch you run.
+  - A proxy, custom CA certificates, or HTTP/2: `connect_options: [...]`.
+
+  One combination is refused when the client is built, where Req would
+  raise only on the first retry: a `:retry_delay`, in `req_options` or the
+  app's defaults, without a `:retry` in `req_options`. The adapter's retry
+  sets its own delays.
+
   ## Connections
 
   Requests go through Req's default Finch pool, 50 connections per host.
   Past that, a request waits for a connection with no time limit, so
   `concurrency` above 50 queues inside Finch instead of sending more at
-  once. For more in flight, pass a larger size, `req_options: [finch: [size:
-  100]]`, and Req starts and supervises that pool; this needs no pool
-  `name:` set, here or in `Req.default_options/0`. To run the pool yourself,
-  start a Finch with the size you want and pass `req_options: [finch: [name:
-  MyFinch]]`.
+  once. A `pool_timeout` under `finch:`, in `req_options` or the app's
+  defaults, sets a limit instead.
 
   ## The size cap
 
@@ -114,101 +131,40 @@ defmodule Cite.Provider.TypeSafe do
     base_url = opts[:base_url]
     max_retry_delay = opts[:max_retry_delay]
     req_overrides = opts[:req_options]
-    req_defaults = Req.default_options()
     adapter_retry = &retry/2
 
-    # A request past the pool's size waits its turn instead of raising. The
+    # A request past the pool's size waits its turn instead of raising: the
     # wait restarts at every checkout and the pool is shared node-wide, so
-    # any finite limit is eventually reached under load; an app-wide default
-    # doesn't override it, a caller's own finch: does. Req reads a finch:
-    # list's timeouts over the top-level ones, so the app's default list
-    # loses its timeouts, which would beat the adapter's and the caller's.
-    # The lists merge key by key, where Req's own merge would replace one
-    # list with the next.
-    finch =
-      req_defaults
-      |> finch_list("Req.default_options/0")
-      |> Keyword.drop([:pool_timeout, :receive_timeout, :request_timeout])
-      |> Keyword.merge(pool_timeout: :infinity)
-      |> Keyword.merge(finch_list(req_overrides, "req_options"))
-
-    # The options Req will get, in the order Req.new/1 would merge them.
-    req_options =
-      req_defaults
-      |> Keyword.merge(
+    # any finite limit is eventually reached under load. It's set on the
+    # request, not in a finch: list, so every connection option stays Req's
+    # to merge; a pool_timeout under finch:, anyone's, still takes precedence.
+    http_client =
+      [
         base_url: base_url,
         auth: {:bearer, api_key},
         receive_timeout: 120_000,
         retry: adapter_retry,
         max_retries: @max_retries,
         redirect: false
-      )
+      ]
       |> Keyword.merge(req_overrides)
-      |> Keyword.put(:finch, finch)
-
-    check_req_options(req_options, adapter_retry)
-    check_finch(finch)
-
-    http_client =
-      req_options
       |> Req.new()
+      |> Req.Request.put_new_option(:pool_timeout, :infinity)
       |> Req.Request.put_private(:cite_max_retry_delay, max_retry_delay)
+
+    check_retry_delay(http_client, adapter_retry)
 
     %__MODULE__{http_client: http_client, model: model}
   end
 
-  # One source's finch: list; nil means none, as it does to Req. Req still
-  # takes a bare pool name there, but a name can't merge with the adapter's
-  # pool wait.
-  defp finch_list(options, source) do
-    finch = Keyword.get(options, :finch) || []
-
-    if Keyword.keyword?(finch) do
-      finch
-    else
+  # Req refuses a :retry_delay beside a retry function that sets its own
+  # delays, as the adapter's does, but only on the first retry. So it's
+  # checked here, on the options Req built: the delay may come from
+  # req_options or the app's Req.default_options/0. A nil one is unset.
+  defp check_retry_delay(%Req.Request{options: options}, adapter_retry) do
+    if options[:retry_delay] && options[:retry] == adapter_retry do
       raise ArgumentError,
-            "finch: in #{source} must be a keyword list, such as finch: [name: MyFinch], got: #{inspect(finch)}"
-    end
-  end
-
-  # Req refuses these only once a request is sent, so they're checked on the
-  # options it will get. A key may come from req_options or the app's
-  # Req.default_options/0; the check can't tell which. Like Req, a nil
-  # :retry_delay counts as unset, but any :connect_options is refused.
-  defp check_req_options(req_options, adapter_retry) do
-    cond do
-      req_options[:retry_delay] && req_options[:retry] == adapter_retry ->
-        raise ArgumentError,
-              ":retry_delay needs a :retry in req_options, because the adapter's retry sets delays itself"
-
-      Keyword.has_key?(req_options, :connect_options) ->
-        raise ArgumentError,
-              ":connect_options can't be combined with the adapter's :finch options; set Finch pool options under finch: instead, such as finch: [conn_opts: ...]"
-
-      true ->
-        :ok
-    end
-  end
-
-  # Req refuses a pool name beside pool options, again only once a request
-  # is sent; the two may come from different sources.
-  @finch_per_request [
-    :name,
-    :pool_tag,
-    :unix_socket,
-    :pool_timeout,
-    :receive_timeout,
-    :request_timeout,
-    :pool_strategy
-  ]
-
-  defp check_finch(finch) do
-    name = finch[:name]
-    pool_options = Keyword.drop(finch, @finch_per_request)
-
-    if name && pool_options != [] do
-      raise ArgumentError,
-            "finch: can't set pool options beside name: #{inspect(name)}, got: #{inspect(pool_options)}; configure the pool when starting #{inspect(name)} instead"
+            ":retry_delay needs a :retry in req_options, because the adapter's retry sets delays itself"
     end
   end
 

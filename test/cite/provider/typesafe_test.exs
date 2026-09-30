@@ -1,7 +1,7 @@
 defmodule Cite.Provider.TypeSafeTest do
   use ExUnit.Case, async: true
 
-  import Cite.TestTypeSafe, only: [finch_options_sent: 1]
+  import Cite.TestTypeSafe, only: [options_sent: 1]
 
   alias Cite.Provider.TypeSafe
 
@@ -96,43 +96,24 @@ defmodule Cite.Provider.TypeSafeTest do
       end
     end
 
-    test "waits for a pooled connection with no time limit" do
-      assert finch_options_sent([]) == [pool_timeout: :infinity]
+    test "waits for a pooled connection with no time limit, and sets no finch: list" do
+      assert options_sent([]) == %{pool_timeout: :infinity}
     end
 
-    test "merges a caller's finch options into the wait" do
-      assert finch_options_sent(finch: [name: MyFinch]) == [
+    test "leaves a caller's finch: and connect_options to Req" do
+      assert options_sent(finch: [name: MyFinch]) == %{
                pool_timeout: :infinity,
-               name: MyFinch
-             ]
+               finch: [name: MyFinch]
+             }
 
-      assert finch_options_sent(finch: [pool_timeout: 1_000]) == [pool_timeout: 1_000]
+      assert options_sent(connect_options: [timeout: 1_000]) == %{
+               pool_timeout: :infinity,
+               connect_options: [timeout: 1_000]
+             }
     end
 
-    test "refuses connect_options and a bare finch pool name" do
-      for {req_options, message} <- [
-            {[connect_options: [timeout: 1_000]],
-             ":connect_options can't be combined with the adapter's :finch options; set Finch pool options under finch: instead, such as finch: [conn_opts: ...]"},
-            {[finch: MyFinch],
-             "finch: in req_options must be a keyword list, such as finch: [name: MyFinch], got: MyFinch"}
-          ] do
-        assert_raise ArgumentError, message, fn ->
-          TypeSafe.new(api_key: "k", req_options: req_options)
-        end
-      end
-    end
-
-    test "treats a nil retry_delay or finch as unset, as Req does" do
+    test "treats a nil retry_delay as unset, as Req does" do
       assert %TypeSafe{} = TypeSafe.new(api_key: "k", req_options: [retry_delay: nil])
-      assert finch_options_sent(finch: nil) == [pool_timeout: :infinity]
-    end
-
-    test "refuses a finch pool name beside pool options" do
-      assert_raise ArgumentError,
-                   "finch: can't set pool options beside name: MyFinch, got: [size: 100]; configure the pool when starting MyFinch instead",
-                   fn ->
-                     TypeSafe.new(api_key: "k", req_options: [finch: [name: MyFinch, size: 100]])
-                   end
     end
   end
 
@@ -269,17 +250,20 @@ defmodule Cite.Provider.TypeSafeTest do
                judge().(@request)
     end
 
-    # The plug tests never reach Finch; this one sends through the real adapter.
+    # The plug tests never reach Finch; this one sends through the real
+    # adapter, with the connection options callers pass.
     test "reaches Finch without a plug and reports a refused connection as an error" do
-      client =
-        Cite.client(TypeSafe,
-          api_key: "k",
-          base_url: "http://127.0.0.1:1",
-          req_options: [retry: false]
-        )
+      for req_options <- [[], [connect_options: [timeout: 1_000]], [finch: [size: 3]]] do
+        client =
+          Cite.client(TypeSafe,
+            api_key: "k",
+            base_url: "http://127.0.0.1:1",
+            req_options: [retry: false] ++ req_options
+          )
 
-      assert {:error, {:request_error, %Req.TransportError{reason: :econnrefused}}} =
-               client.(@request)
+        assert {:error, {:request_error, %Req.TransportError{reason: :econnrefused}}} =
+                 client.(@request)
+      end
     end
   end
 

@@ -3,7 +3,7 @@ defmodule Cite.Provider.TypeSafeDefaultsTest do
   # builds a TypeSafe client, so these run apart from them.
   use ExUnit.Case, async: false
 
-  import Cite.TestTypeSafe, only: [finch_options_sent: 1]
+  import Cite.TestTypeSafe, only: [options_sent: 1]
 
   alias Cite.Provider.TypeSafe
 
@@ -12,42 +12,28 @@ defmodule Cite.Provider.TypeSafeDefaultsTest do
     on_exit(fn -> Req.default_options(defaults) end)
   end
 
-  test "keeps the app's default finch options beneath the wait and the caller's own" do
-    Req.default_options(finch: [name: MyApp.Finch, pool_timeout: 5_000])
+  test "leaves the app's default finch: and connect_options to Req" do
+    Req.default_options(finch: [name: MyApp.Finch], connect_options: [timeout: 1_000])
 
-    assert finch_options_sent([]) == [name: MyApp.Finch, pool_timeout: :infinity]
-
-    assert finch_options_sent(finch: [pool_timeout: 1_000]) == [
-             name: MyApp.Finch,
-             pool_timeout: 1_000
-           ]
-
-    assert finch_options_sent(finch: [name: MyFinch]) == [pool_timeout: :infinity, name: MyFinch]
+    assert options_sent([]) == %{
+             pool_timeout: :infinity,
+             finch: [name: MyApp.Finch],
+             connect_options: [timeout: 1_000]
+           }
   end
 
-  # Req reads a finch: list's timeouts over the top-level ones, so a default
-  # list's timeouts would beat the adapter's receive_timeout and the caller's.
-  test "drops the timeouts from the app's default finch options" do
-    Req.default_options(
-      finch: [name: MyApp.Finch, receive_timeout: 200, request_timeout: 300, pool_timeout: 400]
-    )
+  test "lets a caller's finch: replace the app's default one whole, as Req does" do
+    Req.default_options(finch: [name: MyApp.Finch])
 
-    assert finch_options_sent([]) == [name: MyApp.Finch, pool_timeout: :infinity]
+    assert options_sent(finch: [size: 100]) == %{pool_timeout: :infinity, finch: [size: 100]}
   end
 
-  test "refuses app defaults that can't sit beside the adapter's options" do
-    for {defaults, message} <- [
-          {[connect_options: [timeout: 1_000]],
-           ":connect_options can't be combined with the adapter's :finch options; set Finch pool options under finch: instead, such as finch: [conn_opts: ...]"},
-          {[finch: MyApp.Finch],
-           "finch: in Req.default_options/0 must be a keyword list, such as finch: [name: MyFinch], got: MyApp.Finch"},
-          {[retry: :transient, retry_delay: 1],
-           ":retry_delay needs a :retry in req_options, because the adapter's retry sets delays itself"}
-        ] do
-      Req.default_options(defaults)
+  test "refuses a default retry_delay beside the adapter's retry" do
+    Req.default_options(retry: :transient, retry_delay: 1)
 
-      assert_raise ArgumentError, message, fn -> TypeSafe.new(api_key: "k") end
-    end
+    assert_raise ArgumentError,
+                 ":retry_delay needs a :retry in req_options, because the adapter's retry sets delays itself",
+                 fn -> TypeSafe.new(api_key: "k") end
   end
 
   test "accepts a default retry_delay when req_options brings its own retry or unsets it" do
@@ -55,13 +41,5 @@ defmodule Cite.Provider.TypeSafeDefaultsTest do
 
     assert %TypeSafe{} = TypeSafe.new(api_key: "k", req_options: [retry: :transient])
     assert %TypeSafe{} = TypeSafe.new(api_key: "k", req_options: [retry_delay: nil])
-  end
-
-  test "refuses a default pool name beside the caller's pool options" do
-    Req.default_options(finch: [name: MyApp.Finch])
-
-    assert_raise ArgumentError,
-                 "finch: can't set pool options beside name: MyApp.Finch, got: [size: 100]; configure the pool when starting MyApp.Finch instead",
-                 fn -> TypeSafe.new(api_key: "k", req_options: [finch: [size: 100]]) end
   end
 end
