@@ -738,6 +738,63 @@ defmodule CiteTest do
       assert Task.await(task) == :helper_crashed
     end
 
+    test "leaves a caller that traps exits with an empty mailbox after a run" do
+      task =
+        Task.async(fn ->
+          Process.flag(:trap_exit, true)
+          Cite.judge(client(%{}), Cite.source(["a", "b", "c"]), Riddles, window: 1)
+          Process.info(self(), :messages)
+        end)
+
+      assert Task.await(task) == {:messages, []}
+    end
+
+    test "leaves a caller that traps exits with an empty mailbox after a raise" do
+      task =
+        Task.async(fn ->
+          Process.flag(:trap_exit, true)
+          catch_error(Cite.judge(fn _request -> :not_a_verdict end, Cite.source(["a"]), Riddles))
+          Process.info(self(), :messages)
+        end)
+
+      assert Task.await(task) == {:messages, []}
+    end
+
+    test "leaves a caller that traps exits with an empty mailbox after a linked crash" do
+      task =
+        Task.async(fn ->
+          Process.flag(:trap_exit, true)
+
+          client = fn _request ->
+            spawn_link(fn -> exit(:helper_crashed) end)
+
+            receive do
+              :never -> :ok
+            end
+          end
+
+          catch_exit(Cite.judge(client, Cite.source(["a"]), Riddles))
+          Process.info(self(), :messages)
+        end)
+
+      assert Task.await(task) == {:messages, []}
+    end
+
+    test "stops its requests when the caller dies" do
+      # Arrange
+      client = held_client(&window_ids/1, client(%{}))
+      source = Cite.source(["a", "b"])
+      caller = spawn(fn -> Cite.judge(client, source, Riddles, window: 1) end)
+      held = arrivals(2)
+      refs = Enum.map(held, fn {_label, pid} -> Process.monitor(pid) end)
+
+      # Act
+      Process.exit(caller, :kill)
+
+      # Assert
+      for ref <- refs, do: assert_receive({:DOWN, ^ref, :process, _pid, _reason})
+    end
+
     test "carries the caller's Logger metadata and process level into the client" do
       test_pid = self()
       answering = client(%{})
