@@ -32,9 +32,8 @@ defmodule Cite.Provider.TypeSafe do
               type: :keyword_list,
               default: [],
               doc: """
-              Req options, merged over the ones the adapter sets, as `Req.new/1` \
-              merges them. The app's `Req.default_options/0` sits beneath both. \
-              See "Req options" below.\
+              Req options, merged over the ones the adapter sets. See "Req \
+              options" below.\
               """
             ]
           )
