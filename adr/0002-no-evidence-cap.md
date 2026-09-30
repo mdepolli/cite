@@ -13,20 +13,25 @@ passages. The rest went to `Finding.over_cap`: reported, never judged. The
 cap had two jobs: bound the round-2 request, and bound what an end user
 reads.
 
-The cap was set before anyone measured what one request can hold. On the
-benchmark behind ADR 1, one request carried 79 passages without refusal or
-slowdown, and no finding at the default threshold exceeded 11 passages.
-
 ## Decision
 
 `max_evidence` and `over_cap` are removed before the first release. A
 directly screened concern gathers every match, and round 2 judges them all
 in one request (ADR 1).
 
+## Rationale
+
+**Bounding the request.** The cap was set before anyone measured what one
+request can hold. On the benchmark behind ADR 1, one request carried 79
+passages without refusal or slowdown, and no finding at the default
+threshold exceeded 11 passages.
+
+**Bounding what an end user reads.** The report carries every citation;
+how many to show is presentation.
+
 ## Consequences
 
 - No passage that matched is left unjudged.
 - The request bound is the provider's limit, not Cite's.
-- Bounding what an end user reads is the caller's: the report carries every
-  citation, and how many to show is presentation.
+- Bounding what an end user reads is the caller's.
 - The number of passages judged follows the threshold (ADR 4).
