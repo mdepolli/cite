@@ -2,7 +2,7 @@ defmodule Cite.PolicyTest do
   use ExUnit.Case, async: true
 
   alias Cite.Policy.Build
-  alias Cite.TestPolicies.{FocusRole, Household, Riddles, TwoConcerns}
+  alias Cite.TestPolicies.{FocusRole, Household, Riddles, SharedFactor, TwoConcerns}
   alias Cite.TestTerms
 
   describe "Build.read/1" do
@@ -20,6 +20,10 @@ defmodule Cite.PolicyTest do
 
     test "records the roles a check's focus names" do
       assert Build.read(FocusRole) == TestTerms.focus_role()
+    end
+
+    test "compiles a factor two concerns share once" do
+      assert Build.read(SharedFactor) == TestTerms.shared_factor()
     end
 
     test "raises on a module that is not a policy, and on a name that is not a module" do

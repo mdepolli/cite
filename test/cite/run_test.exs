@@ -1,12 +1,19 @@
 defmodule Cite.RunTest do
   use ExUnit.Case, async: true
 
-  alias Cite.Run
+  alias Cite.{Run, TestRun, TestTerms}
   alias Cite.TestPolicies.Riddles
 
   defp client, do: fn _request -> :unused end
 
   describe "new/4" do
+    test "defaults the options Cite.TestRun hard-codes for the pure steps" do
+      keys = [:threshold, :review_band, :window, :concurrency]
+      run = Run.new(client(), Cite.source(["a"]), Riddles, [])
+
+      assert Map.take(run, keys) == Map.take(TestRun.new(TestTerms.riddles()), keys)
+    end
+
     test "raises on a client, source, policy, or options of the wrong kind" do
       for {client, source, policy, opts, message} <- [
             {:not_a_function, Cite.source(["a"]), Riddles, [],

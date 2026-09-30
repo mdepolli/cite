@@ -2,8 +2,6 @@ defmodule Cite.ScreenTest do
   use ExUnit.Case, async: true
 
   alias Cite.{Error, Screen, Source}
-  alias Cite.Policy.Build
-  alias Cite.TestPolicies.SharedFactor
   alias Cite.{TestRun, TestTerms}
   alias Cite.Wire.Object
 
@@ -81,10 +79,9 @@ defmodule Cite.ScreenTest do
 
     test "asks a factor two concerns share once per passage" do
       source = Source.new([%{id: "U3", text: "Two kids."}], as: "utterances")
-      terms = Build.read(SharedFactor)
 
       %{"questions" => questions} =
-        Screen.request(TestRun.new(terms, source: source), source.passages)
+        Screen.request(TestRun.new(TestTerms.shared_factor(), source: source), source.passages)
 
       assert Map.keys(questions) == ["U3:dependents"]
     end

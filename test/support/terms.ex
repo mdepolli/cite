@@ -316,4 +316,61 @@ defmodule Cite.TestTerms do
       descriptors: []
     }
   end
+
+  def shared_factor do
+    %Terms{
+      filters: [],
+      concerns: [
+        %Concern{
+          name: :one,
+          category: :one,
+          detect: nil,
+          confirm: nil,
+          roles: [%Role{name: :household, factor: :dependents, optional: false, distinct: false}],
+          checks: [
+            %Check{
+              name: :is_one,
+              distinct: false,
+              roles: [:household],
+              question: %Question{
+                type: :noul,
+                text: "Is {household} the one?",
+                focus: nil,
+                criteria: %{true: %{what: "y"}, false: %{what: "n"}}
+              }
+            }
+          ]
+        },
+        %Concern{
+          name: :two,
+          category: :two,
+          detect: nil,
+          confirm: nil,
+          roles: [%Role{name: :household, factor: :dependents, optional: false, distinct: false}],
+          checks: [
+            %Check{
+              name: :is_two,
+              distinct: false,
+              roles: [:household],
+              question: %Question{
+                type: :noul,
+                text: "Is {household} the two?",
+                focus: nil,
+                criteria: %{true: %{what: "y"}, false: %{what: "n"}}
+              }
+            }
+          ]
+        }
+      ],
+      factors: [
+        dependents: %Question{
+          type: :noul,
+          text: "Does {passage} mention dependents?",
+          focus: nil,
+          criteria: %{true: %{what: "Mentions dependents."}, false: %{what: "No dependents."}}
+        }
+      ],
+      descriptors: []
+    }
+  end
 end
