@@ -7,7 +7,7 @@ defmodule Cite.Run do
   Internal; use `Cite.judge/4`.
   """
 
-  alias Cite.{Error, Finding, Gathered, Screen, Source}
+  alias Cite.{Error, Finding, Gathered, Options, Screen, Source}
   alias Cite.Policy.{Build, Terms}
 
   @schema Spark.Options.new!(
@@ -86,7 +86,7 @@ defmodule Cite.Run do
   def new(client, source, policy_module, opts) do
     given = [client: client(client), source: source(source), terms: Build.read(policy_module)]
 
-    struct!(__MODULE__, given ++ options(opts))
+    struct!(__MODULE__, given ++ Options.read(opts, @schema))
   end
 
   defp client(client) when is_function(client, 1), do: client
@@ -100,17 +100,6 @@ defmodule Cite.Run do
   defp source(other) do
     raise ArgumentError,
           "source must be a Cite.Source, built by Cite.source/2, got: #{inspect(other)}"
-  end
-
-  defp options(opts) do
-    if not Keyword.keyword?(opts) do
-      raise ArgumentError, "options must be a keyword list, got: #{inspect(opts)}"
-    end
-
-    case Spark.Options.validate(opts, @schema) do
-      {:ok, options} -> options
-      {:error, error} -> raise ArgumentError, Exception.message(error)
-    end
   end
 
   # Round-1 scores, confirms, and checks are all probabilities, so the options

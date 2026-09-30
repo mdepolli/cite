@@ -10,7 +10,7 @@ defmodule Cite.Source do
   string (`:k` and `"k"`): on the wire they are one key.
   """
 
-  alias Cite.Passage
+  alias Cite.{Options, Passage}
 
   @type t :: %__MODULE__{
           passages: [Passage.t()],
@@ -64,7 +64,7 @@ defmodule Cite.Source do
   def new(units, opts \\ [])
 
   def new(units, opts) when is_list(units) do
-    opts = options(opts)
+    opts = Options.read(opts, @schema)
     as = opts[:as]
     show = opts[:show]
 
@@ -80,17 +80,6 @@ defmodule Cite.Source do
   def new(units, _opts) do
     raise ArgumentError,
           "units must be a list of texts or %{text: text} maps, got: #{inspect(units)}"
-  end
-
-  defp options(opts) do
-    if not Keyword.keyword?(opts) do
-      raise ArgumentError, "options must be a keyword list, got: #{inspect(opts)}"
-    end
-
-    case Spark.Options.validate(opts, @schema) do
-      {:ok, options} -> options
-      {:error, error} -> raise ArgumentError, Exception.message(error)
-    end
   end
 
   @doc false

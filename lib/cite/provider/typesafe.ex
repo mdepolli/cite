@@ -111,6 +111,7 @@ defmodule Cite.Provider.TypeSafe do
 
   @behaviour Cite.Provider
 
+  alias Cite.Options
   alias Req.{Request, Response, TransportError}
 
   @type t :: %__MODULE__{http_client: Request.t(), model: String.t()}
@@ -132,7 +133,7 @@ defmodule Cite.Provider.TypeSafe do
   @impl Cite.Provider
   @spec new(keyword()) :: t()
   def new(opts) do
-    opts = options(opts)
+    opts = Options.read(opts, @schema)
     api_key = opts[:api_key]
     model = opts[:model]
     base_url = opts[:base_url]
@@ -172,17 +173,6 @@ defmodule Cite.Provider.TypeSafe do
     if options[:retry_delay] && options[:retry] == adapter_retry do
       raise ArgumentError,
             ":retry_delay needs a :retry in req_options, because the adapter's retry sets delays itself"
-    end
-  end
-
-  defp options(opts) do
-    if not Keyword.keyword?(opts) do
-      raise ArgumentError, "options must be a keyword list, got: #{inspect(opts)}"
-    end
-
-    case Spark.Options.validate(opts, @schema) do
-      {:ok, options} -> options
-      {:error, error} -> raise ArgumentError, Exception.message(error)
     end
   end
 
