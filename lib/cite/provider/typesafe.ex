@@ -92,7 +92,9 @@ defmodule Cite.Provider.TypeSafe do
   Past that, a request waits for a connection with no time limit, so
   `concurrency` above 50 queues inside Finch instead of sending more at
   once. A `pool_timeout` under `finch:`, in `req_options` or the app's
-  defaults, sets a limit instead.
+  defaults, sets a limit instead, and a request still waiting when it runs
+  out raises Finch's error, which ends the run. Leave it unset unless that
+  is what you want.
 
   ## The size cap
 
