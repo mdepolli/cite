@@ -40,11 +40,12 @@ defmodule Cite.Run do
             ],
             concurrency: [
               type: :pos_integer,
-              default: 1,
+              default: 4,
               doc: """
               The most requests in flight at once within a round. The rounds run \
               one after the other, and the report is the same at any setting. Set \
-              it within the provider's rate limits.\
+              it within the provider's rate limits; at `1`, requests go out one at \
+              a time.\
               """
             ]
           )

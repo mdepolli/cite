@@ -21,8 +21,8 @@ calls the client, halves an oversized window, and assembles the
 `Cite.Report`. Every decision lives in the three pure modules, which never
 see the client.
 
-Within a round, the shell sends up to `concurrency` requests at once (1 by
-default). Round 2 starts only when round 1 has finished. The report is the
+Within a round, the shell sends up to `concurrency` requests at once, 4 by
+default. Round 2 starts only when round 1 has finished. The report is the
 same at any setting: errors, usage, and models keep window and finding
 order.
 

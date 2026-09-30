@@ -18,7 +18,7 @@ defmodule Cite.TestRun do
         threshold: 0.5,
         review_band: {0.4, 0.6},
         window: 40,
-        concurrency: 1
+        concurrency: 4
       ] ++ fields
     )
   end

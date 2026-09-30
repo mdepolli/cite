@@ -38,7 +38,7 @@ defmodule Cite do
   `:model`, the versioned id that answered, when the provider reports it.
 
   `judge/4` calls the client from task processes, up to `concurrency` at
-  once, so it must be safe to call concurrently. Each task starts with the
+  once (4 by default), so it must be safe to call concurrently. Each task starts with the
   caller's Logger metadata and process level, and with `$callers`, which
   `Task` sets so that Mox, `Req.Test`, and Ecto's sandbox reach the client.
   Nothing else from the caller's process dictionary carries over,

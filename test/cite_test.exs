@@ -217,7 +217,11 @@ defmodule CiteTest do
 
     test "screens in windows of the requested size, in source order" do
       source = Cite.source(["a", "b", "c", "d", "e"])
-      Cite.judge(window_client(fn _window -> false end), source, Riddles, window: 2)
+
+      Cite.judge(window_client(fn _window -> false end), source, Riddles,
+        window: 2,
+        concurrency: 1
+      )
 
       assert windows_sent() == [["P000", "P001"], ["P002", "P003"], ["P004"]]
     end
@@ -255,7 +259,7 @@ defmodule CiteTest do
       client = window_client(&(length(&1) > 2))
 
       # Act
-      report = Cite.judge(client, source, Riddles, window: 4)
+      report = Cite.judge(client, source, Riddles, window: 4, concurrency: 1)
 
       # Assert
       assert windows_sent() == [
@@ -273,7 +277,7 @@ defmodule CiteTest do
       client = window_client(&("P001" in &1 or "P003" in &1))
 
       # Act
-      report = Cite.judge(client, source, Riddles, window: 4)
+      report = Cite.judge(client, source, Riddles, window: 4, concurrency: 1)
 
       # Assert
       assert windows_sent() == [
@@ -405,7 +409,7 @@ defmodule CiteTest do
 
       # Act + Assert
       assert_raise ClientError, ~r/got: :not_a_verdict/, fn ->
-        Cite.judge(client, source, Riddles, window: 1)
+        Cite.judge(client, source, Riddles, window: 1, concurrency: 1)
       end
 
       # P000's riddle would have been judged in round 2.
@@ -460,14 +464,14 @@ defmodule CiteTest do
       assert %Report{errors: []} = Task.await(task)
     end
 
-    test "sends one request at a time by default" do
+    test "sends up to 4 requests at once by default" do
       # Arrange
-      source = Cite.source(["a", "b"])
+      source = Cite.source(["a", "b", "c", "d", "e"])
       client = held_client(&window_ids/1, client(%{}))
       task = judge_async(client, source, Riddles, window: 1)
 
       # Act
-      first = arrivals(1)
+      first = arrivals(4)
       refute_receive {:arrive, _, _}
       release(first)
       release(arrivals(1))

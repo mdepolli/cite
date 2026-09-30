@@ -155,9 +155,9 @@ Four options tune a run:
   to `:review`.
 - `window`, a positive integer, default `40`: how many passages go in each
   first-round request. At `1`, each request holds one passage.
-- `concurrency`, a positive integer, default `1`: how many requests a round
+- `concurrency`, a positive integer, default `4`: how many requests a round
   sends at once. The report is the same at any setting; set it within your
-  provider's rate limits.
+  provider's rate limits, or to `1` to send one request at a time.
 
 Leave `threshold` alone at first. Lowering it does more than find more
 passages: each one it adds is read together with the rest of its finding,
