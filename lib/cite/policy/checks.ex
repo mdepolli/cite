@@ -199,7 +199,7 @@ defmodule Cite.Policy.Checks do
     |> concerns()
     |> Enum.filter(&(&1.roles != []))
     |> first_error(fn concern ->
-      unless Enum.any?(concern.roles, &(not &1.optional)),
+      if not Enum.any?(concern.roles, &(not &1.optional)),
         do:
           {:error, "concern #{inspect(concern.name)} needs at least one required role",
            [concern.name], concern}
@@ -214,7 +214,7 @@ defmodule Cite.Policy.Checks do
       required =
         for %Dsl.Role{optional: false, name: name} <- concern.roles, do: Atom.to_string(name)
 
-      unless Enum.any?(concern.checks, &(not &1.distinct and placeholders(&1) -- required == [])),
+      if not Enum.any?(concern.checks, &(not &1.distinct and placeholders(&1) -- required == [])),
         do:
           {:error,
            "concern #{inspect(concern.name)} needs a check that names only required roles and is not distinct",
@@ -272,7 +272,7 @@ defmodule Cite.Policy.Checks do
 
     first_error(entities, fn
       %Dsl.Factor{name: name} = factor ->
-        unless name in used,
+        if name not in used,
           do:
             {:error,
              "factor #{inspect(name)} fills no role: it would be asked of every passage and never used",

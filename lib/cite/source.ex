@@ -138,7 +138,7 @@ defmodule Cite.Source do
   defp default_id(index), do: "P" <> String.pad_leading(Integer.to_string(index), 3, "0")
 
   defp id(id) when is_binary(id) and id != "" do
-    unless path_part?(id) do
+    if not path_part?(id) do
       raise ArgumentError, "passage id #{inspect(id)} #{@path_rule}: it is part of every path"
     end
 
