@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the client raises passes through as is.
 - The client runs in a task process, even at `concurrency: 1`. Logger
   metadata and process level carry over; OpenTelemetry context does not.
+- `Cite.Provider` asks two more things of a provider. `judge/2` must be
+  safe to call from several processes at once with the same handle. And
+  it must not raise on a condition that concurrency makes routine, such as
+  waiting for a connection. A custom client must be safe to call
+  concurrently too, or be run at `concurrency: 1`.
 - A crash in a process the client links to now exits `Cite.judge/4` with
   the same reason, even in a caller that traps exits. There, as with a
   raise, the exit comes once the requests before it have answered, and no
