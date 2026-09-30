@@ -706,9 +706,9 @@ defmodule CiteTest do
 
       # Assert
       assert %RuntimeError{} = Task.await(task)
-      # judge/4 raises only once the stream has killed its running tasks and
-      # seen them go down. A monitor set on P002 here could land after that
-      # and report :noproc.
+      # judge/4 raises only once Cite.Round has shut down its running tasks,
+      # and Task.shutdown/2 waits for each to go down. A monitor set on P002
+      # here could land after that and report :noproc.
       refute Process.alive?(third)
     end
 
