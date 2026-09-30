@@ -8,10 +8,19 @@ defmodule Cite.RunTest do
 
   describe "new/4" do
     test "defaults the options Cite.TestRun hard-codes for the pure steps" do
+      # Arrange
       keys = [:threshold, :review_band, :window, :concurrency]
-      run = Run.new(client(), Cite.source(["a"]), Riddles, [])
 
-      assert Map.take(run, keys) == Map.take(TestRun.new(TestTerms.riddles()), keys)
+      # Act
+      run = Run.new(client(), Cite.source(["a"]), Riddles, [])
+      test_run = TestRun.new(TestTerms.riddles())
+
+      # Assert
+      assert Map.take(run, keys) ==
+               %{threshold: 0.5, review_band: {0.4, 0.6}, window: 40, concurrency: 4}
+
+      assert Map.take(test_run, keys) ==
+               %{threshold: 0.5, review_band: {0.4, 0.6}, window: 40, concurrency: 4}
     end
 
     test "raises on a client, source, policy, or options of the wrong kind" do

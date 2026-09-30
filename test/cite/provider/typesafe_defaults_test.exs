@@ -38,10 +38,15 @@ defmodule Cite.Provider.TypeSafeDefaultsTest do
                  fn -> TypeSafe.new(api_key: "k") end
   end
 
-  test "accepts a default retry_delay when req_options brings its own retry or unsets it" do
+  test "accepts a default retry_delay when req_options brings its own retry" do
     Req.default_options(retry_delay: 1)
 
     assert %TypeSafe{} = TypeSafe.new(api_key: "k", req_options: [retry: :transient])
+  end
+
+  test "accepts a default retry_delay when req_options unsets it" do
+    Req.default_options(retry_delay: 1)
+
     assert %TypeSafe{} = TypeSafe.new(api_key: "k", req_options: [retry_delay: nil])
   end
 end

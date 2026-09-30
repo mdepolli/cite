@@ -100,12 +100,14 @@ defmodule Cite.Provider.TypeSafeTest do
       assert options_sent([]) == %{pool_timeout: :infinity}
     end
 
-    test "leaves a caller's finch: and connect_options to Req" do
+    test "leaves a caller's finch: to Req" do
       assert options_sent(finch: [name: MyFinch]) == %{
                pool_timeout: :infinity,
                finch: [name: MyFinch]
              }
+    end
 
+    test "leaves a caller's connect_options to Req" do
       assert options_sent(connect_options: [timeout: 1_000]) == %{
                pool_timeout: :infinity,
                connect_options: [timeout: 1_000]
