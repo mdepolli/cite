@@ -123,7 +123,7 @@ defmodule Cite.Policy.Checks do
 
   defp check_concern_shapes(entities) do
     first_error(concerns(entities), fn %Dsl.Concern{name: name} = concern ->
-      if is_nil(concern.detect) == (concern.roles == []),
+      if is_nil(concern.detect) == Enum.empty?(concern.roles),
         do:
           {:error, "concern #{inspect(name)} needs a detect or roles, not both", [name], concern}
     end)

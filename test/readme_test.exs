@@ -12,7 +12,8 @@ defmodule Cite.ReadmeTest do
     client = fn %{"questions" => questions} ->
       answers =
         Map.new(questions, fn {key, _question} ->
-          {key, %{"noul" => if(String.contains?(key, "P000"), do: 0.9, else: 0.1)}}
+          noul = if String.contains?(key, "P000"), do: 0.9, else: 0.1
+          {key, %{"noul" => noul}}
         end)
 
       {:ok, %{answers: answers, usage: nil}}

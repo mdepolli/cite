@@ -374,7 +374,15 @@ defmodule Cite.Provider.TypeSafeTest do
       }
 
       reply = TypeSafe.judge(client, @request)
-      attempts = for _ <- 1..3, do: receive(do: ({:attempt, count} -> count), after: (0 -> :none))
+
+      attempts =
+        for _ <- 1..3 do
+          receive do
+            {:attempt, count} -> count
+          after
+            0 -> :none
+          end
+        end
 
       assert {match?({:ok, _}, reply), attempts} == {true, [:unset, 1, 2]}
     end
