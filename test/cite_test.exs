@@ -635,22 +635,74 @@ defmodule CiteTest do
       assert %ClientError{} = Task.await(task)
     end
 
-    test "exits a caller that traps exits with the reason a client's linked process crashed with" do
+    test "stops the requests after a raise that are still in flight" do
+      # Arrange
+      source = Cite.source(["a", "b", "c"])
+      answering = client(%{})
+
+      reply = fn request ->
+        if window_ids(request) == ["P001"], do: :not_a_verdict, else: answering.(request)
+      end
+
+      label = fn request -> if window_ids(request) != ["P001"], do: window_ids(request) end
+      client = held_client(label, reply)
+
+      task =
+        Task.async(fn ->
+          catch_error(Cite.judge(client, source, Riddles, window: 1, concurrency: 4))
+        end)
+
+      # Act
+      held = Map.new(arrivals(2))
+      third = held[["P002"]]
+      ref = Process.monitor(third)
+      send(held[["P000"]], :go)
+
+      # Assert
+      assert %ClientError{} = Task.await(task)
+      assert_receive {:DOWN, ^ref, :process, ^third, :killed}
+    end
+
+    test "exits a caller that traps exits with a linked crash's reason, once the requests before it have answered" do
+      # Arrange
+      test_pid = self()
+      answering = client(%{})
+
+      reply = fn request ->
+        if window_ids(request) == ["P001"] do
+          send(test_pid, {:crashing, self()})
+          spawn_link(fn -> exit(:helper_crashed) end)
+
+          receive do
+            :never -> :ok
+          end
+        else
+          answering.(request)
+        end
+      end
+
+      label = fn request -> if window_ids(request) == ["P000"], do: ["P000"] end
+      client = held_client(label, reply)
+
       task =
         Task.async(fn ->
           Process.flag(:trap_exit, true)
 
-          client = fn _request ->
-            spawn_link(fn -> exit(:helper_crashed) end)
-
-            receive do
-              :never -> :ok
-            end
-          end
-
-          catch_exit(Cite.judge(client, Cite.source(["a"]), Riddles, concurrency: 4))
+          catch_exit(
+            Cite.judge(client, Cite.source(["a", "b"]), Riddles, window: 1, concurrency: 4)
+          )
         end)
 
+      # Act
+      [{["P000"], first}] = arrivals(1)
+      assert_receive {:crashing, second}
+      ref = Process.monitor(second)
+      assert_receive {:DOWN, ^ref, :process, ^second, _}
+      still_running = Task.yield(task, 100)
+      send(first, :go)
+
+      # Assert
+      assert still_running == nil
       assert Task.await(task) == :helper_crashed
     end
 
