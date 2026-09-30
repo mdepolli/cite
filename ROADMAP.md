@@ -34,22 +34,48 @@ so Cite cannot tell that a request was too large and split it.
 
 ## Exploring
 
-### More than one finding per concern
+### Separate cases in a directly screened concern
 
-A directly screened concern gathers every match into one finding. A concern
-built from factors fills each role once, with its strongest match. So a log
-with two unrelated kernel crashes reports one finding that cites both, and
-a transcript about two households never has the second household judged.
-Cite answers "is this here, and where?", not "how many separate cases are
-there?".
+A directly screened concern gathers every match into one finding, judged in
+one request. A log with two unrelated kernel crashes reports one finding
+that cites both, and each crash's lines are judged beside the other's.
 
-The aim is to let a concern report separate findings for separate cases.
-How to tell cases apart is open: by distance in the source, by a question
-that asks whether two matches belong together, or another rule. The
-benchmark must show a rule groups matches as a person would. The rule must
-also keep what judging a finding whole gains: a line that refers back to
-another holds beside it and fails alone
-([ADR 1](adr/0001-judge-a-finding-whole.md)).
+A caller can already split that finding into cases: every citation carries
+its passage, `meta` included, so matches can be grouped by position, as the
+sponsor tutorial merges chunks into time ranges. What a caller can't change
+is that the cases were judged together. Judging a finding whole helps on
+conversations, where a line that refers back to another holds beside it and
+fails alone ([ADR 1](adr/0001-judge-a-finding-whole.md)). On
+self-contained passages, such as log lines, the gain is untested, and an
+unrelated case beside a passage may hurt it instead.
+
+The first step is to measure that. If judging unrelated cases together does
+no harm, the answer is a documented pattern for grouping citations, not a
+new mechanism. If it does harm, Cite needs a rule that splits matches into
+cases before round 2: by distance in the source, by a question that asks
+whether two matches belong together, or another rule. The benchmark must
+show the rule groups matches as a person would, and keeps what judging a
+finding whole gains. A split would let a concern report more than one
+finding, so code that expects at most one per concern would need to
+change.
+
+### More than one case in a concern built from factors
+
+A concern built from factors fills each role once, with its strongest match
+in the whole source. So a transcript about two households never has the
+second household judged. Roles can also mix cases: the strongest dependents
+may come from one household and the strongest income from the other. A
+check such as `same_household` then fails the finding, and Cite never
+tries another combination. Unlike the directly screened case, a caller
+can't recover the missed household afterwards: it never reached round 2.
+
+The aim is to judge each candidate case. One direction is an anchored
+role: each match for one role starts a candidate, the other roles are
+filled for that candidate, and the concern's checks judge each candidate in
+its own request. The benchmark must show candidates are formed and judged
+as a person would group them, at a cost in requests that stays in
+proportion to the cases found. This changes what callers rely on: a
+concern could report more than one finding.
 
 ### Context shared by every passage
 
