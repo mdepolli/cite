@@ -29,7 +29,7 @@ defmodule Cite.Provider.TypeSafe do
               doc: "The cap on any one retry wait, in milliseconds, `Retry-After` included."
             ],
             req_options: [
-              type: {:custom, __MODULE__, :validate_req_options, []},
+              type: :keyword_list,
               default: [],
               doc: """
               Req options, merged over the ones the adapter sets, as `Req.new/1` \
@@ -179,13 +179,6 @@ defmodule Cite.Provider.TypeSafe do
   @doc false
   def validate_api_key(key) when is_binary(key) and key != "", do: {:ok, key}
   def validate_api_key(key), do: {:error, "expected a non-empty string, got: #{inspect(key)}"}
-
-  @doc false
-  def validate_req_options(req_options) do
-    if Keyword.keyword?(req_options),
-      do: {:ok, req_options},
-      else: {:error, "expected a keyword list, got: #{inspect(req_options)}"}
-  end
 
   @impl Cite.Provider
   @spec judge(t(), map()) :: {:ok, Cite.verdict()} | {:error, error()}

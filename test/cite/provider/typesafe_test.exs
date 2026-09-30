@@ -85,7 +85,7 @@ defmodule Cite.Provider.TypeSafeTest do
 
     test "refuses req_options that are not a keyword list" do
       assert_raise ArgumentError,
-                   "invalid value for :req_options option: expected a keyword list, got: :nope",
+                   "invalid value for :req_options option: expected keyword list, got: :nope",
                    fn -> TypeSafe.new(api_key: "k", req_options: :nope) end
     end
 
