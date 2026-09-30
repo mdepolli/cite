@@ -8,19 +8,6 @@ Where Cite is heading next. Plans change; the
   ships only if the benchmark shows it helps, in 0.2.0 or later.
 - **Not planned**: asked for or considered, and ruled out.
 
-## Planned for 0.2.0
-
-### Concurrent requests
-
-Cite sends every request one after another: each round-1 window, then each
-finding. A run's latency grows with the length of the source and the number
-of findings.
-
-0.2.0 sends each round's requests concurrently, with a `:concurrency`
-option on `Cite.judge/4`. Results keep their order, so errors and usage
-stay in window and finding order. The rounds themselves stay in sequence:
-round 2 needs round 1's scores.
-
 ## Exploring
 
 ### A local provider, as its own package
