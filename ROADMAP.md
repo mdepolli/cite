@@ -10,6 +10,26 @@ Where Cite is heading next. Plans change; the
 
 ## Planned
 
+### Telemetry
+
+There is no `:telemetry` dependency and no logging today, so paid
+concurrent runs give no view of progress, retries, token usage, or errors.
+Direction: emit `:telemetry` span events for the run, each round, and each
+request (recording usage, retries, and errors). Document how to propagate
+OpenTelemetry context into the client task processes; Logger metadata
+already propagates, OTel context does not. This can land without breaking
+the public API.
+
+### Partial results and budgets
+
+When the client raises or exits, `judge/4` raises and throws away requests
+that already succeeded and were billed, and concurrency makes this more
+likely. `Cite.Provider.TypeSafe` sets `pool_timeout` to `:infinity` by
+default, so a run can wait in the queue forever. Direction: return a
+partial `Report` on failure (or an `on_failure: :record` option), plus a
+run-level timeout and a request/token budget. This can land without
+breaking the public API.
+
 ### Cite-native vocabulary in the public API
 
 Callers see Jev wire terms in replies today: `%{"noul" => 0.91}` in a
