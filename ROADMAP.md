@@ -4,7 +4,7 @@ Where Cite is heading next. Plans change; the
 [changelog](CHANGELOG.md) records what shipped.
 
 - **Exploring**: the problem is real, but the fix waits on a benchmark. It
-  ships only if the benchmark shows it helps, in 0.2.0 or later.
+  ships only if the benchmark shows it helps, in a later release.
 - **Not planned**: asked for or considered, and ruled out.
 
 ## Exploring
