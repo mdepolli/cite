@@ -25,7 +25,7 @@ own passages, cited byte for byte.
 ```elixir
 def deps do
   [
-    {:cite, "~> 0.1.0"}
+    {:cite, "~> 0.2.0"}
   ]
 end
 ```
