@@ -5,9 +5,10 @@ defmodule Cite.Round do
 
   Each item runs in a task linked to the caller, so the caller's death
   stops its requests. Once one fails, by a raise, throw, or exit, or by an
-  exit signal from outside, no further item starts. The failure reaches
-  the caller once the items before it have answered, and the items after
-  it still running are killed. Of several failures, the first in item
+  exit signal from outside, no further item starts, and the items after it
+  still running are killed at once: an item may send several requests,
+  and a killed one sends no more. The failure reaches the caller once the
+  items before it have answered. Of several failures, the first in item
   order wins. The exception is an exit signal from outside in a caller
   that doesn't trap exits: it reaches the caller at once, through the
   link, and kills it.

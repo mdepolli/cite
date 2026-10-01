@@ -29,14 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   concurrently too, or be run at `concurrency: 1`.
 - In a caller that traps exits, a crash in a process the client links to
   now makes `Cite.judge/4` exit with the same reason. As with a raise, the
-  exit comes once the requests before it have answered, and no request
-  starts after the crash. Before, such a caller (a GenServer, say)
+  exit comes once the requests before it have answered, and it stops the
+  rest as a raise does. Before, such a caller (a GenServer, say)
   received an `:EXIT` message and the run carried on. A caller that
   doesn't trap exits still dies at once, through the link.
 - At `concurrency` above 1, a raise mid-run comes once the requests before
-  it have answered. Once a call raises, throws, or exits, no further
-  request starts. Those still in flight when the error comes are stopped,
-  but the provider may already have received and billed them.
+  it have answered. Once a call raises, throws, or exits, no new request
+  starts. A request before it still finishes, including the halves Cite
+  sends when it is too large and any retries the client makes. One after
+  it is stopped at once, but the provider may already have received and
+  billed it.
 - `Cite.Provider.TypeSafe` waits for a pooled connection with no time
   limit, instead of raising after 5 seconds. A `pool_timeout` under
   `finch:`, in `req_options` or the app's `Req.default_options/0`, still

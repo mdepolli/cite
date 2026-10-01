@@ -11,19 +11,21 @@ Accepted
 A round sends its requests up to `concurrency` at once and returns the
 replies in order. `Task.async_stream/3` does that in a few lines.
 
-When a request fails, `Cite.judge/4` promises that no further request
-starts, since every request sent is billed. A crash in a process the client
-links to reaches a caller that traps exits as an exit with the crash's
-reason.
+When a request fails, `Cite.judge/4` promises that no new request starts,
+other than the halves and retries of a request before it, since every
+request sent is billed. A crash in a process the client links to reaches a
+caller that traps exits as an exit with the crash's reason.
 
 ## Decision
 
-`Cite.Round` schedules a round itself. Each request runs in `Task.async/1`,
-and the caller reads every reply and every `:DOWN` as a message.
+`Cite.Round` schedules a round itself. Each item, a round-1 window or a
+round-2 finding, runs in `Task.async/1`, and the caller reads every reply
+and every `:DOWN` as a message. A failure kills the items after it as
+soon as the caller sees it.
 
 Everything else is as the stream had it: replies in item order, the first
-failure in item order, a failure delivered once the requests before it have
-answered, and the requests after it stopped.
+failure in item order, and a failure delivered once the items before it
+have answered.
 
 ## Rationale
 
@@ -31,7 +33,12 @@ answered, and the requests after it stopped.
   the monitor lands first and a task that dies at once reports its real
   reason.
 - A failure of any kind, a linked crash included, is seen in the caller
-  before the next request starts, so none starts after it.
+  before the next item starts, so none starts after it.
+- An item can send several requests: a window over the request cap sends
+  its halves in turn, and the client may retry. `Cite.Round` first killed
+  the items after a failure only once the items before it had answered,
+  and until then they kept sending. Killing them when the failure is seen
+  stops that.
 
 The first two designs used `Task.async_stream/3`, and both fell short.
 
@@ -68,17 +75,18 @@ after a linked crash in about 40 lines, but it still goes through
 
 - Cite owns what the stream did for free. `Cite.Round` unlinks each
   finished task and drops its `:EXIT`, so a caller that traps exits keeps a
-  clean mailbox, and it kills the tasks still running on a failure. The
-  module is about 190 lines where the stream took about 30.
-- Nothing in the caller may raise between the first task and the kill of
-  the rest, or a task outlives the round. No `try/after` enforces it; a
-  step added there, such as a deadline, must keep it true.
+  clean mailbox, and it kills the tasks after a failure. The module is
+  about 190 lines where the stream took about 30.
+- Nothing in the caller may raise between the first task and the result,
+  or a task outlives the round. No `try/after` enforces it; a step added
+  there, such as a deadline, must keep it true.
 - Each receive matches any of the round's refs, so it scans the caller's
   whole mailbox. That costs about three scans per request more than the
   stream's. It only counts for a caller with a backlog, such as a busy
   GenServer.
 - No test pins the `:noproc` race: it cannot be caught in a suite. Tests
-  pin that a linked crash starts no further request.
+  pin that a linked crash starts no further item, and that a failure
+  kills the items after it while the items before it still run.
 - The race is in Elixir, and unchanged on its main branch at this date. A
   fix there would settle the exit reason, but an ordered stream would
   still start requests after a failure.

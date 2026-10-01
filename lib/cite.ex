@@ -49,7 +49,7 @@ defmodule Cite do
   exits dies of it at once, through its link to the task. In a caller that
   traps exits, such as a GenServer, `judge/4` exits with the same reason,
   an exit the caller can catch. As with a raise, it comes once the
-  requests before it have answered. No request starts after the crash.
+  requests before it have answered, and stops the rest as a raise does.
   """
 
   alias Cite.{Answer, Gather, Judge, Report, Round, Run, Screen, Source}
@@ -120,9 +120,10 @@ defmodule Cite do
   outside its contract. `judge/4` passes on, as is, whatever the client
   raises, throws, or exits with, an `ArgumentError` included. Either comes
   once the requests before it have answered. Once a call raises, throws,
-  or exits, no further request starts. Those still in flight when the
-  error comes are stopped, but the provider may already have received,
-  and billed, them.
+  or exits, no new request starts. A request before it still finishes,
+  including the halves Cite sends when it is too large and any retries
+  the client makes. One after it is stopped at once, but the provider may
+  already have received, and billed, it.
 
   ## Options
 
