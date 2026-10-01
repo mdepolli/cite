@@ -118,10 +118,6 @@ defmodule Cite.Provider.TypeSafeTest do
       assert pool_options([]) == %{pool_timeout: :infinity}
     end
 
-    test "keeps a caller's top-level pool_timeout" do
-      assert pool_options(pool_timeout: 5_000) == %{pool_timeout: 5_000}
-    end
-
     test "sets the wait beside a caller's finch: list, not inside it" do
       assert pool_options(finch: [name: MyFinch]) == %{
                pool_timeout: :infinity,

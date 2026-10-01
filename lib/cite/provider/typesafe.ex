@@ -69,7 +69,7 @@ defmodule Cite.Provider.TypeSafe do
   | `retry` | the adapter's retry, above | `req_options: [retry: ...]`, which replaces it |
   | `max_retries` | `3` | `req_options: [max_retries: n]` |
   | `redirect` | `false` | `req_options: [redirect: true]` |
-  | `pool_timeout` | `:infinity`, unless set | `req_options: [pool_timeout: ms]`, or under `finch:` |
+  | `pool_timeout` | `:infinity`, unless set | `req_options: [finch: [pool_timeout: ms]]` |
 
   Every other Req option passes through as Req documents it. The common
   ones:
@@ -92,8 +92,8 @@ defmodule Cite.Provider.TypeSafe do
   Requests go through Req's default Finch pool, 50 connections per host.
   Past that, a request waits for a connection with no time limit, so
   `concurrency` above 50 queues inside Finch instead of sending more at
-  once. A `pool_timeout`, at the top level or under `finch:`, in
-  `req_options` or the app's defaults, sets a limit instead. A request still waiting when it runs out
+  once. A `pool_timeout` under `finch:`, in `req_options` or the app's
+  defaults, sets a limit instead. A request still waiting when it runs out
   raises Finch's error, which ends the run. Leave it unset unless that is
   what you want.
 

@@ -42,9 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it is stopped at once, but the provider may already have received and
   billed it.
 - `Cite.Provider.TypeSafe` waits for a pooled connection with no time
-  limit, instead of raising after 5 seconds. A `pool_timeout`, at the top
-  level or under `finch:`, in `req_options` or the app's
-  `Req.default_options/0`, still sets one.
+  limit, instead of raising after 5 seconds. A `pool_timeout` under
+  `finch:`, in `req_options` or the app's `Req.default_options/0`, still
+  sets one.
 - `Cite.Provider.TypeSafe` applies its `:retry_delay` check to the app's
   `Req.default_options/0` as well as `req_options`: a `:retry_delay` from
   either needs a `:retry` in `req_options`. A `retry_delay: nil` now
