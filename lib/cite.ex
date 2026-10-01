@@ -41,8 +41,8 @@ defmodule Cite do
   `judge/4` calls the client from task processes, up to `concurrency` at
   once (4 by default), so the client must be safe to call concurrently.
   Each task starts with the caller's Logger metadata and process level.
-  The rest of the process dictionary, OpenTelemetry context included, does
-  not carry over; a client that needs it attaches it itself. In the
+  Cite carries nothing else over: OpenTelemetry context, for one, doesn't
+  reach the task, so a client that needs it attaches it itself. In the
   client, `self()` is the task, not the caller.
 
   Tasks don't trap exits. A crash in a process the client links to ends
