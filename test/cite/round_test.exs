@@ -186,6 +186,7 @@ defmodule Cite.RoundTest do
 
       # Assert
       await_down(held[2])
+      assert Process.alive?(held[0])
       send(held[0], :go)
       assert Task.await(task) == %RuntimeError{message: "boom"}
     end
