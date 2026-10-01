@@ -3,9 +3,33 @@
 Where Cite is heading next. Plans change; the
 [changelog](CHANGELOG.md) records what shipped.
 
+- **Planned**: decided work that will ship before 1.0.
 - **Exploring**: the problem is real, but the fix waits on a benchmark. It
   ships only if the benchmark shows it helps, in a later release.
 - **Not planned**: asked for or considered, and ruled out.
+
+## Planned
+
+### Cite-native vocabulary in the public API
+
+Callers see Jev wire terms in replies today: `%{"noul" => 0.91}` in a
+citation’s `answer` and in a finding’s `checks`. The provider contract
+also mirrors TypeSafe’s System One request, and `Cite.Wire.Object` is
+public. Direction: return readable, typed answers (for example
+`%{answers_query: 0.91}` or typed score/choice values) and keep the raw
+wire map in a `raw` field; define a small Cite-owned provider contract,
+with the TypeSafe mapping in `Cite.Provider.TypeSafe`; make
+`Cite.Wire.Object` internal. This is a breaking API change, best done
+before 1.0.
+
+### Naming consistency
+
+The `Cite.verdict()` type (the provider reply map) clashes with a
+finding’s `verdict` atom. Rename it to something like `Cite.reply()`.
+“judge” is overloaded across `Cite.judge/4`, `Provider.judge/2`, and the
+`Cite.Judge` module; keep the word for `Cite.judge/4` only. Unify the
+rejection terms (`:fails` on a finding vs `:dropped` on a citation).
+This is a breaking API change, best done before 1.0.
 
 ## Exploring
 
