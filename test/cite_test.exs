@@ -1,7 +1,8 @@
 defmodule CiteTest do
   use ExUnit.Case, async: true
 
-  import Cite.TestHeld, only: [held: 2, arrivals: 1, release: 1, release_and_await: 1]
+  import Cite.TestHeld,
+    only: [held: 2, arrivals: 1, release: 1, release_and_await: 1, crash_through_link: 0]
 
   alias Cite.{Citation, Error, Finding, Passage, Report}
   alias Cite.TestPolicies.{Household, Riddles, TwoConcerns}
@@ -383,6 +384,41 @@ defmodule CiteTest do
 
       # P000's riddle would have been judged in round 2.
       assert windows_sent() == [["P000"], ["P001"]]
+    end
+
+    test "starts no request once one has raised, at concurrency above 1" do
+      # Arrange
+      source = Cite.source(["a", "b", "c", "d", "e"])
+      answering = client(%{})
+
+      reply = fn request ->
+        if window_ids(request) == ["P001"], do: raise("boom"), else: answering.(request)
+      end
+
+      client = held(&window_ids/1, reply)
+      opts = [window: 1, concurrency: 4]
+      task = Task.async(fn -> catch_error(Cite.judge(client, source, Riddles, opts)) end)
+
+      # Act
+      {failed, others} =
+        4
+        |> arrivals()
+        |> Map.new()
+        |> Map.pop(["P001"])
+
+      release_and_await(failed)
+
+      # Assert
+      refute_receive {:arrive, _window, _pid}
+      release(others)
+      assert Task.await(task) == %RuntimeError{message: "boom"}
+    end
+
+    test "exits a caller that traps exits with a linked crash's reason" do
+      Process.flag(:trap_exit, true)
+      client = fn _request -> crash_through_link() end
+
+      assert catch_exit(Cite.judge(client, Cite.source(["a"]), Riddles)) == :helper_crashed
     end
   end
 
