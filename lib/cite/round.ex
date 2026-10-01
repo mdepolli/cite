@@ -30,17 +30,16 @@ defmodule Cite.Round do
     # :noproc.
     start = fn item -> Task.async(fn -> attempt(fun, item, logger) end) end
 
-    # Nothing between the first Task.async and stop_the_rest/1 can raise, so
-    # no task outlives the round; a step added there must keep it so. The
-    # items must not raise either: Cite passes a list, or chunks one.
+    # Nothing between the first Task.async and deliver/1 can raise, so no
+    # task outlives the round; a step added there must keep it so. The items
+    # must not raise either: Cite passes a list, or chunks one.
     items
     |> Stream.with_index()
     |> Enum.reduce_while(
       %{running: %{}, outcomes: %{}, failed_at: nil},
       &start_next(&1, &2, concurrency, start)
     )
-    |> await_before_failure()
-    |> stop_the_rest()
+    |> await_running()
     |> deliver()
   end
 
@@ -130,40 +129,42 @@ defmodule Cite.Round do
         outcomes: Map.put(state.outcomes, index, outcome),
         failed_at: first_failure(state.failed_at, index, outcome)
     }
+    |> stop_after_failure()
   end
 
   defp first_failure(failed_at, _index, {:ok, _value}), do: failed_at
   defp first_failure(nil, index, _failure), do: index
   defp first_failure(failed_at, index, _failure), do: min(failed_at, index)
 
-  # Once the items run out or a failure stops them, waits for every task
-  # before the failure: all of them when there is none.
-  defp await_before_failure(state) do
-    if running_before_failure?(state) do
-      state
-      |> await_one()
-      |> await_before_failure()
-    else
-      state
-    end
-  end
-
-  defp running_before_failure?(%{running: running, failed_at: failed_at}),
-    do: Enum.any?(running, fn {_ref, {index, _task}} -> before?(index, failed_at) end)
-
-  defp before?(_index, nil), do: true
-  defp before?(index, failed_at), do: index < failed_at
-
+  # A task after the failure can never be used, but it may still send
+  # requests: a window's halves, or the client's retries. So it is killed at
+  # once, not when the tasks before the failure have answered.
+  #
   # Task.shutdown/2 unlinks before it kills, but an :EXIT from a task that
   # already died, killed from outside, may be queued. What it returns is not
-  # needed: every task still running comes after the failure.
-  defp stop_the_rest(state) do
-    for {_ref, {_index, task}} <- state.running do
+  # needed.
+  defp stop_after_failure(%{failed_at: nil} = state), do: state
+
+  defp stop_after_failure(%{running: running, failed_at: failed_at} = state) do
+    {before, after_failure} =
+      Map.split_with(running, fn {_ref, {index, _task}} -> index < failed_at end)
+
+    for {_ref, {_index, task}} <- after_failure do
       Task.shutdown(task, :brutal_kill)
       drop_exit(task.pid)
     end
 
+    %{state | running: before}
+  end
+
+  # Once the items run out or a failure stops them, every task still running
+  # comes before any failure.
+  defp await_running(%{running: running} = state) when map_size(running) == 0, do: state
+
+  defp await_running(state) do
     state
+    |> await_one()
+    |> await_running()
   end
 
   defp drop_exit(pid) do

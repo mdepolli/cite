@@ -180,18 +180,14 @@ defmodule Cite.RoundTest do
       assert Process.info(self(), :messages) == {:messages, []}
     end
 
-    test "stops the items after a failure that are still running" do
+    test "stops the items after a failure at once, while the items before it still run" do
       # Arrange / Act
       {task, held} = fail_item_1([0, 1, 2], fn -> raise "boom" end, &catch_error(&1.()))
-      third = held[2]
-      send(held[0], :go)
 
       # Assert
+      await_down(held[2])
+      send(held[0], :go)
       assert Task.await(task) == %RuntimeError{message: "boom"}
-      # run/3 raises only once it has shut down its running tasks, and
-      # Task.shutdown/2 waits for each to go down. A monitor set on the third
-      # item here could land after that and report :noproc.
-      refute Process.alive?(third)
     end
   end
 
