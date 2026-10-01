@@ -21,7 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   raises `ArgumentError` only on a bad argument, before any request. What
   the client raises passes through as is.
 - The client runs in a task process, even at `concurrency: 1`. Logger
-  metadata and process level carry over; OpenTelemetry context does not.
+  metadata and process level carry over; the rest of the process
+  dictionary, OpenTelemetry context included, does not. In the client,
+  `self()` is the task, not the caller.
 - `Cite.Provider` asks two more things of a provider. `judge/2` must be
   safe to call from several processes at once with the same handle. And
   it must not raise on a condition that concurrency makes routine, such as
