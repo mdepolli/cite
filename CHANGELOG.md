@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The README, the tutorials, and the `Cite` docs read the API key from
+  `TYPESAFE_API_KEY` instead of `JEV_API_KEY`. Cite itself reads no
+  environment variable, so only code copied from the examples is affected.
+
 ## [0.2.0] - 2026-10-01
 
 ### Added
