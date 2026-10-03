@@ -41,7 +41,7 @@ This example needs a TypeSafe API key. To try Cite without one, see
 [Testing without a key](#testing-without-a-key).
 
 ```elixir
-client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
+client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("TYPESAFE_API_KEY"))
 
 defmodule Riddles do
   use Cite.Policy

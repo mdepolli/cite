@@ -120,7 +120,7 @@ More on the language in [Writing policies](../writing-policies.md).
 ## 4. Run it
 
 ```elixir
-client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
+client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("TYPESAFE_API_KEY"))
 report = Cite.judge(client, source, MyApp.Sponsors)
 ```
 

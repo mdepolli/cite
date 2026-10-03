@@ -184,7 +184,7 @@ The full policy is at the end of this guide. More on the language in
 ## 5. Run it
 
 ```elixir
-client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("JEV_API_KEY"))
+client = Cite.client(Cite.Provider.TypeSafe, api_key: System.fetch_env!("TYPESAFE_API_KEY"))
 report = Cite.judge(client, source, MyApp.LogTriage)
 ```
 
